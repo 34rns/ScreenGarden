@@ -824,6 +824,9 @@ SECTION 11 - CURRENT STATUS
       --source . --push` -> https://github.com/34rns/ScreenGarden.
     - CI run 41448113969: success, 3m37s (after D37).
     - CI run 41450818192: success, 1m49s (screenshots commit).
+    - CI run 41451543083: success, 1m20s (memory commit).
+    - Release workflow run 41451442151: success, 2m56s (manual dispatch; unsigned
+      R8 APK and mapping file uploaded as artifacts).
     - `:app:connectedDebugAndroidTest`: BUILD SUCCESSFUL in 41s, tests=2
       failures=0.
     - `ktlintCheck --no-build-cache`, `testDebugUnitTest`, `lintDebug`,
@@ -944,7 +947,10 @@ SECTION 13 - SESSION LOG
       - testDebugUnitTest: 32/32. lintDebug: 0 errors, 2 accepted warnings.
       - assembleDebug: BUILD SUCCESSFUL.
       - connectedDebugAndroidTest: BUILD SUCCESSFUL in 41s, tests=2, failures=0.
-      - CI: run 41448113969 success (3m37s), run 41450818192 success (1m49s).
+      - CI: run 41448113969 success (3m37s), run 41450818192 success (1m49s),
+        run 41451543083 success (1m20s).
+      - Release workflow: run 41451442151 success (2m56s, manual dispatch),
+        producing app-release-unsigned.apk + mapping.txt artifacts.
       - Docker-free, cost-free: no paid service, account or device used.
 
     Not verified
