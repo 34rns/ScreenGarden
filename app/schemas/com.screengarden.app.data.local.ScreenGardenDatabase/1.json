@@ -1,0 +1,308 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "84cc8ea959c33ac8be36ef8103b8921f",
+    "entities": [
+      {
+        "tableName": "daily_stats",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`dayStartUtcMillis` INTEGER NOT NULL, `focusMinutes` INTEGER NOT NULL, `screenMinutes` INTEGER NOT NULL, `sessionsCompleted` INTEGER NOT NULL, `plantsGrown` INTEGER NOT NULL, `updatedAtUtcMillis` INTEGER NOT NULL, PRIMARY KEY(`dayStartUtcMillis`))",
+        "fields": [
+          {
+            "fieldPath": "dayStartUtcMillis",
+            "columnName": "dayStartUtcMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "focusMinutes",
+            "columnName": "focusMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screenMinutes",
+            "columnName": "screenMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionsCompleted",
+            "columnName": "sessionsCompleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plantsGrown",
+            "columnName": "plantsGrown",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMillis",
+            "columnName": "updatedAtUtcMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "dayStartUtcMillis"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "app_usage_daily",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`dayStartUtcMillis` INTEGER NOT NULL, `packageName` TEXT NOT NULL, `usageMillis` INTEGER NOT NULL, `launchCount` INTEGER NOT NULL, `updatedAtUtcMillis` INTEGER NOT NULL, PRIMARY KEY(`dayStartUtcMillis`, `packageName`))",
+        "fields": [
+          {
+            "fieldPath": "dayStartUtcMillis",
+            "columnName": "dayStartUtcMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageName",
+            "columnName": "packageName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "usageMillis",
+            "columnName": "usageMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "launchCount",
+            "columnName": "launchCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMillis",
+            "columnName": "updatedAtUtcMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "dayStartUtcMillis",
+            "packageName"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_app_usage_daily_packageName",
+            "unique": false,
+            "columnNames": [
+              "packageName"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_app_usage_daily_packageName` ON `${TABLE_NAME}` (`packageName`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "app_limits",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`packageName` TEXT NOT NULL, `dailyLimitMinutes` INTEGER NOT NULL, `isEnabled` INTEGER NOT NULL, `updatedAtUtcMillis` INTEGER NOT NULL, PRIMARY KEY(`packageName`))",
+        "fields": [
+          {
+            "fieldPath": "packageName",
+            "columnName": "packageName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dailyLimitMinutes",
+            "columnName": "dailyLimitMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isEnabled",
+            "columnName": "isEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUtcMillis",
+            "columnName": "updatedAtUtcMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "packageName"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "plants",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`plantId` TEXT NOT NULL, `species` TEXT NOT NULL, `stage` INTEGER NOT NULL, `health` INTEGER NOT NULL, `plantedAtUtcMillis` INTEGER NOT NULL, `lastFocusAtUtcMillis` INTEGER, PRIMARY KEY(`plantId`))",
+        "fields": [
+          {
+            "fieldPath": "plantId",
+            "columnName": "plantId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "species",
+            "columnName": "species",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stage",
+            "columnName": "stage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "health",
+            "columnName": "health",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plantedAtUtcMillis",
+            "columnName": "plantedAtUtcMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastFocusAtUtcMillis",
+            "columnName": "lastFocusAtUtcMillis",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "plantId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "focus_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sessionId` TEXT NOT NULL, `dayStartUtcMillis` INTEGER NOT NULL, `startedAtUtcMillis` INTEGER NOT NULL, `endedAtUtcMillis` INTEGER, `plannedMinutes` INTEGER NOT NULL, `wasCompleted` INTEGER NOT NULL, `plantId` TEXT, PRIMARY KEY(`sessionId`))",
+        "fields": [
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dayStartUtcMillis",
+            "columnName": "dayStartUtcMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAtUtcMillis",
+            "columnName": "startedAtUtcMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endedAtUtcMillis",
+            "columnName": "endedAtUtcMillis",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "plannedMinutes",
+            "columnName": "plannedMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wasCompleted",
+            "columnName": "wasCompleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plantId",
+            "columnName": "plantId",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sessionId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_focus_sessions_dayStartUtcMillis",
+            "unique": false,
+            "columnNames": [
+              "dayStartUtcMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_focus_sessions_dayStartUtcMillis` ON `${TABLE_NAME}` (`dayStartUtcMillis`)"
+          },
+          {
+            "name": "index_focus_sessions_plantId",
+            "unique": false,
+            "columnNames": [
+              "plantId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_focus_sessions_plantId` ON `${TABLE_NAME}` (`plantId`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "badges",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`badgeKey` TEXT NOT NULL, `unlockedAtUtcMillis` INTEGER NOT NULL, PRIMARY KEY(`badgeKey`))",
+        "fields": [
+          {
+            "fieldPath": "badgeKey",
+            "columnName": "badgeKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unlockedAtUtcMillis",
+            "columnName": "unlockedAtUtcMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "badgeKey"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '84cc8ea959c33ac8be36ef8103b8921f')"
+    ]
+  }
+}
