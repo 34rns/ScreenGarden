@@ -1,0 +1,18 @@
+# ktlint and .editorconfig require LF endings, so normalise on every platform.
+# Without this, a Windows clone with core.autocrlf=true rewrites the working tree
+# to CRLF and `ktlintCheck` then fails on files it did not change.
+* text=auto eol=lf
+
+# Windows scripts are the one exception: cmd.exe is happier with CRLF.
+*.bat text eol=crlf
+
+# Binary assets must never be normalised.
+*.jar binary
+*.apk binary
+*.aab binary
+*.png binary
+*.webp binary
+*.jpg binary
+*.ttf binary
+*.jks binary
+*.keystore binary

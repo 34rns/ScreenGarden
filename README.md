@@ -7,8 +7,8 @@ check.
 > navigate, and the local database layer is in place; none of the garden, focus
 > or insights features are built yet.
 
-<!-- Badge placeholder: replace OWNER/REPO once the repository is public. -->
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+<!-- Badge placeholder: replace 34rns/ScreenGarden once the repository is public. -->
+[![CI](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml)
 ![Status](https://img.shields.io/badge/status-work%20in%20progress-yellow)
 
 ## The idea
