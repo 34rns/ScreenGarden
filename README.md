@@ -7,7 +7,6 @@ check.
 > navigate, and the local database layer is in place; none of the garden, focus
 > or insights features are built yet.
 
-<!-- Badge placeholder: replace 34rns/ScreenGarden once the repository is public. -->
 [![CI](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml)
 ![Status](https://img.shields.io/badge/status-work%20in%20progress-yellow)
 
@@ -17,6 +16,28 @@ Screen time apps usually shout: red numbers, streaks, guilt. ScreenGarden does
 the opposite. You plant something, you sit with your work, and the garden
 responds quietly — a session that goes well lets it grow, a distracted day lets
 it rest. Nothing is scored, nothing is shared, nothing is sold.
+
+## Screenshots
+
+Captured on an Android 15 emulator (1080 × 2400) with demo mode enabled. Every
+image comes from the emulator with no personal data — nothing here was taken from
+a real phone.
+
+| | Light | Dark | AMOLED |
+| --- | --- | --- | --- |
+| **Garden** | <img src="docs/screenshots/garden_light.png" width="200" alt="Garden tab, light theme"> | <img src="docs/screenshots/garden_dark.png" width="200" alt="Garden tab, dark theme"> | <img src="docs/screenshots/garden_amoled.png" width="200" alt="Garden tab, true-black AMOLED theme"> |
+| **Focus** | <img src="docs/screenshots/focus_light.png" width="200" alt="Focus tab, light theme"> | <img src="docs/screenshots/focus_dark.png" width="200" alt="Focus tab, dark theme"> | <img src="docs/screenshots/focus_amoled.png" width="200" alt="Focus tab, AMOLED theme"> |
+| **Insights** | <img src="docs/screenshots/insights_light.png" width="200" alt="Insights tab, light theme"> | <img src="docs/screenshots/insights_dark.png" width="200" alt="Insights tab, dark theme"> | <img src="docs/screenshots/insights_amoled.png" width="200" alt="Insights tab, AMOLED theme"> |
+| **Settings** | <img src="docs/screenshots/settings_light.png" width="200" alt="Settings tab, light theme"> | <img src="docs/screenshots/settings_dark.png" width="200" alt="Settings tab, dark theme"> | <img src="docs/screenshots/settings_amoled.png" width="200" alt="Settings tab, AMOLED theme"> |
+
+Accessibility and layout:
+
+| Large text (1.3×) | Right-to-left (Arabic locale) |
+| --- | --- |
+| <img src="docs/screenshots/garden_large_font.png" width="240" alt="Garden tab at 1.3x font scale"> | <img src="docs/screenshots/garden_rtl.png" width="240" alt="Garden tab in a right-to-left locale"> |
+
+The same images live in `fastlane/metadata/android/en-US/images/phoneScreenshots/`
+for the F-Droid listing.
 
 ## Privacy promise
 
@@ -57,6 +78,9 @@ by intention. A pull request that adds network access or telemetry is rejected.
 ./gradlew ktlintCheck
 ./gradlew :app:lintDebug
 ./gradlew :app:testDebugUnitTest
+
+# Migration tests (needs a device or emulator; uninstalls the app afterwards)
+./gradlew :app:connectedDebugAndroidTest
 ```
 
 On Windows use `gradlew.bat` instead of `./gradlew`.
