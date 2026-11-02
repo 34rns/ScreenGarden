@@ -1,0 +1,28 @@
+# Gradle / Android Studio
+*.iml
+.gradle/
+build/
+captures/
+.externalNativeBuild
+.cxx
+.kotlin/
+local.properties
+.idea/
+
+# Build output
+*.apk
+*.aab
+*.aar
+output.json
+*.log
+
+# Signing material - never commit these (AGENT_MEMORY H8)
+*.jks
+*.keystore
+!debug.keystore
+keystore.properties
+signing.properties
+
+# OS noise
+.DS_Store
+Thumbs.db

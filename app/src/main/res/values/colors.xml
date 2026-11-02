@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Background used by the adaptive launcher icon (calm deep sage). -->
+    <color name="sg_icon_background">#3F6B4E</color>
+    <!-- Window background shown before Compose draws, matched to surface. -->
+    <color name="sg_window_background">#F6FBF4</color>
+</resources>

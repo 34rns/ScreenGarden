@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package com.screengarden.app.ui.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.screengarden.app.ui.screens.focus.FocusScreen
+import com.screengarden.app.ui.screens.garden.GardenScreen
+import com.screengarden.app.ui.screens.insights.InsightsScreen
+import com.screengarden.app.ui.screens.settings.SettingsScreen
+
+/** Hosts the four top-level screens. Each tab is a separate composable route. */
+@Composable
+fun ScreenGardenNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
+    NavHost(
+        navController = navController,
+        startDestination = ScreenGardenDestination.START.route,
+        modifier = modifier
+    ) {
+        composable(ScreenGardenDestination.Garden.route) {
+            GardenScreen()
+        }
+        composable(ScreenGardenDestination.Focus.route) {
+            FocusScreen()
+        }
+        composable(ScreenGardenDestination.Insights.route) {
+            InsightsScreen()
+        }
+        composable(ScreenGardenDestination.Settings.route) {
+            SettingsScreen()
+        }
+    }
+}
