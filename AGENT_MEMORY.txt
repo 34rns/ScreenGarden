@@ -1,0 +1,1218 @@
+================================================================================
+SCREEN GARDEN - AGENT MEMORY
+Last updated: 2026-11-02 (Session 4 / P00)
+Maintained by: whoever (human or agent) edits this repo. Update this file in the
+same change as the code. It is the single source of truth for rules, decisions,
+dependencies, permissions and status.
+================================================================================
+
+ORIGIN NOTE (read first)
+  Session 1 could not find a pre-existing AGENT_MEMORY.txt anywhere in the
+  workspace and no prior copy was pasted. This file was CREATED in Session 1
+  from the task brief (Task 0.1 + 0.2). If an older master copy exists outside
+  this repo, reconcile it before P04 and note the merge in the Session Log.
+
+  SECTION NUMBERING NOTE (task briefs vs this file):
+    Brief "section 6" (data models)      -> SECTION 15 here
+    Brief "section 7" (dependencies)     -> SECTION 8 here
+    Brief "section 5.1 / 5.2 / 5.4 / 5.5" -> SECTION 16.1 / 16.2 / 16.4 / 16.5
+    Folder layout                        -> SECTION 4 (as documented)
+  The data-model and dependency sections were appended rather than renumbered so
+  existing cross-references stay valid. SECTION 16 was added in P00 because the
+  design spec the briefs refer to was never actually written down.
+
+  TASK IDENTIFIERS: from P00 on, tasks are identified by PROMPT NUMBER (P04,
+  P08, ...), not by the old dotted checklist IDs. Those IDs are preserved in
+  SECTION 7 for traceability. A brief that says "Task 1.3 health score" means
+  P08; the old 1.3 was the focus timer, now P12/P13.
+
+
+--------------------------------------------------------------------------------
+SECTION 1 - PROJECT
+--------------------------------------------------------------------------------
+  Name          ScreenGarden
+  What          Calm, privacy-first Android app: a "garden" that grows while you
+                focus and keep your screen time in check.
+  Character     Quiet, green, no streak pressure, no accounts, no network.
+  Form          Open-source, single-module Android application.
+  Repo root     ScreenGarden/  (this file sits at the repo root)
+  Package base  com.screengarden.app
+  Code license  GPL-3.0-or-later (D27)      -> LICENSE
+  Art license   CC BY-SA 4.0 (D28)          -> ART_LICENSE.md
+  Cost          Zero. Everything must stay free (H16).
+
+
+--------------------------------------------------------------------------------
+SECTION 2 - HARD RULES (never violate, even if a task asks nicely)
+--------------------------------------------------------------------------------
+  H1  NO INTERNET PERMISSION. The manifest must never request the INTERNET
+      permission, directly or through a manifest-merge trick. Anything needing
+      the network does not belong in this app.
+  H2  android:allowBackup="false" stays on the <application> element. Screen
+      time data is private and must not leave the device via cloud backup or
+      device-to-device transfer. Do not add a dataExtractionRules /
+      fullBackupContent resource that re-enables backup.
+  H3  No analytics, telemetry, ads, A/B or crash-reporting SDKs. Ever.
+  H4  Every screen must work fully offline. No "sign in to continue" surfaces.
+  H5  ONE Activity (MainActivity). All UI is Jetpack Compose; no XML layouts.
+      XML is only for resources (strings, colors, themes, icons, manifest).
+  H6  Nothing is "done" until :app:assembleDebug compiles, `ktlintCheck` passes,
+      unit tests pass and Android lint has no errors (lint abortOnError = true).
+  H7  Update this file in the same change: feature checklist, status, next
+      step, decisions, permissions, known issues, session log.
+  H8  Never commit secrets, keystores, signing passwords or local.properties.
+  H9  Every Android permission (including special app access such as usage
+      stats) needs an entry in SECTION 9 with a written justification before
+      the code that uses it is merged.
+  H10 Do not add a dependency when the platform or an existing dependency
+      already solves it. New dependencies go in the version catalog and in
+      SECTION 8 with a one-line reason and its license.
+  H11 No feature work outside the current task. State assumptions and continue.
+  H12 LICENSE IS DECIDED (P00): code is GPL-3.0-or-later, art is CC BY-SA 4.0
+      (D27/D28). Every new .kt file starts with
+      `// SPDX-License-Identifier: GPL-3.0-or-later`; every new original asset is
+      covered by ART_LICENSE.md. Never claim a different license in a comment,
+      README or file header, and never copy code whose license is incompatible
+      with the GPL. (This rule previously forbade choosing a license at all; the
+      owner delegated that decision in P00.)
+  H13 Every stored timestamp is epoch millis UTC, and every "which day" answer
+      comes from com.screengarden.app.core.time.LocalDay. No other code may
+      compute a day boundary (see D20).
+  H14 Never ship a destructive Room fallback. A schema change needs a Migration
+      plus a migration test, or it does not ship (D23).
+  H15 The exported Room schemas in app/schemas/ are committed artifacts. Never
+      delete, hand-edit or regenerate an existing version file (D22).
+  H16 EVERYTHING MUST BE FREE.
+      No paid tools, services, APIs, fonts, art, subscriptions, device farms or
+      developer accounts. Allowed: open-source tooling, GitHub free tier (public
+      repo, free Actions minutes), Android Studio and its free emulator, free
+      F-Droid and GitHub Releases distribution. If a task seems to need
+      something paid, STOP and propose a free alternative instead of adding it.
+
+
+--------------------------------------------------------------------------------
+SECTION 3 - TECH STACK
+--------------------------------------------------------------------------------
+  Language      Kotlin 2.1.0 (official code style), Java 17 source/target
+  UI            Jetpack Compose, Compose BOM 2025.01.00, Material 3
+  Activity      androidx.activity:activity-compose 1.10.0, enableEdgeToEdge()
+  Navigation    androidx.navigation:navigation-compose 2.8.5, single NavHost
+  Architecture  UI (Compose screens) -> domain -> data (local only)
+  DI            Manual dependency injection (AppContainer). No Hilt.
+  Persistence   Room 2.6.1 (KSP), 6 tables, schema export + migrations.
+                DataStore for preferences is still planned (P04/P22).
+  Async         Kotlin coroutines + Flow (Room DAOs expose Flow queries).
+                WorkManager arrives with the daily sync (P06).
+  Build         Gradle 8.13 (wrapper), AGP 8.9.2, KSP 2.1.0-1.0.29,
+                Kotlin DSL, version catalog
+  SDK           compileSdk 35, targetSdk 35, minSdk 26
+  Style         ktlint 1.5.0 via org.jlleitschuh.gradle.ktlint 12.2.0
+  CI            GitHub Actions, two workflows:
+                  ci.yml       PR + push to main: ktlint, debug build, lint, tests
+                  release.yml  manual + weekly: unsigned R8 release build
+  License       GPL-3.0-or-later (code), CC BY-SA 4.0 (art)
+  Distribution  GitHub Releases + F-Droid (+ optional IzzyOnDroid). No Play.
+  Testing       JVM unit tests (JUnit 4 + Robolectric + Room in-memory);
+                Android Studio emulator for visual/migration checks
+  Tests         32 JVM unit tests, 1 androidTest migration suite (compiles).
+  Toolchain     JDK 17 (verified with 17.0.20.1 on Windows)
+
+  BUILD & RUN (from the repo root)
+    Windows       gradlew.bat :app:assembleDebug
+    macOS/Linux   ./gradlew :app:assembleDebug
+    Install       gradlew.bat :app:installDebug
+    Style check   gradlew.bat ktlintCheck      (add --no-build-cache after
+                                                deleting files - see K14)
+    Auto-format   gradlew.bat ktlintFormat
+    Lint          gradlew.bat :app:lintDebug
+    Unit tests    gradlew.bat :app:testDebugUnitTest       (JVM, no device)
+    Migration     gradlew.bat :app:connectedDebugAndroidTest  (emulator/device)
+    Release build gradlew.bat :app:assembleRelease   (unsigned for now)
+  Android Studio: open the ScreenGarden folder, let Gradle sync, pick the
+  "app" run configuration, run on an API 26+ emulator or device.
+
+
+--------------------------------------------------------------------------------
+SECTION 4 - FOLDER LAYOUT
+--------------------------------------------------------------------------------
+  ScreenGarden/
+  |-- AGENT_MEMORY.txt                  <- this file (authoritative)
+  |-- LICENSE                           GPL-3.0 text (verbatim, official)
+  |-- ART_LICENSE.md                    CC BY-SA 4.0 for art and plant packs
+  |-- README.md                         pitch, privacy promise, license, badges
+  |-- CONTRIBUTING.md                   rules, style, licensing, PR flow
+  |-- .editorconfig                     ktlint and editor settings
+  |-- .gitignore
+  |-- .github/
+  |   |-- PULL_REQUEST_TEMPLATE.md
+  |   `-- workflows/
+  |       |-- ci.yml                    PR gate: ktlint, build, lint, tests
+  |       `-- release.yml               manual + weekly unsigned release build
+  |-- build.gradle.kts                  root: plugin aliases only (apply false)
+  |-- settings.gradle.kts               repositories + include(":app")
+  |-- gradle.properties                 JVM args, AndroidX, non-transitive R
+  |-- gradlew, gradlew.bat              Gradle 8.13 wrapper (generated)
+  |-- gradle/
+  |   |-- libs.versions.toml            ONLY place dependency versions live
+  |   `-- wrapper/
+  |       |-- gradle-wrapper.jar
+  |       `-- gradle-wrapper.properties
+  `-- app/
+      |-- build.gradle.kts              module config, KSP, Room, ktlint, tests
+      |-- proguard-rules.pro            R8 rules (currently none needed)
+      |-- schemas/                      exported Room schemas - COMMITTED (D22)
+      |   `-- com.screengarden.app.data.local.ScreenGardenDatabase/
+      |       `-- 1.json
+      `-- src/
+          |-- main/
+          |   |-- AndroidManifest.xml   no permissions, allowBackup=false
+          |   |-- res/                  values, values-night, drawable, mipmap
+          |   `-- java/com/screengarden/app/
+          |       |-- ScreenGardenApplication.kt   owns AppContainer(this)
+          |       |-- MainActivity.kt              single activity, setContent
+          |       |-- core/
+          |       |   `-- time/
+          |       |       `-- LocalDay.kt          the only day-boundary helper
+          |       |-- di/
+          |       |   `-- AppContainer.kt          manual DI root + database
+          |       |-- data/
+          |       |   |-- local/
+          |       |   |   |-- ScreenGardenDatabase.kt   6 entities, v1
+          |       |   |   |-- entity/   DailyStat.kt, AppUsageDaily.kt,
+          |       |   |   |             AppLimit.kt, Plant.kt, FocusSession.kt,
+          |       |   |   |             Badge.kt
+          |       |   |   `-- dao/      DailyStatDao.kt, AppUsageDailyDao.kt,
+          |       |   |                 AppLimitDao.kt, PlantDao.kt,
+          |       |   |                 FocusSessionDao.kt, BadgeDao.kt
+          |       |   `-- repo/         DailyStatRepository.kt,
+          |       |                     AppUsageRepository.kt,
+          |       |                     AppLimitRepository.kt,
+          |       |                     GardenRepository.kt,
+          |       |                     FocusSessionRepository.kt,
+          |       |                     BadgeRepository.kt
+          |       `-- ui/
+          |           |-- theme/        Color.kt, Type.kt, Theme.kt
+          |           |-- navigation/   ScreenGardenApp.kt, ScreenGardenNavHost.kt,
+          |           |                 ScreenGardenBottomBar.kt,
+          |           |                 ScreenGardenDestination.kt
+          |           |-- components/   PlaceholderScreen.kt
+          |           `-- screens/      garden/, focus/, insights/, settings/
+          |-- test/java/com/screengarden/app/
+          |   |-- core/time/LocalDayTest.kt            6 tests
+          |   `-- data/local/  DailyStatDaoTest.kt, AppUsageDailyDaoTest.kt,
+          |                    AppLimitDaoTest.kt, PlantDaoTest.kt,
+          |                    FocusSessionDaoTest.kt, BadgeDaoTest.kt  (26 tests)
+          `-- androidTest/java/com/screengarden/app/data/local/
+              `-- ScreenGardenDatabaseMigrationTest.kt  skeleton (device only)
+
+  PLANNED (created by the prompt that needs them, never empty - D17):
+    data/settings/     DataStore settings repository            (P04)
+    data/usage/        usage-stats collection                   (P05)
+    data/work/         WorkManager daily sync                   (P06)
+    domain/model/      UI-facing models (sessions, plants, summaries)
+    domain/usecase/    single-purpose operations, plain classes, unit-testable
+    ui/onboarding/     first-run flow                           (P07)
+    assets/plants/     plant packs (plant.json + stage images)  (P25)
+
+  RENAMES / SUPERSEDED NAMES
+    util/            superseded by core/time/ (D21)
+    data/repository  superseded by data/repo/ (D21, name used by the briefs)
+    LICENSE-PENDING.md  deleted in P00 once D27 decided the license
+
+  Layer rules
+    - screens/ may depend on components/, theme/, domain/model.
+    - screens/ must NOT touch data/ directly; go through a use case.
+    - data/ may depend on domain/; the reverse is forbidden.
+    - core/ depends on nothing in data/, domain/ or ui/. It is pure Kotlin
+      (java.time is allowed, Android framework is not).
+    - di/ is the only place that constructs the database, repositories and
+      use cases.
+    - Docs for the schema itself live in SECTION 15; product behaviour lives in
+      SECTION 16.
+
+
+--------------------------------------------------------------------------------
+SECTION 5 - CONVENTIONS
+--------------------------------------------------------------------------------
+  Naming
+    - Screens:        <Feature>Screen.kt + @Composable fun <Feature>Screen(...)
+    - App-wide        ScreenGarden* for app-level composables (App, NavHost,
+      composables:    BottomBar, Destination) so they read clearly next to
+                      Compose's own names.
+    - One public composable per file; private previews at the bottom.
+    - State:          onX callbacks up, immutable state down, hoisted params.
+    - Strings:        user-facing text ALWAYS via @StringRes (strings.xml).
+                      Never hardcode UI text in composables.
+    - Room:           entity = the model name (DailyStat), DAO = <Entity>Dao,
+                      table = plural snake_case (daily_stats).
+  Files
+    - Every .kt file starts with `// SPDX-License-Identifier: GPL-3.0-or-later`
+      on line 1, a blank line, then the package declaration (H12).
+  Compose
+    - Every composable takes `modifier: Modifier = Modifier` as its first
+      optional parameter.
+    - Use MaterialTheme.colorScheme / .typography tokens, never raw Color(...)
+      inside screens (tokens live in ui/theme/Color.kt only).
+    - Follow the ktlint android_studio style, which does NOT use trailing
+      commas; run `ktlintFormat` rather than hand-formatting.
+    - contentDescription = null when a neighbouring label already describes the
+      element (see the bottom bar); otherwise write a real description.
+  Kotlin
+    - Explicit types on public APIs, `val` by default, no wildcard imports.
+    - KDoc on every public class/function worth explaining; comments say WHY.
+    - No Android framework imports below ui/ and data/local/.
+    - 120-column limit, 4-space indent, LF line endings (.editorconfig).
+  Data
+    - Day-scoped tables key the day as `dayStartUtcMillis`, produced by
+      LocalDay only (H13). Never store a date string or a raw wall-clock time.
+    - DAOs expose suspend functions for one-shot reads/writes and Flow for
+      anything a screen observes. No blocking calls.
+    - Tests: in-memory Room via Robolectric, one test class per DAO, covering
+      insert, query, update and delete (D24).
+  Gradle
+    - Versions only in gradle/libs.versions.toml (aliases via `libs.*`).
+    - Repositories only in settings.gradle.kts (FAIL_ON_PROJECT_REPOS).
+  Docs
+    - README = what users and newcomers read; AGENT_MEMORY = what agents and
+      maintainers must obey. If they disagree, AGENT_MEMORY wins and the README
+      is wrong.
+    - Every user-facing claim about privacy must be checkable in the manifest,
+      the Gradle files or CI - no promises the build cannot back up.
+  Git
+    - Imperative, specific commit subjects; one logical change per commit.
+    - Conventional Commits (feat:, fix:, docs:, test:, chore:, refactor:).
+    - Update AGENT_MEMORY.txt in the same commit as the code change.
+
+
+--------------------------------------------------------------------------------
+SECTION 6 - DECISIONS
+--------------------------------------------------------------------------------
+  D1  DEPENDENCY INJECTION: manual (AppContainer), NOT Hilt.
+      Hilt would add kapt/KSP, a compiler plugin and annotation surface for a
+      single-activity app with one module. A plain container created in
+      ScreenGardenApplication gives the same testability with zero build cost
+      and no generated code. Revisit only if the graph grows past roughly a
+      dozen dependencies or dynamic feature modules appear.
+
+  D2  minSdk = 26 (Android 8.0).
+      Covers the overwhelming majority of active devices, guarantees adaptive
+      launcher icons and modern notification channels, and removes every
+      legacy pre-O branch (icons, JobScheduler shims, notification styles).
+
+  D3  applicationId = "com.screengarden.app".
+      Matches the namespace so there is never a second identifier to reason
+      about. Debug builds get the ".debug" suffix so a dev build can be
+      installed next to a release build. Changing it later would orphan
+      installs, so treat it as permanent.
+
+  D4  compileSdk = targetSdk = 35.
+      targetSdk 35 is required by Google Play from Aug 2025 and gives the
+      modern edge-to-edge behaviour we already handle via Scaffold insets.
+
+  D5  Navigation: string routes + a ScreenGardenDestination enum.
+      Four flat, argument-free tabs gain nothing from the type-safe
+      serialization-based API (it would add the kotlinx.serialization plugin
+      for no correctness benefit). The enum keeps route, label and icon in one
+      place; ScreenGardenDestination.fromRoute() maps back stack state to a tab.
+
+  D6  Theme: three static schemes (light, dark, AMOLED), dynamic color OFF.
+      The calm green palette is the product identity, so Material You colour
+      extraction would erase it. AMOLED is a true-black variant of the dark
+      palette; passing amoled = true forces dark regardless of the system
+      setting. A Settings toggle will feed this from DataStore later (see K1).
+
+  D7  No AppCompat / Material Components dependency.
+      The XML theme inherits the platform android:Theme.Material[.Light]
+      NoActionBar and only provides a launch window background. Compose draws
+      everything else. This avoids a large unused dependency and keeps the
+      manifest free of an AppCompat-only theme requirement.
+
+  D8  Single Gradle module (:app) with a version catalog.
+      One catalog (gradle/libs.versions.toml) is the only place versions
+      appear; root build.gradle.kts only declares plugin aliases. Splitting
+      into :core/:feature modules is deferred until build times demand it.
+      Note: this is a Gradle module decision, unrelated to the `core/` Kotlin
+      package introduced in Session 3.
+
+  D9  Launcher icon: vector-only adaptive icon (foreground drawable + colour
+      background + monochrome), no PNG mipmaps, kept in res/mipmap-anydpi-v26.
+      Legacy density buckets are dead weight; the monochrome layer covers
+      themed icons on API 33+. The "-v26" qualifier stays even though minSdk is
+      26: an unversioned res/mipmap-anydpi build failed this toolchain (K12),
+      so the lint ObsoleteSdkInt warning is accepted.
+
+  D10 Release: R8 minification and resource shrinking ON, no custom rules yet.
+      Compose/Navigation/Material ship their own consumer rules, so
+      proguard-rules.pro is intentionally empty apart from a note.
+
+  D11 Version numbers live inline in app/build.gradle.kts for now
+      (versionCode 1 / versionName "0.1.0"). At the first real release, move
+      them to version.properties so a release script can rewrite one file
+      (the sibling Shobdo Keyboard project does exactly that).
+
+  D12 All four tabs share ui/components/PlaceholderScreen during the skeleton
+      phase, so the tabs cannot drift stylistically before real content lands.
+      Each screen drops the delegation as its feature ships.
+
+  D13 Bottom-bar navigation uses the standard flags: popUpTo(startDestination)
+      { saveState = true }, launchSingleTop, restoreState. Tapping tabs never
+      grows the back stack and each tab keeps its own state.
+
+  D14 Backups disabled via allowBackup="false" only. No dataExtractionRules /
+      fullBackupContent resource is declared, because the intent is "nothing
+      leaves the device", not "some files are excluded". The lint
+      DataExtractionRules warning is accepted and documented (K11).
+
+  D15 No lint baseline file and no warning suppression for the two accepted
+      warnings (K11, K12). They stay visible so a future, real issue of the same
+      type cannot hide behind a baseline.
+
+  D16 STYLE TOOL: ktlint (via org.jlleitschuh.gradle.ktlint), NOT detekt.
+      ktlint is a formatter plus basic style checks in one plugin with a
+      `ktlintFormat` task, so the rule set is enforceable without new config
+      files, a baseline, or hand-written reports. detekt is better at design
+      smells (complexity, long methods, magic numbers) and the code base is
+      still small; adding it now would mean tuning thresholds against little
+      code. Revisit detekt when the domain layer lands - the two tools coexist.
+      Config: .editorconfig, `ktlint_code_style = android_studio`,
+      max_line_length = 120, Composable functions exempt from function naming.
+      CLI pinned to 1.5.0 in app/build.gradle.kts.
+
+  D17 NO placeholder files for empty packages.
+      Session 1 documented reserved packages with comment-only .kt files.
+      ktlint reports "File should not be empty" for them and cannot auto-fix
+      that, so every check would fail. Kotlin needs no directory for a package
+      and git does not store empty directories, so the files were deleted and
+      the packages stay documented in SECTION 4. Re-introducing placeholder
+      files would break `ktlintCheck`; do not.
+
+  D18 CI: one GitHub Actions job on ubuntu-latest, JDK 17, Android SDK via
+      android-actions/setup-android, Gradle caching via gradle/actions.
+      Steps run in the order ktlint -> assembleDebug -> lintDebug ->
+      testDebugUnitTest, then upload the APK and the reports. One job keeps
+      feedback fast and simple; split it only when the build exceeds a few
+      minutes or when a matrix (multiple SDKs) is needed. Release builds moved to
+      their own workflow in P00 (D30).
+
+  D19 ~~LICENSE DEFERRED to the owner.~~ SUPERSEDED by D27 in P00 (the owner
+      delegated the choice). Kept for history: it is why LICENSE-PENDING.md
+      existed and why no headers were added during Sessions 1-3.
+
+  D20 TIME MODEL: every timestamp column is epoch millis in UTC, and a day is
+      identified by `dayStartUtcMillis` = the instant of local midnight, always
+      computed by com.screengarden.app.core.time.LocalDay (H13).
+      Why: storing a yyyy-MM-dd string or a raw "midnight" from System.current
+      TimeMillis breaks on travel and DST (a day is 23 or 25 hours long), and
+      duplicates logic in every feature. One helper, one meaning. LocalDay takes
+      the ZoneId as a defaulted parameter so tests pin a zone instead of
+      depending on the machine, and it is covered by LocalDayTest (including a
+      real DST gap in Europe/Berlin).
+
+  D21 PACKAGE NAMES: core/time and data/repo (as the task briefs name them).
+      `core/` holds pure Kotlin helpers with no Android or data dependencies
+      (currently only LocalDay); it replaces the planned `util/` package, and
+      `data/repo` replaces `data/repository`. Two names for one thing is worse
+      than either name, so the planned ones are struck from SECTION 4.
+
+  D22 SCHEMA EXPORT ON, schemas committed.
+      KSP exports to app/schemas/ (arg `room.schemaLocation`), and that folder
+      is added to the androidTest assets so MigrationTestHelper can find it.
+      Without the exported JSON a migration can never be tested; the first one
+      would be written blind. Existing version files are append-only history:
+      never delete or hand-edit them (H15).
+
+  D23 NO DESTRUCTIVE MIGRATION FALLBACK.
+      `fallbackToDestructiveMigration` is deliberately not used. Silently
+      wiping a user's garden and screen-time history would break the core
+      promise of the app. Every version bump ships a real Migration plus a case
+      in ScreenGardenDatabaseMigrationTest (H14). The cost is real work per
+      schema change; that is accepted.
+
+  D24 DAO TESTS RUN ON THE JVM VIA ROBOLECTRIC.
+      Room's in-memory builder only needs a Context, so Robolectric + JUnit 4
+      gives real SQLite coverage with no emulator. CI (`testDebugUnitTest`)
+      therefore runs the whole data layer on every pull request; an
+      instrumentation-gated suite would have been skipped in practice. The
+      trade-off: Robolectric does not exercise the Android SQLite build, so the
+      migration test still runs on a device (androidTest).
+
+  D25 REPOSITORIES EXPOSE ROOM ENTITIES FOR NOW.
+      Task 1.1 (now P03) asked for interfaces "not full logic yet", and no
+      domain models exist yet (domain/ is still reserved). Mapping entity->domain
+      in the interface today would mean inventing domain models ahead of the
+      features that shape them. The interfaces name entities; when domain models
+      land, the mapping goes inside the implementations and the interface
+      signatures change once (K18).
+
+  D26 ROOM 2.6.1 WITH KSP 2.1.0-1.0.29.
+      The stable Room release that matches Kotlin 2.1.0 through KSP1; verified
+      by a clean build and 26 passing DAO tests. Room 2.7 (KMP) is not adopted
+      yet - it brings KSP2 expectations and no feature this app needs.
+
+  D27 LICENSE = GPL-3.0-or-later for code (Q1 ANSWERED). P00.
+      The owner wanted a privacy promise that cannot become a closed,
+      tracker-laden fork, and full F-Droid compatibility; GPL-3.0-or-later is
+      the only shortlisted license that guarantees both. Verified compatible
+      with every runtime dependency (all Apache-2.0, which is GPLv3-compatible);
+      the one EPL-1.0 artifact (JUnit) is test-only and never ships. The LICENSE
+      file is the verbatim official text (35,149 bytes from gnu.org) and every
+      .kt file carries the SPDX line, which is what makes "-or-later" explicit.
+
+  D28 ART = CC BY-SA 4.0 for original artwork and plant packs (P00).
+      A code license is the wrong instrument for images; CC BY-SA keeps art
+      open and remixable like the GPL keeps code open. Each plant pack may
+      declare its own compatible license in plant.json, and the loader rejects a
+      pack with no license rather than guessing (P25). Recorded in ART_LICENSE.md.
+
+  D29 REPOSITORY = one public GitHub repository, default branch `main` (Q2
+      ANSWERED, partly pending the owner running the commands). Rationale: free
+      hosting, free Actions minutes for public repos, and the badge/links need a
+      real owner. A single placeholder token OWNER/REPO is kept in README.md
+      (and only there) so one find-and-replace finishes the job; the commands
+      live in SECTION 17. K16/K17 stay open until the owner pushes.
+
+  D30 CI = split by purpose (Q3 ANSWERED). Pull-request CI stays debug-only and
+      fast (D18); a separate release.yml runs `:app:assembleRelease` on manual
+      trigger and weekly (cron) to catch R8/consumer-rule regressions. Both are
+      free on a public repo. The release APK is unsigned until signing exists
+      (D34); no paid signing service is ever used.
+
+  D31 DATA RETENTION = keep everything on device forever (Q4 ANSWERED).
+      At roughly 7-8k usage rows and a few thousand sessions per year the
+      database stays tiny, and "your history is yours" is the product promise.
+      No automatic pruning. A user-controlled "Delete all data" action in
+      Settings is planned (part of P22/P31) so deletion is a choice, not a
+      policy. Revisit only if storage becomes measurable.
+
+  D32 DISTRIBUTION = GitHub Releases + F-Droid, plus optional IzzyOnDroid.
+      Google Play is deliberately out of scope: it charges a registration fee
+      (H16) and adds nothing this app needs. F-Droid requires the source to be
+      GPL-compatible and the build to be reproducible from source, which D27 and
+      the "no proprietary dependency" rule already satisfy.
+
+  D33 DEVICE TESTING = free Android Studio emulator.
+      Visual checks and the migration suite can run on an emulator (API 26 for
+      the floor, plus a recent API for the modern path), so no phone or device
+      farm is required. Still unverified until someone actually runs one (K8,
+      K19); an emulator run is cheaper than a licence and needs no account.
+
+  D34 RELEASE SIGNING IS A LATER TASK (P33).
+      The keystore will be generated locally with `keytool` (free), kept out of
+      git (H8), and exposed to CI only through GitHub Secrets. Until then every
+      release artifact is explicitly unsigned, and no paid signing or
+      key-management service is considered.
+
+
+--------------------------------------------------------------------------------
+SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
+--------------------------------------------------------------------------------
+  From P00 on, work is identified by PROMPT NUMBER. The old dotted IDs are kept
+  in brackets so earlier briefs still map. P01-P03 are the work already shipped.
+
+  Prompt  Status  Work item
+  -----------------------------------------------------------------------------
+  P00     done    Resolve open questions, license, CI release build, memory
+                  reconciliation, restore the design spec [SESSION 4]
+  P01     done    Project skeleton: Gradle, theme, manifest, DI [0.1]
+  P02     done    Navigation shell + repository setup: CI, ktlint, docs [0.2, 0.3]
+  P03     done    Room database: entities, DAOs, schema export, repo
+                  interfaces, time helper, 32 tests [1.1]
+  P04     NEXT    DataStore settings + implement the six repositories
+                  (implementations deferred from P03) [1.2]
+  P05     todo    Usage stats repository [2.1 part]
+  P06     todo    Daily sync worker (WorkManager) [2.2]
+  P07     todo    Onboarding + permissions [2.1 part]
+  P08     todo    Health score formula (fills in 16.1) [new]
+  P09     todo    Plant lifecycle engine + plant count cap [1.5 part]
+  P10     todo    Garden screen [1.4]
+  P11     todo    Animations [new]
+  P12     todo    Focus logic + foreground service [1.3]
+  P13     todo    Focus UI [1.3]
+  P14     todo    Soft-fail + rewards [new]
+  P15     todo    Per-app limits [3.2]
+  P16     todo    Gentle notifications [new]
+  P17     todo    Bedtime mode [new]
+  P18     todo    Streaks + badges [1.5 part]
+  P19     todo    Insights charts [2.3]
+  P20     todo    Weekly reflection + timeline [new]
+  P21     todo    Day/night, seasons, weather visuals [new]
+  P22     todo    Themes (incl. AMOLED toggle) [3.1]
+  P23     todo    Widget + Quick Settings tile [new]
+  P24     todo    Snapshot export [new]
+  P25     todo    Plant packs (16.5) [new]
+  P26     todo    Export/import JSON (16.6) [new]
+  P27     todo    Battery help [new]
+  P28     todo    Localization [new]
+  P29     todo    Opt-in focus blocking [new]
+  P30     todo    Live wallpaper [new]
+  P31     todo    Quality pass: visual verification, accessibility, perf
+                  [0.4 + 3.3]
+  P32     todo    Docs + release assets [3.4 part]
+  P33     todo    F-Droid + release automation + signing (D34) [3.4 part]
+
+  Sequencing note: P04 is the true next step and unblocks everything in Phase 1.
+  P08 (the formula) must precede P09/P10 because the garden renders its output.
+  P12/P13 can proceed in parallel with P05-P10 if the plan ever allows it, but
+  only one prompt is executed per turn (H11).
+
+
+--------------------------------------------------------------------------------
+SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
+--------------------------------------------------------------------------------
+  Everything below is declared in gradle/libs.versions.toml. The license column
+  matters for distribution: everything shipped in the APK is Apache-2.0, and
+  the two non-Apache-2.0 artifacts are test-only, so they never ship.
+
+  Name / version                    License       Why / scope
+  ---------------------------------------------------------------------------
+  com.android.application 8.9.2     Apache-2.0    build
+  org.jetbrains.kotlin.android
+                          2.1.0     Apache-2.0    build
+  org.jetbrains.kotlin.plugin.compose
+                          2.1.0     Apache-2.0    Compose compiler
+  com.google.devtools.ksp
+                          2.1.0-1.0.29
+                                    Apache-2.0    annotation processing (Room)
+  androidx.room:room-runtime
+                          2.6.1     Apache-2.0    database runtime (shipped)
+  androidx.room:room-ktx  2.6.1     Apache-2.0    suspend/Flow support (shipped)
+  androidx.room:room-compiler
+                          2.6.1     Apache-2.0    KSP processor (build only)
+  androidx.room:room-testing
+                          2.6.1     Apache-2.0    MigrationTestHelper, test only
+  androidx.core:core-ktx  1.15.0    Apache-2.0    core extensions
+  androidx.lifecycle:*     2.8.7     Apache-2.0    runtime, compose, viewmodel
+  androidx.activity:activity-compose
+                          1.10.0    Apache-2.0    ComponentActivity, setContent
+  androidx.compose:compose-bom
+                          2025.01.00
+                                    Apache-2.0    aligns Compose artifacts
+  androidx.compose.ui:*    (BOM)     Apache-2.0    ui, graphics, tooling, preview
+  androidx.compose.material3
+                          (BOM)     Apache-2.0    Material 3 (shipped)
+  androidx.navigation:navigation-compose
+                          2.8.5     Apache-2.0    NavHost (shipped)
+  org.jetbrains.kotlinx:kotlinx-coroutines-test
+                          1.9.0     Apache-2.0    runTest, test only
+  androidx.test:core-ktx  1.6.1     Apache-2.0    ApplicationProvider, test only
+  androidx.test.ext:junit 1.2.1     Apache-2.0    AndroidJUnit4, test only
+  androidx.test:runner    1.6.2     Apache-2.0    instrumentation runner
+  org.robolectric:robolectric
+                          4.14.1    MIT           JVM Android runtime, test only
+  junit:junit             4.13.2    EPL-1.0       unit test framework, test only
+  org.jlleitschuh.gradle.ktlint
+                          12.2.0    MIT           style gate (build only),
+                                                  driving ktlint 1.5.0
+                                                  (Apache-2.0)
+
+  LICENSE COMPATIBILITY CHECK (done in P00 against GPL-3.0-or-later, D27)
+    - Apache-2.0 (every androidx/Compose/Room/Kotlin artifact): compatible with
+      GPLv3 (one-way: Apache-2.0 code may be combined into a GPLv3 work). This
+      is why GPLv3 was chosen over GPLv2, which is NOT Apache-2.0 compatible.
+    - MIT (Robolectric, ktlint plugin): compatible.
+    - EPL-1.0 (JUnit 4): NOT GPL-compatible. It is test-only, never in the APK
+      and never redistributed, so it does not affect the license of the app. If
+      a future change ever ships JUnit code in the app, that is a blocker.
+    - F-Droid: accepts GPL-3.0 apps and requires the app to build from source
+      without proprietary dependencies - satisfied today (all deps open source).
+    - Art: CC BY-SA 4.0 (D28) is separate from the code license and is
+      compatible with distributing the art inside a GPL app.
+
+  Obligations to keep in mind
+    - Apache-2.0 requires keeping NOTICE/attribution for redistributed binaries;
+      the Apache-2.0 dependencies are used unmodified as libraries, which is the
+      normal case and needs no per-file headers in our source.
+    - GPL-3.0 obliges us to ship the complete corresponding source for any
+      binary we distribute, which is automatic here because the repository IS
+      the source. F-Droid builds it from source anyway.
+    - Every .kt file carries `// SPDX-License-Identifier: GPL-3.0-or-later` (H12).
+
+  Deliberately NOT included: Hilt/Dagger, Retrofit/OkHttp/Ktor, Firebase,
+  Play Services, AppCompat, Material Components (MDC), kotlinx.serialization,
+  DataStore (needed in P04), WorkManager (P06), detekt (D16),
+  material-icons-extended, any paid SDK.
+
+  Gradle 8.13 + AGP 8.9.2 + Kotlin 2.1.0 + KSP 2.1.0-1.0.29 + Room 2.6.1 is the
+  combination verified to build and test here. Bump the KSP version with the
+  Kotlin version (they are released in lockstep) and re-run ktlintCheck +
+  assembleDebug + testDebugUnitTest + lintDebug.
+
+  CI actions (not Gradle dependencies, not shipped):
+    actions/checkout@v4, actions/setup-java@v4,
+    android-actions/setup-android@v3, gradle/actions/setup-gradle@v4,
+    actions/upload-artifact@v4
+
+
+--------------------------------------------------------------------------------
+SECTION 9 - PERMISSIONS
+--------------------------------------------------------------------------------
+  DECLARED BY THIS APP: NONE.
+  The manifest declares no <uses-permission> and no <uses-feature> at all.
+  Room adds none: it is a local SQLite wrapper.
+
+  Expected merge-time entry (not ours, not a violation of H1):
+    <applicationId>.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+    Added automatically by androidx.core for context-registered receivers. It is
+    a signature-level self-declared permission, invisible to the user, and
+    grants no access to anything. It appears in debug and release alike.
+
+  APPROVED FOR FUTURE USE (does not exist yet - add an entry here before use):
+    PACKAGE_USAGE_STATS   Insights needs it to read screen time. Special app
+                          access granted by the user in system settings; not a
+                          runtime permission. Must degrade gracefully when it is
+                          not granted - no permission, no crash. (P05/P07)
+    POST_NOTIFICATIONS    API 33+ prompt for focus-session reminders. (P12/P16)
+    FOREGROUND_SERVICE    If a focus session must survive leaving the app. (P12)
+    USE_EXACT_ALARM / SCHEDULE_EXACT_ALARM
+                          Only if session completion must fire at an exact time.
+    Accessibility service (P29) is OPT-IN, OFF by default, and must never store
+                          what it sees (16.6).
+
+  FORBIDDEN WITHOUT AN EXPLICIT PROJECT DECISION: INTERNET, ACCESS_NETWORK_STATE,
+  ACCESS_WIFI_STATE, READ/WRITE_EXTERNAL_STORAGE, READ_SMS, READ_CONTACTS,
+  QUERY_ALL_PACKAGES (use a narrower <queries> block instead), AD_ID,
+  BIND_ACCESSIBILITY_SERVICE outside the opt-in flow in P29.
+
+  Auditing tip: grep the merged manifest for "<uses-permission" and for
+  "android.permission."; do not grep for the bare word INTERNET - the manifest's
+  own explanatory comment contains it.
+  CI does not parse the manifest today; the pull request checklist covers it.
+
+
+--------------------------------------------------------------------------------
+SECTION 10 - KNOWN ISSUES
+--------------------------------------------------------------------------------
+  K1  The AMOLED scheme has no user-facing switch yet. It is only reachable by
+      calling ScreenGardenTheme(amoled = true). P04/P22 wires it to settings.
+  K2  All four tabs are placeholders by design (no feature screens yet).
+  K3  No UI reads the database yet. The whole Room layer is currently exercised
+      only by tests; P04 onwards make it real.
+  K4  kotlinOptions { jvmTarget } is deprecated in Kotlin 2.1 (still compiles).
+      Migrate to the kotlin { compilerOptions { } } DSL before AGP 9 / Kotlin 2.2.
+  K5  Gradle 8.13 prints "Deprecated Gradle features ... incompatible with
+      Gradle 9.0" from this build setup. Harmless today; handle it during the
+      next AGP/Gradle upgrade rather than suppressing it.
+  K6  No dynamic (Material You) colour by design - see D6.
+  K7  Release APK is UNSIGNED (app-release-unsigned.apk). assembleRelease is
+      verified for R8 and resource shrinking; signing is D34/P33. Never publish
+      an unsigned APK as a release.
+  K8  Nothing has been run on a device or emulator yet. Use the free Android
+      Studio emulator (API 26 for the floor, plus a recent API) per D33; the
+      rendered palette, the sprout icon and nav-bar insets are still unverified
+      visually. Closed when P31 runs.
+  K9  Theme follows the system dark mode only; there is no in-app override yet
+      (P22).
+  K10 The launcher icon's monochrome layer reuses the coloured foreground
+      drawable; themed icons on API 33+ may flatten the two-tone leaf.
+  K11 Lint warning (accepted): android:allowBackup is deprecated from Android
+      12 [DataExtractionRules]. Deliberate per D14/H2 - adding a
+      dataExtractionRules file would only restate what allowBackup="false"
+      already does. Do not "fix" this by weakening backup protection.
+  K12 Lint warning (accepted): res/mipmap-anydpi-v26 is flagged
+      [ObsoleteSdkInt] because minSdk is already 26. Attempting the suggested
+      res/mipmap-anydpi folder made AAPT2 fail to link with
+      "resource mipmap/ic_launcher not found" at :app:processDebugResources
+      while build-cache entries existed for the renamed resource folder.
+      Reverted to the standard -v26 folder (D9). If someone retries the rename,
+      first run :app:clean with --no-build-cache and ./gradlew --stop.
+  K13 Windows-only flake: :app:lintDebug can fail with
+      java.nio.file.FileSystemException "...migrated-jars/....jar: The process
+      cannot access the file because it is being used by another process"
+      (lint cache held by an IDE/AV scanner). Retrying after ./gradlew --stop
+      succeeded. Not a code defect; do not chase it in source.
+  K14 Gradle's build cache can replay a stale ktlint result. Observed in
+      Session 2: after six empty placeholder files were deleted,
+      runKtlintCheckOverMainSourceSet was restored FROM-CACHE and kept
+      reporting violations for those now-missing files, even after
+      ./gradlew --stop and deleting .gradle/ and app/build/.
+      Workaround (used by CI): `ktlintCheck --no-build-cache` after deleting or
+      renaming Kotlin files.
+  K15 RESOLVED IN P00: the license is decided (D27 code, D28 art). The file
+      existed as "all rights reserved" for three sessions; any fork made before
+      P00 was made without permission, which is a historical footnote only.
+  K16 The CI workflows have never executed: this directory is not a git
+      repository yet, so there is no remote and no GitHub Actions run. Every
+      step was verified locally (same commands, same order), but the YAML itself
+      is unproven on a runner. Closed when the owner runs SECTION 17 and the
+      first push goes green.
+  K17 The README badge uses the literal placeholder OWNER/REPO and will render
+      broken until the repository is published (D29 / SECTION 17).
+  K18 Repository interfaces expose Room entities (D25). When domain models
+      arrive (P10/P12) the mapping must move into the implementations and these
+      signatures will change. Callers at that point are still few, which is why
+      the shortcut is acceptable now.
+  K19 The migration test is a SKELETON. currentSchemaCanBeCreatedAndValidated
+      compiles and is expected to pass, but it has never been run; the free
+      emulator in D33 is the way to close it
+      (`./gradlew :app:connectedDebugAndroidTest`). The 1->2 case stays @Ignore'd
+      until schema version 2 exists, which K24 will force.
+  K20 Room does not enforce referential integrity here: FocusSession.plantId is
+      a plain indexed column, not a ForeignKey. Deliberate - a session may
+      outlive its plant (a withered plant is still history). If the garden
+      starts deleting plants, revisit with ON DELETE SET NULL.
+  K21 Badge has no "seen/acknowledged" state, so the UI cannot yet distinguish
+      a freshly unlocked badge from an old one. Add a column (with a migration)
+      when the badge UI lands (P18).
+  K22 A session interrupted mid-flight is represented by endedAtUtcMillis IS
+      NULL (observeRunning). Nothing recovers it yet; P12 owns that, and until
+      then a killed session simply stays open.
+  K23 app/schemas/ is not covered by any test other than the migration suite.
+      Nothing prevents someone from deleting 1.json while adding 2.json; H15 and
+      the pull request checklist are the only guards.
+  K24 SCHEMA v1 IS MISSING FIELDS THE DESIGN NEEDS. Recorded in P00 on purpose;
+      the schema is NOT changed yet. Missing: DailyStat.score, DailyStat.pickups,
+      DailyStat.unlocks, DailyStat.isCompassionDay (16.1/16.4); Plant.growthPoints,
+      Plant.position (16.2/16.4); FocusSession.tag, FocusSession.status
+      (16.3/16.4). When the first prompt actually needs one of these, do it
+      properly: bump DATABASE_VERSION, add a Migration, add a migration case,
+      commit the exported 2.json (H14/H15). Do not edit or regenerate 1.json.
+  K25 The design spec was reconstructed from the P00 brief, not from an original
+      document; 16.1 is explicitly TBD until P08 defines the formula. Treat
+      SECTION 16 as authoritative but incomplete, and update it in the same
+      change that implements a rule.
+
+  Current lint state: 0 errors, 2 accepted warnings (K11, K12). No baseline.
+  Current ktlint state: clean (0 violations).
+  Current test state: 32 JVM tests, 32 passing (26 DAO + 6 LocalDay).
+
+
+--------------------------------------------------------------------------------
+SECTION 11 - CURRENT STATUS
+--------------------------------------------------------------------------------
+  P00 is COMPLETE, and with it P01-P03 remain green. The build is clean: ktlint,
+  debug APK, Android lint, unit tests and the androidTest compile all pass.
+
+  What exists and works
+    - Gradle 8.13 wrapper, AGP 8.9.2, Kotlin 2.1.0, KSP, version catalog, one
+      :app module, compileSdk/targetSdk 35, minSdk 26, Java 17.
+    - Single ComponentActivity (MainActivity) with edge-to-edge Compose content
+      and a four-tab navigation shell (Garden, Focus, Insights, Settings).
+    - Theme package: calm green light, dark and AMOLED (true black) schemes.
+    - Manifest: no permissions at all, allowBackup="false", adaptive icon.
+    - Room 2.6.1 data layer (P03):
+        * six entities - DailyStat, AppUsageDaily, AppLimit, Plant,
+          FocusSession, Badge - documented in SECTION 15;
+        * six DAOs with suspend writes and Flow reads, per-day queries keyed on
+          dayStartUtcMillis;
+        * ScreenGardenDatabase v1 with schema export and no destructive
+          fallback (D22/D23);
+        * core/time/LocalDay as the single day-boundary helper (D20);
+        * six repository interfaces in data/repo, no implementations (D25);
+        * AppContainer now owns a lazy database instance;
+        * 26 in-memory DAO tests (Robolectric) + 6 LocalDay tests;
+        * migration test skeleton in androidTest, wired to the exported schema.
+    - LICENSING (P00): GPL-3.0-or-later code (D27) with the verbatim official
+      LICENSE text, CC BY-SA 4.0 art (D28) in ART_LICENSE.md, SPDX headers in all
+      43 Kotlin files, README and CONTRIBUTING updated, LICENSE-PENDING.md gone.
+    - CI (P00): ci.yml (PR, debug) plus release.yml (manual + weekly, unsigned
+      R8 build uploading APK and mapping file). Both free-tier only.
+    - Docs: README (privacy, distribution, cost, license), CONTRIBUTING,
+      PR template, this file with SECTIONS 15 (schema), 16 (design) and 17
+      (first push).
+    - Decisions D1-D34 recorded; no open questions left (SECTION 14).
+
+  Verification done in Session 4 / P00
+    - :app:ktlintCheck --no-build-cache -> 0 violations, with the SPDX headers
+      in place (they do not upset any ktlint rule).
+    - :app:assembleDebug -> BUILD SUCCESSFUL.
+    - LICENSE verified as the official GPL-3.0 text: 35,149 bytes, downloaded
+      from https://www.gnu.org/licenses/gpl-3.0.txt, contains the title line,
+      "Version 3, 29 June 2007", "END OF TERMS AND CONDITIONS" and the
+      "How to Apply These Terms" appendix. Not compared against a published
+      checksum.
+    - 43 of 43 Kotlin files carry the SPDX line.
+    - Still true from earlier sessions: 32 unit tests pass, lint 0 errors,
+      androidTest compiles, no INTERNET permission or allowBackup change.
+
+
+--------------------------------------------------------------------------------
+SECTION 12 - NEXT STEP
+--------------------------------------------------------------------------------
+  NEXT: P04 - DataStore settings + implement the six repositories.
+
+  Scope of P04 (nothing else):
+    - Add DataStore Preferences to the catalog and a settings repository that
+      owns the keys listed in 16.7 (types and defaults included).
+    - Implement the six repository interfaces over their DAOs (GardenRepository,
+      FocusSessionRepository, DailyStatRepository, AppUsageRepository,
+      AppLimitRepository, BadgeRepository).
+    - Register them in AppContainer so nothing is constructed ad hoc.
+    - Prove the wiring: one screen (Settings or Garden) reads a real value from
+      DataStore, or one repository read is visible in the UI.
+    - Tests for the settings repository and the new mappings; ktlint + build.
+
+  Do NOT do in P04: the health score (P08), the plant engine (P09), schema v2
+  (only when a prompt needs those fields, K24), or any UI redesign.
+
+  Then in order: P05 (usage repository) -> P06 (sync worker) -> P07 (onboarding)
+  -> P08 (score formula) -> P09/P10 (engine + garden).
+
+  When touching the schema: bump DATABASE_VERSION, add a Migration to
+  ScreenGardenDatabase.MIGRATIONS, add a case to
+  ScreenGardenDatabaseMigrationTest, then run testDebugUnitTest + ktlintCheck.
+  Never delete an exported schema file (H15) and never add a destructive
+  fallback (H14/D23).
+
+
+--------------------------------------------------------------------------------
+SECTION 13 - SESSION LOG
+--------------------------------------------------------------------------------
+  SESSION 1 - 2026-11-02 - Task 0.1 + 0.2 (project skeleton + nav shell)
+
+    Did
+      - Created the ScreenGarden Gradle project from scratch at ScreenGarden/
+        (no prior AGENT_MEMORY.txt existed; this file was authored then).
+      - Gradle 8.13 wrapper, version catalog, single :app module, Compose +
+        Material 3, Java 17, compileSdk/targetSdk 35, minSdk 26.
+      - Theme package: calm green light, dark and AMOLED schemes, type scale.
+      - Navigation shell: ScreenGardenDestination, NavHost, BottomBar, App.
+      - Shared PlaceholderScreen and the four tab screens.
+      - Manual DI: AppContainer + ScreenGardenApplication.
+      - Manifest with no permissions, allowBackup="false", adaptive icon.
+      - Decisions D1-D15 recorded.
+
+    Verified
+      - assembleDebug + assembleRelease (R8) BUILD SUCCESSFUL; lintDebug clean
+        apart from the two accepted warnings; aapt2 shows no INTERNET.
+
+    Not verified
+      - Never launched on a device/emulator (K8); unsigned release (K7).
+
+  SESSION 2 - 2026-11-02 - Task 0.3 (repository setup)
+
+    Did
+      - ktlint plugin + .editorconfig; reformatted 11 Kotlin files.
+      - Removed six comment-only placeholder files (D17).
+      - CI workflow, PR template, README, CONTRIBUTING, LICENSE-PENDING,
+        rewritten .gitignore, OPEN QUESTIONS section.
+      - Decisions D16-D19 recorded.
+
+    Verified
+      - ktlintCheck 0 violations; assembleDebug + lintDebug + unit tests green.
+
+    Not verified
+      - CI has never run (not a git repo). Badges still OWNER/REPO.
+
+  SESSION 3 - 2026-11-02 - Task 1.1 (Room database, now P03)
+
+    Did
+      - Assumption recorded: the brief's "section 6 models" and "section 7
+        dependencies" do not exist under those numbers here (SECTION 6 is
+        DECISIONS, SECTION 7 is the CHECKLIST, dependencies are SECTION 8), and
+        no model definitions existed anywhere. Defined the six models from the
+        brief's names and documented them in a new SECTION 15; added licenses to
+        SECTION 8.
+      - Added Room 2.6.1 + KSP 2.1.0-1.0.29 + Robolectric 4.14.1 +
+        kotlinx-coroutines-test 1.9.0 + androidx.test to the catalog; wired the
+        ksp plugin, `room.schemaLocation` and the androidTest schema assets.
+      - Six entities with epoch-millis UTC columns: DailyStat (PK day),
+        AppUsageDaily (PK day+package), AppLimit (PK package), Plant (PK uuid),
+        FocusSession (PK uuid, indexed day + plantId), Badge (PK key).
+      - Six DAOs with upsert/query/Flow/update/delete, day queries keyed on
+        dayStartUtcMillis.
+      - ScreenGardenDatabase v1, exportSchema = true, no destructive fallback.
+      - core/time/LocalDay: startOfDay (instant + LocalDate), todayStart,
+        nextDayStart, previousDayStart, isSameDay - all zone-parameterised.
+      - Six repository interfaces in data/repo (no implementations).
+      - AppContainer(context) now owns a lazy database; Application passes this.
+      - 26 in-memory Room tests (6 classes, insert/query/update/delete for each
+        DAO) + 6 LocalDay tests, all on the JVM via Robolectric.
+      - Migration test skeleton using MigrationTestHelper + exported schema.
+
+    Decided
+      - D20 epoch millis UTC + LocalDay as the only day boundary helper.
+      - D21 core/time and data/repo package names (util/ and data/repository
+        struck from SECTION 4).
+      - D22 schema export on, schemas committed, migration helper wired.
+      - D23 no destructive fallback; migrations are mandatory.
+      - D24 DAO tests on the JVM via Robolectric so CI actually runs them.
+      - D25 repositories expose entities until domain models exist.
+      - D26 Room 2.6.1 + KSP 2.1.0-1.0.29 pinned.
+
+    Verified
+      - ./gradlew ktlintCheck --no-build-cache -> 0 violations.
+      - ./gradlew :app:testDebugUnitTest -> 32 tests, 0 failures
+        (LocalDayTest 6, DailyStat 4, AppUsageDaily 5, AppLimit 4, Plant 4,
+        FocusSession 5, Badge 4).
+      - ./gradlew :app:compileDebugAndroidTestKotlin -> compiles, which also
+        confirms the Room 2.6.1 MigrationTestHelper(Instrumentation, Class)
+        constructor and the androidTest schema asset wiring.
+      - ./gradlew :app:lintDebug -> 0 errors, 2 accepted warnings.
+      - ./gradlew :app:assembleDebug -> BUILD SUCCESSFUL.
+      - KSP exported app/schemas/.../ScreenGardenDatabase/1.json.
+      - First full run caught a bug in my own test (AppUsageDailyDaoTest
+        asserted usageMillis = 1 while creating the row with the default 0);
+        fixed the test, not the production code, and re-ran the suite green.
+
+    Not verified
+      - The migration suite has never executed (needs a device/emulator, K19).
+      - No UI reads the database yet (K3).
+      - Robolectric exercises its own SQLite, not the device SQLite build (D24).
+      - Nothing run on a device or emulator (K8), CI unproven (K16).
+
+  SESSION 4 - 2026-11-02 - P00 (resolve open questions, reconcile memory)
+
+    Did
+      - Answered Q1-Q4 and recorded D27-D34. Added H16 (everything must be
+        free) and rewrote H12, which had forbidden choosing a license at all.
+      - Q1: GPL-3.0-or-later for code, CC BY-SA 4.0 for art. Checked SECTION 8
+        for compatibility: every shipped dependency is Apache-2.0 (GPLv3
+        compatible); the only EPL-1.0 artifact is JUnit, test-only.
+      - LICENSE: downloaded the official text from gnu.org
+        (https://www.gnu.org/licenses/gpl-3.0.txt, 35,149 bytes) and verified
+        the title line, version line, "END OF TERMS AND CONDITIONS" and the
+        appendix. Nothing was retyped or improvised.
+      - Added `// SPDX-License-Identifier: GPL-3.0-or-later` as line 1 of all
+        43 Kotlin files (blank line before `package`), then re-ran ktlint.
+      - Added ART_LICENSE.md (CC BY-SA 4.0, per-pack license field, link to the
+        canonical text instead of bundling it), deleted LICENSE-PENDING.md.
+      - Rewrote README (license, distribution, cost, current state) and the
+        CONTRIBUTING licensing section; CONTRIBUTING also gained the no-paid-
+        dependency rule and the emulator note.
+      - Q3: added .github/workflows/release.yml - workflow_dispatch + weekly
+        cron, unsigned assembleRelease, uploads APK and R8 mapping.txt. ci.yml
+        left debug-only.
+      - Q4: retention is forever, no pruning (D31), with a user-controlled
+        "Delete all data" planned.
+      - Restored the missing design spec as SECTION 16 (16.1-16.7), noted that
+        brief "section 5.x" means SECTION 16.x, and added SECTION 17 with the
+        first-push steps.
+      - Rewrote SECTION 7 as a prompt-mapped roadmap (P00-P33) keeping the old
+        IDs in brackets; P01-P03 marked done, P04 next.
+      - Recorded K24 (schema v1 lacks score/pickups/unlocks/isCompassionDay/
+        growthPoints/position/tag/status) without touching the schema, and K25
+        (spec reconstructed, 16.1 TBD until P08).
+      - Updated K8/K15/K16/K17/K19 wording; K15 closed.
+
+    Decided
+      - D27 GPL-3.0-or-later code, D28 CC BY-SA 4.0 art.
+      - D29 public GitHub repo, branch main, one OWNER/REPO token.
+      - D30 release builds in their own workflow (manual + weekly).
+      - D31 keep all data forever, deletion is user-controlled.
+      - D32 GitHub Releases + F-Droid (+ optional IzzyOnDroid), no Play.
+      - D33 test on the free emulator, not a device farm or a phone.
+      - D34 signing later via keytool + GitHub Secrets.
+
+    Verified
+      - ./gradlew ktlintCheck --no-build-cache -> 0 violations with SPDX
+        headers present in all 43 files.
+      - ./gradlew :app:assembleDebug -> BUILD SUCCESSFUL.
+      - LICENSE file: 35,149 bytes, official text markers all present.
+      - README/CONTRIBUTING/AGENT_MEMORY no longer reference LICENSE-PENDING.md
+        (the file is deleted), and OWNER/REPO appears in README.md only.
+
+    Not verified
+      - Neither workflow has ever run (K16): no git repository exists yet, so
+        release.yml and ci.yml are still unproven YAML.
+      - The LICENSE text was not compared against a published SHA-256, only
+        checked for size and standard markers.
+      - No emulator run: the migration suite still has not executed (K19) and
+        nothing has been seen rendered (K8).
+
+    Next
+      - P04: DataStore settings + the six repository implementations, wired into
+        AppContainer and proven by one screen reading real data.
+
+
+--------------------------------------------------------------------------------
+SECTION 14 - OPEN QUESTIONS
+--------------------------------------------------------------------------------
+  No open questions. All four were answered in P00; the decisions live in
+  SECTION 6. Kept here as a record of what was asked and how it was settled.
+
+  Q1  WHICH LICENSE?                     ANSWERED -> D27 (code), D28 (art)
+      GPL-3.0-or-later for code, CC BY-SA 4.0 for original art and plant packs.
+      Compatible with every shipped dependency (Apache-2.0) and with F-Droid;
+      keeps forks open, which was the owner's stated priority.
+
+  Q2  WHERE WILL THE REPOSITORY LIVE?    ANSWERED -> D29 (+ SECTION 17)
+      One public GitHub repository, default branch main, one OWNER/REPO token to
+      replace. The owner runs the init/push commands; K16/K17 close after that.
+
+  Q3  SHOULD CI ALSO BUILD RELEASE?      ANSWERED -> D30 (+ release.yml)
+      Pull-request CI stays debug-only; a separate workflow builds the unsigned
+      release on demand and weekly. Free on a public repository.
+
+  Q4  IS THE ROOM RETENTION FOREVER?     ANSWERED -> D31
+      Yes: keep everything on device, no automatic pruning, and give the user a
+      deliberate "Delete all data" action instead of a silent policy.
+
+
+--------------------------------------------------------------------------------
+SECTION 15 - DATA MODEL (Room schema, version 1)
+--------------------------------------------------------------------------------
+  Source of truth: app/src/main/java/com/screengarden/app/data/local/.
+  Every timestamp is epoch millis UTC (D20). Every `dayStartUtcMillis` value is
+  the instant of local midnight produced by core/time/LocalDay - never a
+  yyyy-MM-dd string, never a raw wall-clock number.
+
+  daily_stats  (DailyStat)                       PK: dayStartUtcMillis
+    focusMinutes           Int    total focused minutes that day
+    screenMinutes          Int    total screen time that day
+    sessionsCompleted      Int    sessions that ran to completion
+    plantsGrown            Int    plants that advanced a stage
+    updatedAtUtcMillis     Long   when the aggregate was last recomputed
+    (MISSING vs the design: score, pickups, unlocks, isCompassionDay - K24)
+
+  app_usage_daily  (AppUsageDaily)                PK: dayStartUtcMillis + packageName
+    (index on packageName)
+    usageMillis            Long   foreground time for that app that day
+    launchCount            Int    launches that day
+    updatedAtUtcMillis     Long   when collected
+
+  app_limits  (AppLimit)                         PK: packageName
+    dailyLimitMinutes      Int    allowed minutes per local day
+    isEnabled              Boolean  paused limits keep their value
+    updatedAtUtcMillis     Long
+
+  plants  (Plant)                                PK: plantId (client UUID)
+    species                String  plant kind, owned by the domain layer
+    stage                  Int     0 = seed; domain maps it to GrowthStage
+    health                 Int     0..100
+    plantedAtUtcMillis     Long
+    lastFocusAtUtcMillis   Long?   null until the first session touches it
+    (MISSING vs the design: growthPoints, position - K24)
+
+  focus_sessions  (FocusSession)                 PK: sessionId (client UUID)
+    (indexes on dayStartUtcMillis, plantId)
+    dayStartUtcMillis      Long    denormalised day key for cheap per-day reads
+    startedAtUtcMillis     Long
+    endedAtUtcMillis       Long?   null = still running (see K22)
+    plannedMinutes         Int
+    wasCompleted           Boolean
+    plantId                String? no ForeignKey on purpose (K20)
+    (MISSING vs the design: tag, status - K24)
+
+  badges  (Badge)                                PK: badgeKey
+    unlockedAtUtcMillis    Long    row exists only once earned
+
+  Rules for changing the schema
+    1. Bump DATABASE_VERSION in ScreenGardenDatabase.kt.
+    2. Add a Migration object to ScreenGardenDatabase.MIGRATIONS (never edit an
+       existing migration once shipped).
+    3. Add a case to ScreenGardenDatabaseMigrationTest, and run it (emulator is
+       fine - D33).
+    4. Commit the newly exported app/schemas/<class>/<n>.json; never delete an
+       older one (H15).
+    5. Never add fallbackToDestructiveMigration (H14/D23).
+  The first such change is already known: the v2 fields listed as K24.
+
+
+--------------------------------------------------------------------------------
+SECTION 16 - CORE DESIGN
+--------------------------------------------------------------------------------
+  Recorded in P00 because the briefs referenced "section 5.1/5.2/5.4/5.5" and no
+  such section existed. Treat this as product truth; when code disagrees with
+  it, the code is wrong or this section must be updated in the same change.
+  Brief "5.1" = 16.1, "5.2" = 16.2, "5.4" = 16.4, "5.5" = 16.5.
+
+  16.1 DAILY HEALTH SCORE (0-100)
+    One number per local day, summarising how the day went. Inputs:
+      - screen time versus the daily goal (16.7 dailyGoalMs),
+      - per-app limit breaches (AppLimit),
+      - pickups versus the pickup goal (16.7 pickupGoal),
+      - usage inside the bedtime window (16.7 bedtimeStart/bedtimeEnd),
+      - focus minutes versus the focus target.
+    It must degrade SMOOTHLY: no cliffs. Going one minute over a goal must not
+    drop the score by ten points; every input contributes a continuous curve and
+    a single bad input cannot zero the day.
+    THE EXACT FORMULA IS DEFINED IN P08 AND IS "TBD" UNTIL THEN. Do not invent it
+    in another prompt, and do not build UI that depends on a specific curve
+    before P08 lands.
+
+  16.2 PLANT LIFECYCLE
+    States: SEED -> SPROUT -> BUD -> BLOOM, plus WILTING and RECOVERING.
+    Growth comes from good daily scores, completed focus sessions and streak
+    bonuses (16.4). Wilting is GRADUAL and ALWAYS RECOVERABLE: a plant is never
+    permanently lost, which is why there is no "dead plant" state to delete.
+    Recovery comes from a completed focus session or a good day. The maximum
+    number of plants is decided in P09, not here.
+    Stored today as Plant.stage (Int) + health (0-100); growthPoints and
+    position are a v2 addition (K24).
+
+  16.3 FOCUS SESSIONS
+    A session has a planned duration and a tag (Study / Work / Reading / Other).
+    It is timed by a foreground service so it survives leaving the app.
+    Completed = growth reward. Using the phone during a session is a SOFT fail
+    with a small setback, not a hard reset, after a grace period (default 30 s).
+    Default behaviour is "gentle mode": no blocking, no shaming, no red screen.
+    Blocking exists only as the opt-in feature in P29.
+
+  16.4 STREAKS
+    A day counts toward the streak when its health score is at or above the
+    threshold (default 60, configurable via streakThreshold). A "compassion day"
+    preserves the streak and is EXCLUDED from averages - a missed day does not
+    erase progress, it just does not count. Requires DailyStat.isCompassionDay
+    (K24) when implemented.
+
+  16.5 PLANT PACKS
+    Layout: assets/plants/<id>/plant.json plus one image per stage.
+    Fields: id, name, description, unlock rule, stage images, license, author,
+    schemaVersion. The schema is VERSIONED and the loader validates safely:
+    unknown or future schemaVersion, missing fields, unreadable images or a pack
+    with no license are skipped with a logged reason, never a crash. Details are
+    in P25.
+
+  16.6 PRIVACY
+    Export and import everything as ONE user-controlled JSON file (P26). Nothing
+    leaves the device unless the user manually shares that file - there is no
+    sync, no server, no auto-upload, and H1 keeps it that way.
+    Blocking features are OPT-IN, OFF by default, and must never store what an
+    accessibility service sees (P29).
+
+  16.7 SETTINGS KEYS (planned, DataStore - P04)
+    dailyGoalMs       Long    screen-time goal for a day
+    pickupGoal        Int     target pickups per day
+    bedtimeStart      String  local time, e.g. "22:30"
+    bedtimeEnd        String  local time, e.g. "07:00"
+    theme             enum    system | light | dark | amoled
+    accentColor       enum    calm palette variant
+    streakThreshold   Int     default 60
+    gentleMode        Boolean default true
+    notificationsOn   Boolean default false
+    onboardingDone    Boolean default false
+    hemisphere        enum    drives season visuals (P21)
+    lowPowerVisuals   Boolean reduces animation/particles
+    P04 owns the types, defaults and migration of these keys; nothing else may
+    invent a new key without adding it here.
+
+
+--------------------------------------------------------------------------------
+SECTION 17 - FIRST PUSH CHECKLIST (owner actions)
+--------------------------------------------------------------------------------
+  These cannot be done by an agent: they create the remote and publish. Run them
+  once; they close K16 and K17. See D29.
+
+  1. Create the repository on github.com (free):
+       - New repository -> name: ScreenGarden -> Public
+       - Do NOT initialise with a README/.gitignore/license (this repo has them)
+       - Create repository, then copy the HTTPS/SSH URL it shows.
+
+  2. Replace the placeholder (one token, one file: README.md):
+       Windows PowerShell (from the repo root):
+         (Get-Content README.md -Raw) -replace 'OWNER/REPO', 'yourname/ScreenGarden' |
+           Set-Content README.md -NoNewline
+       macOS / Linux:
+         sed -i.bak 's|OWNER/REPO|yourname/ScreenGarden|g' README.md && rm -f README.md.bak
+     Verify: grep -r "OWNER/REPO" . should print nothing.
+
+  3. Initialise and push (git is not installed as a repo here yet):
+         git init -b main
+         git add .
+         git commit -m "Initial commit: ScreenGarden skeleton, Room layer, GPL-3.0"
+         git remote add origin https://github.com/yourname/ScreenGarden.git
+         git push -u origin main
+
+  4. Confirm the free automation is alive:
+       - Actions tab -> "CI" should run on the push and go green.
+       - Actions tab -> "Release build" -> Run workflow (manual) to prove
+         release.yml works; it takes a few minutes and downloads nothing paid.
+       - The README badge starts rendering once CI has one run on main.
+
+  5. Later, for F-Droid (P33): F-Droid builds from the public source, so no
+     store account and no fee are involved. Signing (D34) still has to happen
+     before a release APK is published anywhere.
+
+================================================================================
+END OF FILE
+================================================================================
