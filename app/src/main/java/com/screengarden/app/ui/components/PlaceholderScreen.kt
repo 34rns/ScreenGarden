@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.screengarden.app.ui.theme.ScreenGardenTheme
@@ -50,7 +51,10 @@ fun PlaceholderScreen(title: String, description: String, icon: ImageVector, mod
         )
         Text(
             text = description,
-            style = MaterialTheme.typography.bodyMedium,
+            // Resolve direction from the text itself. In an RTL locale the layout
+            // mirrors, but an English sentence must still read left to right or its
+            // trailing full stop is drawn on the wrong end (".nurture it").
+            style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp)
