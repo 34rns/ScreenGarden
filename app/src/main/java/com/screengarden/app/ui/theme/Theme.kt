@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import com.screengarden.app.domain.model.ThemePreference
 
 private val LightColors = lightColorScheme(
     primary = LightPrimary,
@@ -122,19 +123,24 @@ private val AmoledColors = darkColorScheme(
 /**
  * App theme.
  *
- * @param darkTheme follow the system dark setting; ignored when [amoled] is true.
- * @param amoled use the true-black scheme for OLED panels. Settings will later feed
- *   this from persisted user preference; until then callers pass it explicitly.
+ * The scheme is decided in exactly one place (DECISION D42): the stored
+ * [themePreference] wins over the device setting, and [amoled] is the debug-only
+ * preview override from DECISION D35 so screenshots can reach the true-black
+ * variant before its picker ships in P22.
+ *
+ * @param themePreference the persisted choice from [com.screengarden.app.data.settings.SettingsRepository].
+ * @param amoled debug-only override that forces the true-black scheme.
  */
 @Composable
 fun ScreenGardenTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themePreference: ThemePreference = ThemePreference.SYSTEM,
     amoled: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val systemInDarkTheme = isSystemInDarkTheme()
     val colorScheme = when {
-        amoled -> AmoledColors
-        darkTheme -> DarkColors
+        amoled || themePreference.isAmoled -> AmoledColors
+        themePreference.prefersDark(systemInDarkTheme) -> DarkColors
         else -> LightColors
     }
 

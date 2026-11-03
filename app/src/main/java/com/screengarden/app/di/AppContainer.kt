@@ -4,6 +4,9 @@ package com.screengarden.app.di
 
 import android.content.Context
 import com.screengarden.app.data.local.ScreenGardenDatabase
+import com.screengarden.app.data.settings.DataStoreSettingsRepository
+import com.screengarden.app.data.settings.SettingsRepository
+import com.screengarden.app.data.settings.settingsDataStore
 
 /**
  * Manual dependency injection root, created once by [com.screengarden.app.ScreenGardenApplication].
@@ -13,9 +16,8 @@ import com.screengarden.app.data.local.ScreenGardenDatabase
  *   stays simple.
  * - The app has one Activity and no dynamic feature modules, so a graph library
  *   buys nothing yet.
- * - Repositories and use cases are added here as plain `val`s once their
- *   implementations land (Task 1.1 defines only interfaces, so nothing is
- *   constructed for them yet - see Section 11 of AGENT_MEMORY).
+ * - Everything is constructed here and nowhere else, so a screen cannot quietly
+ *   build its own database or DataStore.
  */
 class AppContainer(context: Context) {
 
@@ -26,4 +28,12 @@ class AppContainer(context: Context) {
      * actually asks for data.
      */
     val database: ScreenGardenDatabase by lazy { ScreenGardenDatabase.build(appContext) }
+
+    /**
+     * User settings (AGENT_MEMORY 16.7), read at the composition root to pick the
+     * theme and later by the settings UI.
+     */
+    val settingsRepository: SettingsRepository by lazy {
+        DataStoreSettingsRepository(appContext.settingsDataStore)
+    }
 }

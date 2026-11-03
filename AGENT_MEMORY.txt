@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-02 (Session 5 / P00b)
+Last updated: 2026-11-03 (Session 6 / P04 - DataStore settings)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -106,7 +106,7 @@ SECTION 3 - TECH STACK
   Architecture  UI (Compose screens) -> domain -> data (local only)
   DI            Manual dependency injection (AppContainer). No Hilt.
   Persistence   Room 2.6.1 (KSP), 6 tables, schema export + migrations.
-                DataStore for preferences is still planned (P04/P22).
+                Preferences DataStore 1.1.2 behind SettingsRepository (P04).
   Async         Kotlin coroutines + Flow (Room DAOs expose Flow queries).
                 WorkManager arrives with the daily sync (P06).
   Build         Gradle 8.13 (wrapper), AGP 8.9.2, KSP 2.1.0-1.0.29,
@@ -120,7 +120,7 @@ SECTION 3 - TECH STACK
   Distribution  GitHub Releases + F-Droid (+ optional IzzyOnDroid). No Play.
   Testing       JVM unit tests (JUnit 4 + Robolectric + Room in-memory);
                 API 35 emulator for visual, RTL and migration checks
-  Tests         32 JVM unit tests (green) + 1 migration suite (green on emulator)
+  Tests         48 JVM unit tests (green) + 1 migration suite (green on emulator)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -197,18 +197,21 @@ SECTION 4 - FOLDER LAYOUT
           |       |-- di/AppContainer.kt           manual DI root + database
           |       |-- data/local/                  DB, entity/, dao/
           |       |-- data/repo/                   6 repository interfaces
+          |       |-- data/settings/               DataStore settings repository (P04)
+          |       |-- domain/model/                ThemePreference, AccentColor (P04)
           |       `-- ui/  theme/, navigation/, components/, screens/
           |-- test/java/com/screengarden/app/
           |   |-- core/time/LocalDayTest.kt            6 tests
-          |   `-- data/local/                          6 DAO test classes (26)
+          |   |-- data/local/                          6 DAO test classes (26)
+          |   |-- data/settings/                       settings store (9 tests)
+          |   `-- domain/model/ThemePreferenceTest.kt  7 tests
           `-- androidTest/java/com/screengarden/app/data/local/
               `-- ScreenGardenDatabaseMigrationTest.kt  green on emulator
 
   PLANNED (created by the prompt that needs them, never empty - D17):
-    data/settings/     DataStore settings repository            (P04)
     data/usage/        usage-stats collection                   (P05)
     data/work/         WorkManager daily sync                   (P06)
-    domain/model/      UI-facing models (sessions, plants, summaries)
+    domain/model/      remaining UI models (sessions, plants, summaries)
     domain/usecase/    single-purpose operations, plain classes, unit-testable
     ui/onboarding/     first-run flow                           (P07)
     assets/plants/     plant packs (plant.json + stage images)  (P25)
@@ -226,6 +229,8 @@ SECTION 4 - FOLDER LAYOUT
       (java.time is allowed, Android framework is not).
     - di/ is the only place that constructs the database, repositories and
       use cases.
+    - MainActivity may read the container: it is the composition root for the
+      theme (D42). Screens under screens/ still never touch data/.
     - Docs for the schema itself live in SECTION 15; product behaviour lives in
       SECTION 16.
 
@@ -517,6 +522,38 @@ SECTION 6 - DECISIONS
       download and no cost. The pre-existing `shobdo` AVD from another project
       is never used or modified, so this repository cannot disturb other work.
 
+  D40 SETTINGS LIVE IN ONE PREFERENCES DATASTORE BEHIND SettingsRepository (P04).
+      Ten of the keys in 16.7 are stored, each exposed as a Flow that always
+      emits a value: an absent key reports its SettingsDefaults entry, so no
+      caller has to distinguish "never set" from "set to the default". One
+      process-wide DataStore instance (the top-level settingsDataStore
+      delegate) is required because DataStore throws on a second instance for
+      the same file. Existing storage keys are never renamed - that would
+      silently reset the setting on every install - and writes are validated
+      in the repository, so no caller can persist a value the rest of the app
+      cannot interpret. A read failure caused by a corrupt file degrades to
+      defaults instead of crashing the shell: the user can set values again,
+      a crash would be worse. A file that cannot be parsed is handled the same
+      way through a ReplaceFileCorruptionHandler, which swaps it for an empty
+      store rather than letting a CorruptionException crash the launch.
+
+  D41 THE COLOUR SCHEME IS RESOLVED IN EXACTLY ONE PLACE (P04).
+      ScreenGardenTheme(themePreference, amoled) is the only mapping from a
+      preference to a scheme: SYSTEM follows the device, LIGHT/DARK ignore it,
+      AMOLED forces the true-black palette because that is its definition (D6).
+      The old (darkTheme, amoled) signature was removed rather than kept
+      alongside, so there is no second way to pick a theme. The debug AMOLED
+      override (D35) still wins, but only in debuggable builds (K28).
+
+  D42 THE ACTIVITY, NOT A SCREEN, READS THE THEME SETTING (P04).
+      A themed shell cannot be composed before the theme is known, and the
+      settings UI that will write this value is not P04's work (K1/P22), so
+      MainActivity collects settingsRepository.theme with
+      collectAsStateWithLifecycle and passes it down. No use-case layer exists
+      yet, which is why the composition root may read the container while
+      screens/ still only talk to domain/model (SECTION 4). The first frame
+      starts from SYSTEM until DataStore emits (K31).
+
 
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
@@ -535,8 +572,10 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P02     done    Navigation shell + repository setup: CI, ktlint, docs [0.2, 0.3]
   P03     done    Room database: entities, DAOs, schema export, repo
                   interfaces, time helper, 32 tests [1.1]
-  P04     NEXT    DataStore settings + implement the six repositories
-                  (implementations deferred from P03) [1.2]
+  P04     done    DataStore settings repository + theme wiring, 15 new
+                  tests [1.2]
+  P04b    NEXT    Implement the six repository interfaces over their DAOs
+                  (implementations deferred from P03) [1.2 part]
   P05     todo    Usage stats repository [2.1 part]
   P06     todo    Daily sync worker (WorkManager) [2.2]
   P07     todo    Onboarding + permissions [2.1 part]
@@ -572,8 +611,9 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P04 is the true next step and unblocks Phase 1. P08 (the
-  formula) must precede P09/P10. Only one prompt is executed per turn (H11).
+  Sequencing note: P04b (the six repository implementations) is the next step
+  and unblocks Phase 1. P08 (the formula) must precede P09/P10. Only one
+  prompt is executed per turn (H11).
 
 
 --------------------------------------------------------------------------------
@@ -582,7 +622,8 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   Everything below is declared in gradle/libs.versions.toml. The license column
   matters for distribution: everything shipped in the APK is Apache-2.0, and
   the two non-Apache-2.0 artifacts are test-only, so they never ship.
-  No dependency was added in P00b (screenshots used only adb and the emulator).
+  P00b added no dependency (screenshots used only adb and the emulator). P04
+  added androidx.datastore:datastore-preferences 1.1.2 (Apache-2.0).
 
   Name / version                    License       Why / scope
   ---------------------------------------------------------------------------
@@ -613,6 +654,9 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
                           (BOM)     Apache-2.0    Material 3 (shipped)
   androidx.navigation:navigation-compose
                           2.8.5     Apache-2.0    NavHost (shipped)
+  androidx.datastore:datastore-preferences
+                          1.1.2     Apache-2.0    settings persistence (shipped),
+                                                  pulls okio 3.x (Apache-2.0)
   org.jetbrains.kotlinx:kotlinx-coroutines-test
                           1.9.0     Apache-2.0    runTest, test only
   androidx.test:core-ktx  1.6.1     Apache-2.0    ApplicationProvider, test only
@@ -649,7 +693,7 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
 
   Deliberately NOT included: Hilt/Dagger, Retrofit/OkHttp/Ktor, Firebase,
   Play Services, AppCompat, Material Components (MDC), kotlinx.serialization,
-  DataStore (P04), WorkManager (P06), detekt (D16), material-icons-extended,
+  WorkManager (P06), detekt (D16), material-icons-extended,
   any paid SDK.
 
   CI actions (not Gradle dependencies, not shipped):
@@ -672,6 +716,9 @@ SECTION 9 - PERMISSIONS
     <applicationId>.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
     Added automatically by androidx.core for context-registered receivers. It is
     signature-level, invisible to the user, and grants nothing.
+
+  Preferences DataStore (P04) adds no permission: it writes one app-private
+  file under files/datastore/.
 
   APPROVED FOR FUTURE USE (does not exist yet - add an entry here before use):
     PACKAGE_USAGE_STATS   Insights needs it to read screen time. Special app
@@ -696,12 +743,14 @@ SECTION 9 - PERMISSIONS
 --------------------------------------------------------------------------------
 SECTION 10 - KNOWN ISSUES
 --------------------------------------------------------------------------------
-  K1  The AMOLED scheme has no user-facing switch yet; it is reachable only
-      through ScreenGardenTheme(amoled = true) or the debug intent extra (D35).
-      P22 adds the persisted preference and deletes the hook.
+  K1  The AMOLED scheme is a persisted setting now (P04), but nothing writes it
+      yet: the picker is P22's work, so on device it is still reachable only
+      through the debug intent extra (D35). Close in P22.
   K2  All four tabs are placeholders by design (no feature screens yet).
-  K3  No UI reads the database yet. The Room layer is exercised only by tests
-      and the migration suite; P04 onwards make it real.
+  K3  No UI reads the database yet: the Room layer is still exercised only by
+      tests and the migration suite. The one persisted value the running app
+      reads is the theme setting (P04); the six repositories stay interfaces
+      until P04b.
   K4  kotlinOptions { jvmTarget } is deprecated in Kotlin 2.1 (still compiles).
       Migrate to the compilerOptions DSL before AGP 9 / Kotlin 2.2.
   K5  Gradle 8.13 prints "Deprecated Gradle features ... incompatible with
@@ -713,7 +762,8 @@ SECTION 10 - KNOWN ISSUES
       light/dark/AMOLED, 1.3x font, RTL. Theme colours were verified by pixel
       probe, not by eye. See K26/K29 for what this did NOT cover (status-bar
       icons, other screen sizes, API 26 rendering).
-  K9  Theme follows the system dark mode only; no in-app override yet (P22).
+  K9  The theme honours a persisted preference, but no in-app control changes
+      it yet (K1/P22).
   K10 The launcher icon's monochrome layer reuses the coloured foreground
       drawable; themed icons on API 33+ may flatten the two-tone leaf. Not
       verified on a launcher in P00b (only in-app screens were captured).
@@ -781,18 +831,26 @@ SECTION 10 - KNOWN ISSUES
   K29 Visual coverage is one screen size only: 1080x2400 (Pixel 6 profile),
       API 35. Small phones, tablets, foldables and API 26 rendering are
       unverified; P31 owns a multi-size pass.
+  K30 Two keys listed in 16.7 are deliberately NOT stored yet: hemisphere
+      (season visuals, P21) and lowPowerVisuals (P27). Storing a value that
+      nothing maintains would let a screen read a lie.
+  K31 COLD-START THEME: MainActivity starts from ThemePreference.SYSTEM until
+      DataStore emits (a few milliseconds). A user who chose LIGHT on a dark
+      device can see one dark frame. Accepted; if it becomes visible, gate the
+      first frame on the first emission rather than loosening the flow.
 
   Current lint state: 0 errors, 2 accepted warnings (K11, K12). No baseline.
   Current ktlint state: clean (0 violations).
-  Current test state: 32 JVM tests green; migration suite green on the emulator.
+  Current test state: 48 JVM tests green; migration suite green on the emulator.
   Current CI state: green on main (ci.yml and release.yml both dispatched).
 
 
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00 and P00b are COMPLETE. The project is published, CI is green, and the UI
-  has been seen running on an emulator for the first time.
+  P00, P00b and P04 are COMPLETE. The project is published, CI is green, the
+  UI has been seen running on an emulator, and user settings now persist on
+  device and drive the app theme.
 
   What exists and works
     - Public repository https://github.com/34rns/ScreenGarden with a clean
@@ -815,7 +873,11 @@ SECTION 11 - CURRENT STATUS
       the F-Droid fastlane layout.
     - Licensing: GPL-3.0-or-later code + CC BY-SA 4.0 art, SPDX headers in all
       43 Kotlin files, LICENSE is the verbatim official text.
-    - Decisions D1-D39 recorded; no open questions (SECTION 14); standing
+    - Settings (P04): one Preferences DataStore behind SettingsRepository with
+      ten 16.7 keys as always-emitting flows, documented defaults, validated
+      writes, unknown-value fallbacks and a corruption handler; the stored theme
+      is resolved by ScreenGardenTheme at the Activity root.
+    - Decisions D1-D42 recorded; no open questions (SECTION 14); standing
       orders for every future turn in SECTION 18.
 
   Evidence from P00b
@@ -832,23 +894,30 @@ SECTION 11 - CURRENT STATUS
     - `ktlintCheck --no-build-cache`, `testDebugUnitTest`, `lintDebug`,
       `assembleDebug`: all green after the RTL fix.
 
+  Evidence from P04 (2026-11-03)
+    - `ktlintFormat`, then `ktlintCheck --no-build-cache`: 0 violations.
+    - `:app:testDebugUnitTest`: 48/48, 0 skipped, 0 failures (16 new tests).
+    - `:app:lintDebug`: 0 errors, 2 accepted warnings (unchanged).
+    - `:app:assembleDebug`: BUILD SUCCESSFUL.
+    - Emulator: launched on screengarden_api35 with no crash, and a hand-written
+      preferences file containing theme=dark made the UI render (16,20,16), so
+      the persisted preference demonstrably drives the colour scheme.
+
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  NEXT: P04 - DataStore settings + implement the six repositories.
+  NEXT: P04b - implement the six repository interfaces over their DAOs.
 
-  Scope of P04 (nothing else):
-    - Add DataStore Preferences to the catalog and a settings repository that
-      owns the keys listed in 16.7 (types and defaults included).
-    - Implement the six repository interfaces over their DAOs.
-    - Register them in AppContainer so nothing is constructed ad hoc.
-    - Prove the wiring: one screen reads a real value (a setting or one
-      repository read) and shows it.
-    - Tests for the settings repository and the mappings; ktlint + build + lint.
+  Scope of P04b (nothing else):
+    - One implementation per interface in data/repo, over the existing DAO;
+      no extra query unless a method genuinely needs one.
+    - Register all six in AppContainer, next to settingsRepository.
+    - Tests for any mapping or default the implementations add.
 
-  Do NOT do in P04: the health score (P08), the plant engine (P09), schema v2
-  (only when a prompt needs those fields, K24), or any UI redesign.
+  Do NOT do in P04b: the health score (P08), the plant engine (P09), schema v2
+  (only when a prompt needs those fields, K24), settings UI (P22), or any UI
+  redesign.
 
   Then in order: P05 -> P06 -> P07 -> P08 -> P09/P10.
 
@@ -966,6 +1035,52 @@ SECTION 13 - SESSION LOG
       - P04: DataStore settings + the six repository implementations, wired into
         AppContainer and proven by one screen reading real data.
 
+
+  SESSION 6 - 2026-11-03 - P04 (DataStore settings, Task 1.2)
+
+    Did
+      - Added androidx.datastore:datastore-preferences 1.1.2 to the catalog: the
+        first new dependency since P03, Apache-2.0, no permission.
+      - Added domain/model/ThemePreference (SYSTEM/LIGHT/DARK/AMOLED, storage-key
+        parsing, prefersDark) and AccentColor (one palette variant today).
+      - Added data/settings: SettingsDefaults, the SettingsRepository contract
+        (ten flows + ten setters), the process-wide settingsDataStore delegate,
+        and DataStoreSettingsRepository (default-on-absent reads, corrupt-file
+        fallback, validated writes, unknown-enum fallbacks).
+      - Registered settingsRepository in AppContainer; MainActivity collects the
+        theme with collectAsStateWithLifecycle and ScreenGardenTheme resolves the
+        scheme from it, keeping the debug AMOLED override (D35).
+      - Replaced the old ScreenGardenTheme(darkTheme, amoled) signature so there
+        is exactly one place that chooses a scheme.
+      - 16 new tests: 9 against a real Preferences DataStore file (including a
+        deliberately truncated file) and 7 pure-JVM theme resolution tests.
+      - No settings UI was added: the pickers are P22's work (K1).
+
+    Decided
+      - D40 one Preferences DataStore behind SettingsRepository.
+      - D41 the theme is resolved only in ScreenGardenTheme.
+      - D42 MainActivity is the composition root that reads the theme setting.
+
+    Verified
+      - ktlintFormat, then ktlintCheck --no-build-cache: 0 violations.
+      - :app:testDebugUnitTest: 48/48, 0 skipped, 0 failures (16 new).
+      - :app:lintDebug: 0 errors, 2 accepted warnings (unchanged).
+      - :app:assembleDebug: BUILD SUCCESSFUL.
+      - On the API 35 emulator: installed and launched with no crash; with
+        theme=dark written into the settings file the frame rendered (16,20,16)
+        instead of (246,251,244), so the stored value really reaches the
+        scheme. The probe file was removed afterwards and the app went back to
+        the light scheme.
+      - Secret sweep and manifest audit: no permissions, no credentials.
+
+    Not verified
+      - No user-facing way to change a setting yet (P22), so the on-device
+        theme proof used a hand-written preferences file, not a tap in the UI.
+      - hemisphere and lowPowerVisuals remain unstored (K30).
+
+    Next
+      - P04b: implement the six repository interfaces over their DAOs and wire
+        them into AppContainer.
 
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
@@ -1108,7 +1223,7 @@ SECTION 16 - CORE DESIGN
     OPT-IN, OFF by default, and must never store what an accessibility service
     sees (P29).
 
-  16.7 SETTINGS KEYS (planned, DataStore - P04)
+  16.7 SETTINGS KEYS (DataStore - implemented in P04 except the last two)
     dailyGoalMs       Long    screen-time goal for a day
     pickupGoal        Int     target pickups per day
     bedtimeStart      String  local time, e.g. "22:30"
@@ -1121,6 +1236,12 @@ SECTION 16 - CORE DESIGN
     onboardingDone    Boolean default false
     hemisphere        enum    drives season visuals (P21)
     lowPowerVisuals   Boolean reduces animation/particles
+    IMPLEMENTED in P04: the first ten keys, with the SettingsDefaults values
+    (dailyGoalMs 3h, pickupGoal 80, bedtime 22:30-07:00, theme SYSTEM,
+    accentColor CALM_GREEN, streakThreshold 60, gentleMode true,
+    notificationsOn false, onboardingDone false). Storage keys live in
+    SettingsKeys and are only ever added, never renamed (D40).
+    NOT STORED YET: hemisphere (P21) and lowPowerVisuals (P27) - K30.
     P04 owns the types, defaults and migration of these keys; nothing may invent
     a new key without adding it here.
 
