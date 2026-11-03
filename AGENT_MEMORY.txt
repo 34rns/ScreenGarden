@@ -190,7 +190,7 @@ SECTION 4 - FOLDER LAYOUT
       |       `-- 1.json
       `-- src/
           |-- main/
-          |   |-- AndroidManifest.xml   no permissions, allowBackup=false
+          |   |-- AndroidManifest.xml   PACKAGE_USAGE_STATS only, allowBackup=false
           |   |-- res/                  values, values-night, drawable, mipmap
           |   `-- java/com/screengarden/app/
           |       |-- ScreenGardenApplication.kt   owns AppContainer(this)
@@ -937,7 +937,8 @@ SECTION 11 - CURRENT STATUS
       navigation shell (Garden, Focus, Insights, Settings).
     - Calm green light / dark / true-black AMOLED themes, verified by pixel
       probe, plus an RTL-correct and 1.3x-font-tolerant placeholder shell.
-    - Manifest: no permissions, allowBackup="false", adaptive icon.
+    - Manifest: PACKAGE_USAGE_STATS (user-granted, SECTION 9) and a launcher
+      <queries> block; allowBackup="false"; no INTERNET permission.
     - Room 2.6.1 data layer: six entities, six DAOs, ScreenGardenDatabase v1
       with schema export and no destructive fallback, core/time/LocalDay,
       six repository interfaces, 26 in-memory DAO tests + 6 time tests.
@@ -1007,7 +1008,7 @@ SECTION 12 - NEXT STEP
   (only when a prompt needs those fields, K24), settings UI (P22), or any UI
   redesign.
 
-  Then in order: P05 -> P06 -> P07 -> P08 -> P09/P10.
+  Then in order: P06 -> P07 -> P08 -> P09/P10.
 
   Every turn also follows the standing orders in SECTION 18: local gate, commit,
   push, watch CI, refresh screenshots if a screen changed, update this file.
