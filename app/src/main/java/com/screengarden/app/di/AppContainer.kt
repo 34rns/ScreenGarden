@@ -7,6 +7,9 @@ import com.screengarden.app.data.local.ScreenGardenDatabase
 import com.screengarden.app.data.settings.DataStoreSettingsRepository
 import com.screengarden.app.data.settings.SettingsRepository
 import com.screengarden.app.data.settings.settingsDataStore
+import com.screengarden.app.data.usage.AndroidUsageSource
+import com.screengarden.app.data.usage.DefaultUsageRepository
+import com.screengarden.app.data.usage.UsageRepository
 
 /**
  * Manual dependency injection root, created once by [com.screengarden.app.ScreenGardenApplication].
@@ -35,5 +38,13 @@ class AppContainer(context: Context) {
      */
     val settingsRepository: SettingsRepository by lazy {
         DataStoreSettingsRepository(appContext.settingsDataStore)
+    }
+
+    /**
+     * Screen time read straight from the OS (P05). Read-only; the daily sync (P06)
+     * is what persists it into `app_usage_daily`.
+     */
+    val usageRepository: UsageRepository by lazy {
+        DefaultUsageRepository(AndroidUsageSource(appContext))
     }
 }

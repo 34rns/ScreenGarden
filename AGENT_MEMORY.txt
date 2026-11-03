@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-03 (Session 6 / P04 - DataStore settings)
+Last updated: 2026-11-03 (Session 7 / P05 - usage statistics)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -109,6 +109,8 @@ SECTION 3 - TECH STACK
                 Preferences DataStore 1.1.2 behind SettingsRepository (P04).
   Async         Kotlin coroutines + Flow (Room DAOs expose Flow queries).
                 WorkManager arrives with the daily sync (P06).
+  Usage stats   UsageStatsManager + UsageEvents behind a pure UsageSource
+                (P05). Read-only; P06 persists what it returns.
   Build         Gradle 8.13 (wrapper), AGP 8.9.2, KSP 2.1.0-1.0.29,
                 Kotlin DSL, version catalog
   SDK           compileSdk 35, targetSdk 35, minSdk 26
@@ -120,7 +122,7 @@ SECTION 3 - TECH STACK
   Distribution  GitHub Releases + F-Droid (+ optional IzzyOnDroid). No Play.
   Testing       JVM unit tests (JUnit 4 + Robolectric + Room in-memory);
                 API 35 emulator for visual, RTL and migration checks
-  Tests         48 JVM unit tests (green) + 1 migration suite (green on emulator)
+  Tests         58 JVM unit tests (green) + 1 migration suite (green on emulator)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -198,18 +200,19 @@ SECTION 4 - FOLDER LAYOUT
           |       |-- data/local/                  DB, entity/, dao/
           |       |-- data/repo/                   6 repository interfaces
           |       |-- data/settings/               DataStore settings repository (P04)
+          |       |-- data/usage/                  usage source + aggregator (P05)
           |       |-- domain/model/                ThemePreference, AccentColor (P04)
           |       `-- ui/  theme/, navigation/, components/, screens/
           |-- test/java/com/screengarden/app/
           |   |-- core/time/LocalDayTest.kt            6 tests
           |   |-- data/local/                          6 DAO test classes (26)
           |   |-- data/settings/                       settings store (9 tests)
+          |   |-- data/usage/                          usage aggregation (10 tests)
           |   `-- domain/model/ThemePreferenceTest.kt  7 tests
           `-- androidTest/java/com/screengarden/app/data/local/
               `-- ScreenGardenDatabaseMigrationTest.kt  green on emulator
 
   PLANNED (created by the prompt that needs them, never empty - D17):
-    data/usage/        usage-stats collection                   (P05)
     data/work/         WorkManager daily sync                   (P06)
     domain/model/      remaining UI models (sessions, plants, summaries)
     domain/usecase/    single-purpose operations, plain classes, unit-testable
@@ -554,6 +557,45 @@ SECTION 6 - DECISIONS
       screens/ still only talk to domain/model (SECTION 4). The first frame
       starts from SYSTEM until DataStore emits (K31).
 
+  D43 ALL ANDROID USAGE-STATS CODE SITS BEHIND UsageSource (P05).
+      UsageStatsManager, PackageManager, AppOpsManager and Settings are touched
+      by exactly two classes: AndroidUsageSource and UsageAccess. Everything
+      else - the day window, the resume/pause pairing, the clipping, the
+      launcher filter - lives in DefaultUsageRepository, which is pure Kotlin
+      and is tested with a fake source on the JVM. This is the sanctioned
+      exception to "no Android imports below data/local" in SECTION 5: the
+      Android adapter is unavoidable, so it is isolated instead of spread.
+
+  D44 ONLY LAUNCHER APPS COUNT AS SCREEN TIME (P05).
+      The per-app list is filtered to packages with a launcher activity, and the
+      day total is the sum of that list. Including system UI and the launcher
+      would add time the user cannot attribute to anything, and the total would
+      no longer match the rows shown. The cost is that an app the user hid from
+      the launcher is also missing from screen time; this is recorded in K37
+      rather than guessed at. The launcher filter needs the MAIN/LAUNCHER
+      <queries> block on API 30+ (SECTION 9).
+
+  D45 FOREGROUND TIME AND "LAST TIME USED" ARE DIFFERENT NUMBERS (P05).
+      Durations come from pairing ACTIVITY_RESUMED with ACTIVITY_PAUSED, clipped
+      to the day. UsageStats.getLastTimeUsed() is only ever a timestamp and is
+      exposed as AppUsage.lastUsedUtcMillis; it is never subtracted to make a
+      duration, and UsageStats.getTotalTimeInForeground() is not trusted for a
+      specific day because queryUsageStats returns calendar-day buckets that can
+      extend past the requested window.
+
+  D46 MISSING USAGE ACCESS IS A RESULT, NOT AN EXCEPTION (P05).
+      readDay returns DayUsageResult.MissingPermission, and the Android layer
+      turns a null service or an empty query into empty data. No code path in
+      the usage layer throws when access is missing, because a privacy
+      permission is a normal state of the world, not an error (H9).
+
+  D47 ONE PLACE KNOWS HOW TO CHECK AND REQUEST USAGE ACCESS (P05).
+      UsageAccess.isGranted(context) does the AppOps check with a stats-query
+      fallback for OEM builds that report MODE_DEFAULT after granting, and
+      UsageAccess.settingsIntent() opens the device-wide usage-access screen.
+      P07's onboarding uses the same two calls, so the check and the fix cannot
+      drift apart.
+
 
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
@@ -576,7 +618,8 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
                   tests [1.2]
   P04b    NEXT    Implement the six repository interfaces over their DAOs
                   (implementations deferred from P03) [1.2 part]
-  P05     todo    Usage stats repository [2.1 part]
+  P05     done    Usage stats repository: screen time, per-app usage,
+                  pickups, unlocks, access check [2.1 part]
   P06     todo    Daily sync worker (WorkManager) [2.2]
   P07     todo    Onboarding + permissions [2.1 part]
   P08     todo    Health score formula (fills in 16.1) [new]
@@ -623,7 +666,9 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   matters for distribution: everything shipped in the APK is Apache-2.0, and
   the two non-Apache-2.0 artifacts are test-only, so they never ship.
   P00b added no dependency (screenshots used only adb and the emulator). P04
-  added androidx.datastore:datastore-preferences 1.1.2 (Apache-2.0).
+  added androidx.datastore:datastore-preferences 1.1.2 (Apache-2.0). P05 added
+  no dependency: usage stats come from the platform (UsageStatsManager,
+  UsageEvents, AppOpsManager).
 
   Name / version                    License       Why / scope
   ---------------------------------------------------------------------------
@@ -708,9 +753,20 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
 --------------------------------------------------------------------------------
 SECTION 9 - PERMISSIONS
 --------------------------------------------------------------------------------
-  DECLARED BY THIS APP: NONE.
-  The manifest declares no <uses-permission> and no <uses-feature> at all.
-  Room adds none: it is a local SQLite wrapper.
+  DECLARED BY THIS APP:
+    PACKAGE_USAGE_STATS   Read screen time for Insights and the daily score.
+                          Signature|privileged: declaring it grants nothing and
+                          the user enables it in Settings > Special app access >
+                          Usage access. The app works without it and reports
+                          DayUsageResult.MissingPermission instead (D46). Added
+                          with P05; lint's ProtectedPermissions warning is
+                          suppressed on the element with tools:ignore and this
+                          entry is the justification (K36).
+  No <uses-feature> is declared. Room and DataStore add none.
+
+  <queries> (not a permission): MAIN/LAUNCHER intent, so PackageManager can
+  name the apps that have a launcher icon on API 30+ (D44). This is the narrow
+  form approved here instead of QUERY_ALL_PACKAGES.
 
   Expected merge-time entry (not ours, not a violation of H1):
     <applicationId>.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
@@ -721,9 +777,6 @@ SECTION 9 - PERMISSIONS
   file under files/datastore/.
 
   APPROVED FOR FUTURE USE (does not exist yet - add an entry here before use):
-    PACKAGE_USAGE_STATS   Insights needs it to read screen time. Special app
-                          access granted by the user in settings; must degrade
-                          gracefully when not granted. (P05/P07)
     POST_NOTIFICATIONS    API 33+ prompt for focus reminders. (P12/P16)
     FOREGROUND_SERVICE    If a focus session must survive leaving the app. (P12)
     USE_EXACT_ALARM / SCHEDULE_EXACT_ALARM
@@ -838,19 +891,39 @@ SECTION 10 - KNOWN ISSUES
       DataStore emits (a few milliseconds). A user who chose LIGHT on a dark
       device can see one dark frame. Accepted; if it becomes visible, gate the
       first frame on the first emission rather than loosening the flow.
+  K32 The event constants are matched by value: ACTIVITY_RESUMED = 1 =
+      MOVE_TO_FOREGROUND and ACTIVITY_PAUSED = 2 = MOVE_TO_BACKGROUND, so
+      pre-29 events are matched by the new names. Verified with `javap
+      -constants` on the API 35 android.jar; the runtime path on an API 26-28
+      device was NOT exercised (only the API 35 emulator exists here).
+  K33 Unlocks are always 0 on API 26-27: KEYGUARD_HIDDEN was added in API 28
+      and there is no earlier keyguard event in UsageEvents. Reported as 0
+      instead of being inferred from other events (D45).
+  K34 Nothing calls UsageRepository yet: there is no screen (P10/P19) and the
+      daily sync that persists it is P06. It is covered by JVM tests only.
+  K35 The Android adapter has never produced a real number: Usage access was
+      not granted on the emulator, so AndroidUsageSource/UsageAccess are
+      verified by compilation and review, not by execution on a device.
+  K36 PACKAGE_USAGE_STATS trips lint's ProtectedPermissions error by design
+      (it is required for the AppOps check). The suppression is one
+      tools:ignore on that element, documented in SECTION 9 - not a baseline
+      and not a blanket suppression (D15).
+  K37 An app the user hid from the launcher is excluded from screen time,
+      because the list and the total are launcher-only (D44). Revisit if a
+      user reports missing time.
 
   Current lint state: 0 errors, 2 accepted warnings (K11, K12). No baseline.
   Current ktlint state: clean (0 violations).
-  Current test state: 48 JVM tests green; migration suite green on the emulator.
+  Current test state: 58 JVM tests green; migration suite green on the emulator.
   Current CI state: green on main (ci.yml and release.yml both dispatched).
 
 
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00, P00b and P04 are COMPLETE. The project is published, CI is green, the
-  UI has been seen running on an emulator, and user settings now persist on
-  device and drive the app theme.
+  P00, P00b, P04 and P05 are COMPLETE. The project is published, CI is green,
+  settings persist and theme the app, and screen time can be read from the
+  system.
 
   What exists and works
     - Public repository https://github.com/34rns/ScreenGarden with a clean,
@@ -877,7 +950,12 @@ SECTION 11 - CURRENT STATUS
       ten 16.7 keys as always-emitting flows, documented defaults, validated
       writes, unknown-value fallbacks and a corruption handler; the stored theme
       is resolved by ScreenGardenTheme at the Activity root.
-    - Decisions D1-D42 recorded; no open questions (SECTION 14); standing
+    - Usage stats (P05): a pure UsageRepository/aggregator over a UsageSource,
+      an AndroidUsageSource for UsageStatsManager/UsageEvents, and UsageAccess
+      for the app-op check plus the settings intent; 10 JVM tests with a fake.
+      The manifest now declares PACKAGE_USAGE_STATS and a launcher <queries>
+      block.
+    - Decisions D1-D47 recorded; no open questions (SECTION 14); standing
       orders for every future turn in SECTION 18.
 
   Evidence from P00b
@@ -903,6 +981,15 @@ SECTION 11 - CURRENT STATUS
       preferences file containing theme=dark made the UI render (16,20,16), so
       the persisted preference demonstrably drives the colour scheme.
     - CI: run 41570541137 success for the P04 commit.
+
+  Evidence from P05 (2026-11-03)
+    - `ktlintFormat`, then `ktlintCheck --no-build-cache`: 0 violations.
+    - `:app:testDebugUnitTest`: 58/58, 0 skipped, 0 failures (10 new).
+    - `:app:lintDebug`: 0 errors, 2 accepted warnings (K11, K12).
+    - `:app:assembleDebug`: BUILD SUCCESSFUL with the new manifest.
+    - `javap -constants` on the API 35 android.jar: ACTIVITY_RESUMED = 1,
+      MOVE_TO_FOREGROUND = 1, ACTIVITY_PAUSED = 2, MOVE_TO_BACKGROUND = 2,
+      SCREEN_INTERACTIVE = 15, KEYGUARD_HIDDEN = 18 (K32).
 
 
 --------------------------------------------------------------------------------
@@ -1083,6 +1170,52 @@ SECTION 13 - SESSION LOG
     Next
       - P04b: implement the six repository interfaces over their DAOs and wire
         them into AppContainer.
+
+  SESSION 7 - 2026-11-03 - P05 (usage statistics, Task 1.3)
+
+    Did
+      - Added data/usage: UsageSource (pure boundary + raw models), DayUsage /
+        AppUsage / DayUsageResult, the UsageRepository contract, and
+        DefaultUsageRepository (day window, resume/pause pairing, clipping,
+        launcher filter, pickups and unlocks).
+      - Added AndroidUsageSource (UsageStatsManager.queryUsageStats for last-used
+        timestamps, queryEvents for durations and counters, PackageManager for
+        launcher packages) and UsageAccess (AppOps check with a stats fallback,
+        plus the usage-access settings Intent).
+      - Declared PACKAGE_USAGE_STATS with tools:ignore="ProtectedPermissions" and
+        a MAIN/LAUNCHER <queries> block for API 30+ package visibility.
+      - Registered usageRepository in AppContainer; no screen consumes it yet.
+      - 10 JVM tests with a fake UsageSource, pinning Europe/Berlin so the day
+        window does not depend on the machine.
+
+    Decided
+      - D43 all Android usage code behind UsageSource, the sanctioned exception
+        to the "no Android below data/local" convention.
+      - D44 launcher apps only; the day total is their sum.
+      - D45 durations from events; getLastTimeUsed is a timestamp, never a
+        duration, and bucket totals are not trusted for a specific day.
+      - D46 missing access is a result value, never an exception.
+      - D47 one helper owns the access check and the settings Intent.
+
+    Verified
+      - ktlintFormat, then ktlintCheck --no-build-cache: 0 violations.
+      - :app:testDebugUnitTest: 58/58, 0 skipped, 0 failures (10 new).
+      - :app:lintDebug: 0 errors, 2 accepted warnings (unchanged).
+      - :app:assembleDebug: BUILD SUCCESSFUL; merged manifest contains only
+        PACKAGE_USAGE_STATS (plus the androidx DYNAMIC_RECEIVER entry) and no
+        INTERNET permission.
+      - javap on the API 35 android.jar confirmed the event constant values.
+
+    Not verified
+      - No device run: Usage access was never granted on the emulator, so the
+        Android adapter has not produced a real number yet (K35).
+      - Unlock counting on API 26-27 is 0 by design and untested there (K33).
+      - The pre-29 event path is matched by constant value, not exercised (K32).
+      - No screen reads UsageRepository yet (K34).
+
+    Next
+      - P04b: implement the six repository interfaces over their DAOs; then P06
+        (daily sync) is what will persist DayUsage.
 
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS

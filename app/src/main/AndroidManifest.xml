@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
         ScreenGarden is deliberately offline-capable and privacy-first.
@@ -7,6 +8,30 @@
         directly or through a tools:node merge. See AGENT_MEMORY.txt - HARD
         RULES and PERMISSIONS.
     -->
+
+    <!--
+        Usage access (SECTION 9). PACKAGE_USAGE_STATS is a signature|privileged
+        permission: declaring it does not grant anything, and the user must still
+        switch ScreenGarden on in Settings > Special app access > Usage access.
+        Without the declaration the AppOps check cannot succeed on any device.
+        lint's ProtectedPermissions warning is expected for exactly this reason.
+    -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!--
+        Launcher-app visibility on API 30+. Reading usage stats gives package
+        names, but PackageManager only resolves apps this app can see, and the
+        screen-time list must exclude packages without a launcher icon. A narrow
+        <queries> block is the approved alternative to QUERY_ALL_PACKAGES (SECTION 9).
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
     <!--
         android:allowBackup="false" is a HARD RULE: screen time data never leaves
