@@ -69,6 +69,19 @@ class DefaultUsageRepositoryTest {
     }
 
     @Test
+    fun todaysOpenIntervalStopsAtNowInsteadOfTheEndOfTheDay() {
+        // Regression (K38): a window that ends in the future made an app left in
+        // the foreground count every remaining hour of the day.
+        val source = FakeUsageSource(events = listOf(resumed(APP_A, 10)))
+
+        val usage = runBlocking { repository(source, now = DAY_START + 60 * MINUTE).readDay(DAY_START, ZONE) }
+            .requireUsage()
+
+        assertEquals(50 * MINUTE, usage.app(APP_A)?.usageMillis)
+        assertEquals(50 * MINUTE, usage.totalScreenTimeMillis)
+    }
+
+    @Test
     fun ignoresEventsOutsideTheRequestedDay() {
         val source = FakeUsageSource(
             events = listOf(
@@ -119,7 +132,29 @@ class DefaultUsageRepositoryTest {
         val usage = runBlocking { repository(source).readDay(DAY_START, ZONE) }.requireUsage()
 
         assertEquals(2, usage.pickups)
-        assertEquals(2, usage.unlocks)
+        assertEquals(UnlockCount.Supported(2), usage.unlocks)
+    }
+
+    @Test
+    fun unlocksAreUnsupportedWhenThePlatformHasNoKeyguardEvent() {
+        // API 26-27 send no KEYGUARD_HIDDEN event at all, so the honest answer is
+        // "cannot count" rather than a fabricated 0 (D48).
+        val source = FakeUsageSource(
+            supportsUnlocks = false,
+            events = listOf(
+                UsageEvent(UsageEventType.SCREEN_INTERACTIVE, DAY_START + 1 * MINUTE, null),
+                UsageEvent(UsageEventType.SCREEN_INTERACTIVE, DAY_START + 2 * MINUTE, null),
+                resumed(APP_A, 10),
+                paused(APP_A, 20)
+            )
+        )
+
+        val usage = runBlocking { repository(source).readDay(DAY_START, ZONE) }.requireUsage()
+
+        assertEquals(UnlockCount.Unsupported, usage.unlocks)
+        // Pickups and durations are unaffected by the missing keyguard stream.
+        assertEquals(2, usage.pickups)
+        assertEquals(10 * MINUTE, usage.totalScreenTimeMillis)
     }
 
     @Test
@@ -201,7 +236,8 @@ class DefaultUsageRepositoryTest {
         assertNull(usage.app(APP_B))
     }
 
-    private fun repository(source: UsageSource): UsageRepository = DefaultUsageRepository(source)
+    private fun repository(source: UsageSource, now: Long = DAY_START + 24 * 60 * MINUTE): UsageRepository =
+        DefaultUsageRepository(source) { now }
 
     private fun resumed(packageName: String, atMinutes: Int): UsageEvent =
         UsageEvent(UsageEventType.ACTIVITY_RESUMED, DAY_START + atMinutes * MINUTE, packageName)
@@ -215,6 +251,7 @@ class DefaultUsageRepositoryTest {
     }
 
     private class FakeUsageSource(
+        override var supportsUnlocks: Boolean = true,
         var granted: Boolean = true,
         var launchable: Set<String> = setOf(APP_A, APP_B, APP_C),
         var totals: List<AppTotal> = emptyList(),

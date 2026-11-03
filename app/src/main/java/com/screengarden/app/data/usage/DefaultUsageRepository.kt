@@ -17,12 +17,19 @@ import java.time.ZoneId
  * - The window is `[start, nextDayStart)`; an event outside it is ignored even if a
  *   source returns more than asked (defensive, because bucket-based sources do).
  * - An interval still open at the end of the day is closed at the day boundary, so
- *   "used the phone at 23:58" counts for that day instead of vanishing.
+ *   "used the phone at 23:58" counts for that day instead of vanishing. A day that
+ *   has not finished yet is closed at "now" instead: otherwise an app left in the
+ *   foreground counts every remaining hour of the day it has not used (K38).
  * - A resume for an app that is already open is ignored, and a pause without a
  *   matching resume is ignored: both happen in real event streams.
  * - Only launcher apps are reported, and the total is their sum (D44).
+ * - Unlocks are reported as [UnlockCount.Unsupported] on platforms that have no
+ *   keyguard event, never as a misleading 0 (D48).
  */
-class DefaultUsageRepository(private val source: UsageSource) : UsageRepository {
+class DefaultUsageRepository(
+    private val source: UsageSource,
+    private val nowMillis: () -> Long = System::currentTimeMillis
+) : UsageRepository {
 
     override suspend fun isUsageAccessGranted(): Boolean = source.hasUsageAccess()
 
@@ -31,7 +38,10 @@ class DefaultUsageRepository(private val source: UsageSource) : UsageRepository 
         // which would look exactly like "you did not use your phone today".
         if (!source.hasUsageAccess()) return DayUsageResult.MissingPermission
 
-        val endMillis = LocalDay.nextDayStart(dayStartUtcMillis, zoneId)
+        val dayEndMillis = LocalDay.nextDayStart(dayStartUtcMillis, zoneId)
+        // Reading today (or a future day) must never invent time that has not
+        // happened yet: the window stops at the earlier of the day boundary and now.
+        val endMillis = minOf(dayEndMillis, nowMillis())
         val launchablePackages = source.launchablePackages()
         val lastUsedByPackage = source.appTotals(dayStartUtcMillis, endMillis)
             .associate { it.packageName to it.lastTimeUsedMillis }
@@ -88,7 +98,13 @@ class DefaultUsageRepository(private val source: UsageSource) : UsageRepository 
                 dayStartUtcMillis = dayStartUtcMillis,
                 totalScreenTimeMillis = apps.sumOf { it.usageMillis },
                 pickups = pickups,
-                unlocks = unlocks,
+                // A platform without KEYGUARD_HIDDEN cannot count unlocks, so it says
+                // so instead of reporting zero (D48).
+                unlocks = if (source.supportsUnlocks) {
+                    UnlockCount.Supported(unlocks)
+                } else {
+                    UnlockCount.Unsupported
+                },
                 apps = apps
             )
         )

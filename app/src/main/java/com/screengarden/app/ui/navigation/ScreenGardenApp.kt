@@ -13,9 +13,12 @@ import androidx.navigation.compose.rememberNavController
 
 /**
  * App shell: a [Scaffold] with the persistent bottom bar and the tab [ScreenGardenNavHost].
+ *
+ * [debugDestination] is null in every release build and in debug builds launched
+ * without a debug extra, so the shipped navigation graph is exactly the four tabs.
  */
 @Composable
-fun ScreenGardenApp(modifier: Modifier = Modifier) {
+fun ScreenGardenApp(modifier: Modifier = Modifier, debugDestination: DebugDestination? = null) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = ScreenGardenDestination.fromRoute(backStackEntry?.destination?.route)
@@ -41,7 +44,8 @@ fun ScreenGardenApp(modifier: Modifier = Modifier) {
     ) { innerPadding ->
         ScreenGardenNavHost(
             navController = navController,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            debugDestination = debugDestination
         )
     }
 }

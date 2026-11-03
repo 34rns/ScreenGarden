@@ -14,6 +14,24 @@ package com.screengarden.app.data.usage
 data class AppUsage(val packageName: String, val usageMillis: Long, val launchCount: Int, val lastUsedUtcMillis: Long)
 
 /**
+ * How many times the keyguard was dismissed during the day.
+ *
+ * Unlocking is only observable from API 28: `UsageEvents.Event.KEYGUARD_HIDDEN`
+ * did not exist before that, and no earlier event reliably means "the user
+ * unlocked the phone" (SCREEN_INTERACTIVE also fires for a plain wake). Reporting
+ * a fabricated 0 on API 26-27 would be indistinguishable from "never unlocked",
+ * so the absence is modelled as a state instead of a number (DECISION D48).
+ */
+sealed interface UnlockCount {
+
+    /** The platform reports unlocks and this is the count for the day. */
+    data class Supported(val count: Int) : UnlockCount
+
+    /** The platform has no keyguard event, so unlocks cannot be counted. */
+    data object Unsupported : UnlockCount
+}
+
+/**
  * One local day of screen time, the unit Insights and the daily sync consume.
  *
  * [totalScreenTimeMillis] is the sum of [apps], i.e. launcher apps only, so the
@@ -23,7 +41,7 @@ data class DayUsage(
     val dayStartUtcMillis: Long,
     val totalScreenTimeMillis: Long,
     val pickups: Int,
-    val unlocks: Int,
+    val unlocks: UnlockCount,
     val apps: List<AppUsage>
 ) {
 

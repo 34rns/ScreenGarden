@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-03 (Session 7 / P05 - usage statistics)
+Last updated: 2026-11-03 (Session 8 / P05b - usage verified on devices)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -121,8 +121,10 @@ SECTION 3 - TECH STACK
   License       GPL-3.0-or-later (code), CC BY-SA 4.0 (art)
   Distribution  GitHub Releases + F-Droid (+ optional IzzyOnDroid). No Play.
   Testing       JVM unit tests (JUnit 4 + Robolectric + Room in-memory);
-                API 35 emulator for visual, RTL and migration checks
-  Tests         58 JVM unit tests (green) + 1 migration suite (green on emulator)
+                API 35 + API 26 emulators for visual, RTL, migration and
+                on-device usage checks; a debug-only usage self-check screen
+                (P05b) turns "it compiles" into measured numbers
+  Tests         60 JVM unit tests (green) + 1 migration suite (green on emulator)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -132,6 +134,9 @@ SECTION 3 - TECH STACK
     emulator      37.2.12.0
     accel         WHPX 10.0.26300 installed and usable (emulator -accel-check: 0)
     AVD           screengarden_api35  (Pixel 6 profile, android-35 google_apis)
+                  screengarden_api26  (default profile, android-26 google_apis
+                  x86_64, added in P05b to exercise the pre-29 event path; run
+                  on port 5556 so it can coexist with api35)
     Note          `java` and `adb` are NOT on the default PATH in this shell;
                   export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
                   and note that avdmanager/sdkmanager need their .bat suffix.
@@ -179,7 +184,8 @@ SECTION 4 - FOLDER LAYOUT
   |   |-- libs.versions.toml            ONLY place dependency versions live
   |   `-- wrapper/
   |-- docs/
-  |   `-- screenshots/                  14 emulator captures (D36), README gallery
+  |   `-- screenshots/                  15 emulator captures (D36), README gallery
+  |       `-- 15_usage_self_check_debug.png   debug self-check (P05b)
   |-- fastlane/metadata/android/en-US/images/phoneScreenshots/
   |   `-- 01..08_*.png                  F-Droid listing images (max 8)
   `-- app/
@@ -203,11 +209,18 @@ SECTION 4 - FOLDER LAYOUT
           |       |-- data/usage/                  usage source + aggregator (P05)
           |       |-- domain/model/                ThemePreference, AccentColor (P04)
           |       `-- ui/  theme/, navigation/, components/, screens/
+          |-- debug/                            DEBUG-ONLY source set (P05b)
+          |   |-- res/values/strings.xml        self-check strings, never shipped
+          |   `-- java/com/screengarden/app/
+          |       |-- debug/DebugCatalog.kt     the one debug screen registry
+          |       `-- ui/debug/UsageSelfCheckScreen.kt  P05 usage self-check
+          |-- release/                          RELEASE-ONLY source set (P05b)
+          |   `-- java/com/screengarden/app/debug/DebugCatalog.kt   always null
           |-- test/java/com/screengarden/app/
           |   |-- core/time/LocalDayTest.kt            6 tests
           |   |-- data/local/                          6 DAO test classes (26)
           |   |-- data/settings/                       settings store (9 tests)
-          |   |-- data/usage/                          usage aggregation (10 tests)
+          |   |-- data/usage/                          usage aggregation (11 tests)
           |   `-- domain/model/ThemePreferenceTest.kt  7 tests
           `-- androidTest/java/com/screengarden/app/data/local/
               `-- ScreenGardenDatabaseMigrationTest.kt  green on emulator
@@ -594,7 +607,28 @@ SECTION 6 - DECISIONS
       fallback for OEM builds that report MODE_DEFAULT after granting, and
       UsageAccess.settingsIntent() opens the device-wide usage-access screen.
       P07's onboarding uses the same two calls, so the check and the fix cannot
-      drift apart.
+      drift apart. P05b added UsageAccess.check(), which returns the same answer
+      plus the app-op mode and the PermissionCheckMethod that produced it, so
+      the debug screen reports evidence instead of re-implementing the check.
+
+  D48 UNLOCKS ARE A STATE, NOT A NUMBER, ON PLATFORMS THAT CANNOT COUNT THEM (P05b).
+      KEYGUARD_HIDDEN arrived in API 28. On API 26-27 the event never occurs, and
+      reporting 0 would be indistinguishable from "the user never unlocked", so
+      DayUsage.unlocks is UnlockCount.Supported(count) / UnlockCount.Unsupported,
+      and the capability comes from UsageSource.supportsUnlocks rather than a
+      Build.VERSION check inside the pure repository (D43 stays intact).
+      Verified on API 26 (Unsupported) and API 35 (Supported(1) against one
+      system KEYGUARD_HIDDEN event).
+
+  D49 THE DEBUG SELF-CHECK IS A VARIANT-ONLY COMPOSE DESTINATION (P05b).
+      H5 allows exactly one Activity, so the diagnostic screen is NOT a second
+      Activity: DebugCatalog exists in src/debug (real screen) and src/release
+      (a stub returning null), and MainActivity resolves it from a `screen`
+      intent extra only when FLAG_DEBUGGABLE is set - the same gate as D35.
+      Consequences: normal launches are unchanged, the bottom bar highlights
+      Garden while the debug screen is open (it is not a tab), and a release
+      APK contains no reference to the screen (verified by grepping the release
+      dex: 0 matches for UsageSelfCheck / usage_self_check).
 
 
 --------------------------------------------------------------------------------
@@ -616,11 +650,14 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
                   interfaces, time helper, 32 tests [1.1]
   P04     done    DataStore settings repository + theme wiring, 16 new
                   tests [1.2]
-  P04b    NEXT    Implement the six repository interfaces over their DAOs
+  P04b    todo    Implement the six repository interfaces over their DAOs
                   (implementations deferred from P03) [1.2 part]
   P05     done    Usage stats repository: screen time, per-app usage,
                   pickups, unlocks, access check [2.1 part]
-  P06     todo    Daily sync worker (WorkManager) [2.2]
+  P05b    done    Debug-only usage self-check; granted usage access on the
+                  emulator; measured real usage against dumpsys; API 26 check;
+                  1 production bug found and fixed [2.1 verification]
+  P06     NEXT    Daily sync worker (WorkManager) [2.2]
   P07     todo    Onboarding + permissions [2.1 part]
   P08     todo    Health score formula (fills in 16.1) [new]
   P09     todo    Plant lifecycle engine + plant count cap [1.5 part]
@@ -654,9 +691,10 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P04b (the six repository implementations) is the next step
-  and unblocks Phase 1. P08 (the formula) must precede P09/P10. Only one
-  prompt is executed per turn (H11).
+  Sequencing note: P06 (the daily sync) is the next step and is what persists
+  usage into app_usage_daily; P04b (the six repository implementations) is still
+  open and unblocks Phase 1 reads. P08 (the formula) must precede P09/P10. Only
+  one prompt is executed per turn (H11).
 
 
 --------------------------------------------------------------------------------
@@ -891,19 +929,28 @@ SECTION 10 - KNOWN ISSUES
       DataStore emits (a few milliseconds). A user who chose LIGHT on a dark
       device can see one dark frame. Accepted; if it becomes visible, gate the
       first frame on the first emission rather than loosening the flow.
-  K32 The event constants are matched by value: ACTIVITY_RESUMED = 1 =
-      MOVE_TO_FOREGROUND and ACTIVITY_PAUSED = 2 = MOVE_TO_BACKGROUND, so
-      pre-29 events are matched by the new names. Verified with `javap
-      -constants` on the API 35 android.jar; the runtime path on an API 26-28
-      device was NOT exercised (only the API 35 emulator exists here).
-  K33 Unlocks are always 0 on API 26-27: KEYGUARD_HIDDEN was added in API 28
-      and there is no earlier keyguard event in UsageEvents. Reported as 0
-      instead of being inferred from other events (D45).
-  K34 Nothing calls UsageRepository yet: there is no screen (P10/P19) and the
-      daily sync that persists it is P06. It is covered by JVM tests only.
-  K35 The Android adapter has never produced a real number: Usage access was
-      not granted on the emulator, so AndroidUsageSource/UsageAccess are
-      verified by compilation and review, not by execution on a device.
+  K32 CLOSED in P05b. The event constants are matched by value
+      (ACTIVITY_RESUMED = 1 = MOVE_TO_FOREGROUND, ACTIVITY_PAUSED = 2 =
+      MOVE_TO_BACKGROUND). Verified two ways: `javap -constants` on the API 35
+      android.jar, and a real API 26 emulator whose `dumpsys usagestats` shows
+      only MOVE_TO_FOREGROUND/MOVE_TO_BACKGROUND events (6 of each) while the
+      self-check reported 17s for a 15s Settings session and 41s for the app
+      itself. If the values had differed, that time would have been 0.
+  K33 CLOSED in P05b. Unlocks are now UnlockCount.Unsupported on API 26-27
+      (KEYGUARD_HIDDEN is API 28+), never a fabricated 0 (D48). Verified on the
+      API 26 emulator: the screen shows "unsupported (no keyguard event before
+      API 28)". On API 35 the counter agreed with the system exactly (1 unlock
+      = 1 KEYGUARD_HIDDEN event), after enabling the AVD's disabled lock screen
+      with `locksettings set-disabled false` and swiping up.
+  K34 No PRODUCT screen calls UsageRepository yet: P10/P19 own the real UI and
+      the daily sync that persists it is P06. The only caller is the debug
+      self-check (D49), which is not shipped.
+  K35 CLOSED in P05b. The Android adapter produced real, measured numbers on two
+      emulators. API 35: Settings/DeskClock/Calendar/Chrome each 14-16s for
+      scripted 15s sessions, matching the system's own totalTimeUsed (00:14,
+      00:14, 00:14, 00:17). API 26: Settings 17s for a 15s session. Access was
+      granted with `adb shell appops set com.screengarden.app.debug
+      GET_USAGE_STATS allow` (method 3a), confirmed by `appops get` -> allow.
   K36 PACKAGE_USAGE_STATS trips lint's ProtectedPermissions error by design
       (it is required for the AppOps check). The suppression is one
       tools:ignore on that element, documented in SECTION 9 - not a baseline
@@ -911,19 +958,40 @@ SECTION 10 - KNOWN ISSUES
   K37 An app the user hid from the launcher is excluded from screen time,
       because the list and the total are launcher-only (D44). Revisit if a
       user reports missing time.
+  K38 CLOSED in P05b (found and fixed by the self-check). Reading TODAY closed an
+      still-open interval at the END of the day, i.e. in the future: the first
+      measurement read 14h53m of screen time before 13:00. DefaultUsageRepository
+      now clips the window to min(dayEnd, now) via an injectable nowMillis and a
+      regression test covers it (todaysOpenIntervalStopsAtNowInsteadOfTheEndOfTheDay).
+  K39 The self-check is not a tab: while it is open the bottom bar highlights
+      Garden, because ScreenGardenDestination.fromRoute falls back to START.
+      Accepted for a debug tool; it disappears with the build variant.
+  K40 API 26 pickups stayed 0 while the screen was cycled, because that AVD
+      emitted no SCREEN_INTERACTIVE events at all (`dumpsys usagestats` contains
+      only MOVE_TO_* events; the headless power-key presses were likely
+      swallowed). Pickup counting is therefore proven on API 35 (6 = 6)
+      and unproven for 26-27, where it uses the same constant.
+  K41 OPEN: a screen-off period does not pause the foreground activity, and a
+      force-stop may leave no ACTIVITY_PAUSED, so event pairing alone can count
+      time when the phone was asleep or the app was killed while foreground.
+      The self-check's own app row (3h32m after ~13h of emulator uptime) is the
+      visible symptom. P06/P19 must combine screen time with SCREEN_INTERACTIVE
+      coverage (or ignore intervals longer than a threshold) before any of these
+      numbers reach the UI; the fix is deliberately NOT invented here.
 
   Current lint state: 0 errors, 2 accepted warnings (K11, K12). No baseline.
   Current ktlint state: clean (0 violations).
-  Current test state: 58 JVM tests green; migration suite green on the emulator.
+  Current test state: 60 JVM tests green; migration suite green on the emulator.
   Current CI state: green on main (ci.yml and release.yml both dispatched).
 
 
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00, P00b, P04 and P05 are COMPLETE. The project is published, CI is green,
-  settings persist and theme the app, and screen time can be read from the
-  system.
+  P00, P00b, P04, P05 and P05b are COMPLETE. The project is published, CI is
+  green, settings persist and theme the app, and screen time, per-app usage,
+  pickups and unlocks are read from the system and verified against dumpsys on
+  API 35 and API 26.
 
   What exists and works
     - Public repository https://github.com/34rns/ScreenGarden with a clean,
@@ -953,9 +1021,14 @@ SECTION 11 - CURRENT STATUS
       is resolved by ScreenGardenTheme at the Activity root.
     - Usage stats (P05): a pure UsageRepository/aggregator over a UsageSource,
       an AndroidUsageSource for UsageStatsManager/UsageEvents, and UsageAccess
-      for the app-op check plus the settings intent; 10 JVM tests with a fake.
+      for the app-op check plus the settings intent; 11 JVM tests with a fake.
       The manifest now declares PACKAGE_USAGE_STATS and a launcher <queries>
-      block.
+      block. Unlocks are an explicit supported/unsupported state (D48).
+    - Usage verification (P05b): a debug-only self-check destination (D49) that
+      reports access, check method, API level, screen time, pickups, unlocks,
+      top apps and launchable package count; usage access granted over adb on
+      both emulators; numbers compared with `dumpsys usagestats`; one real bug
+      found and fixed (K38); the debug screen is absent from the release dex.
     - Decisions D1-D47 recorded; no open questions (SECTION 14); standing
       orders for every future turn in SECTION 18.
 
@@ -992,23 +1065,61 @@ SECTION 11 - CURRENT STATUS
       MOVE_TO_FOREGROUND = 1, ACTIVITY_PAUSED = 2, MOVE_TO_BACKGROUND = 2,
       SCREEN_INTERACTIVE = 15, KEYGUARD_HIDDEN = 18 (K32).
 
+  Evidence from P05b (2026-11-03)
+    - Gate: ktlintFormat then ktlintCheck --no-build-cache 0 violations;
+      :app:testDebugUnitTest 60/60, 0 skipped, 0 failures; :app:lintDebug
+      0 errors, 2 accepted warnings; :app:assembleDebug and
+      :app:assembleRelease BUILD SUCCESSFUL.
+    - Usage access without the user: `adb shell appops set
+      com.screengarden.app.debug GET_USAGE_STATS allow` (step 3a) worked;
+      `appops get` and `cmd appops get` both reported allow. Steps 3b-3d were
+      therefore not needed; the Settings UI path was not exercised.
+    - API 35 emulator, scripted activity: Settings 15s, Contacts, DeskClock,
+      Calendar and Chrome 15s each; five power cycles; then one real unlock.
+      Self-check reported screen time 3h33m49s, pickups 6, unlocks 1, 6 apps
+      with usage, 19 launchable packages, check method APP_OPS_UNSAFE.
+    - Ground truth from `dumpsys usagestats` on the same device: 6
+      SCREEN_INTERACTIVE events, 1 KEYGUARD_HIDDEN event, and per-package
+      totalTimeUsed 00:14 (DeskClock), 00:14 (Calendar), 00:14 (Chrome),
+      00:17 (Settings) against our 0m14s/0m14s/0m14s/0m16s, with raw event
+      pairs 12:37:08->12:37:22 = 14s etc.
+    - Differences: 1s on Settings (an earlier 1s launch that day) and the
+      unlock/pickup totals matched exactly. Our own app's row is large
+      (3h32m) because the Activity was left foreground through long idle
+      periods (K41), not a counting error.
+    - API 26 emulator (android-26 google_apis x86_64, booted on port 5556):
+      check method APP_OPS_LEGACY, unlocks "unsupported", 24 launchable
+      packages, and 17s for a 15s Settings session; its event log contains
+      only MOVE_TO_FOREGROUND/BACKGROUND (6 each), proving the constant-value
+      match on pre-29 (K32) and the new state model (K33).
+    - Debug screen absent from release: 0 matches for UsageSelfCheck and
+      usage_self_check in the release dex, 13 in the debug dex; a normal
+      launch opens Garden, only `--es screen usage_self_check` opens the tool.
+    - Screenshot: docs/screenshots/15_usage_self_check_debug.png (emulator,
+      no personal data).
+
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  NEXT: P04b - implement the six repository interfaces over their DAOs.
+  NEXT: P06 - the WorkManager daily sync that persists usage.
 
-  Scope of P04b (nothing else):
-    - One implementation per interface in data/repo, over the existing DAO;
-      no extra query unless a method genuinely needs one.
-    - Register all six in AppContainer, next to settingsRepository.
-    - Tests for any mapping or default the implementations add.
+  Scope of P06 (nothing else):
+    - A worker that reads UsageRepository for yesterday and today and upserts
+      app_usage_daily (+ the daily aggregate fields that exist).
+    - Scheduling through WorkManager, which is the one new dependency it adds
+      (SECTION 8 entry required before use).
+    - No behaviour change when Usage access is missing: skip, do not retry
+      forever (D46).
 
-  Do NOT do in P04b: the health score (P08), the plant engine (P09), schema v2
+  Open before P06 writes numbers: K41 (screen-off gaps inflate event-paired
+  durations) must be bounded, or the sync persists inflated screen time.
+
+  Do NOT do in P06: the health score (P08), the plant engine (P09), schema v2
   (only when a prompt needs those fields, K24), settings UI (P22), or any UI
-  redesign.
+  redesign. P04b (repository implementations) remains open and independent.
 
-  Then in order: P06 -> P07 -> P08 -> P09/P10.
+  Then in order: P07 -> P08 -> P09/P10, with P04b scheduled by the owner.
 
   Every turn also follows the standing orders in SECTION 18: local gate, commit,
   push, watch CI, refresh screenshots if a screen changed, update this file.
@@ -1217,6 +1328,60 @@ SECTION 13 - SESSION LOG
     Next
       - P04b: implement the six repository interfaces over their DAOs; then P06
         (daily sync) is what will persist DayUsage.
+
+  SESSION 8 - 2026-11-03 - P05b (verify usage on devices)
+
+    Did
+      - Added a debug-only usage self-check as a variant-scoped Compose
+        destination (src/debug vs a src/release stub), reachable only by
+        `--es screen usage_self_check` in a debuggable build, so H5's single
+        Activity still holds and nothing ships.
+      - It reports access state, the check method and raw app-op mode, API level,
+        launchable package count, screen time, pickups, unlocks (or unsupported),
+        and the top five apps, straight from the repository.
+      - UsageAccess gained check() returning UsageAccessCheck(granted, appOpMode,
+        method) so the screen shows evidence instead of duplicating the check.
+      - Unlocks became UnlockCount.Supported/Unsupported, driven by a new
+        UsageSource.supportsUnlocks (API 28+), with a unit test.
+      - Granted usage access over adb (method 3a), scripted real activity with
+        measured sleeps, cycled the screen, performed a real unlock, and compared
+        the numbers with `dumpsys usagestats`.
+      - Installed an API 26 system image and a second AVD to exercise the pre-29
+        event path and the unsupported-unlock state.
+      - Found and fixed a real production bug (K38).
+
+    Decided
+      - D48 unlocks are a supported/unsupported state, never a fabricated 0.
+      - D49 the debug screen is a variant-only destination plus a debuggable-only
+        intent extra, not a second Activity.
+
+    Verified
+      - ktlintCheck --no-build-cache: 0 violations.
+      - :app:testDebugUnitTest: 60/60, 0 skipped, 0 failures (2 new).
+      - :app:lintDebug: 0 errors, 2 accepted warnings.
+      - :app:assembleDebug and :app:assembleRelease: BUILD SUCCESSFUL.
+      - API 35: `appops set ... allow` -> `appops get` = allow; pickups 6 = 6
+        system SCREEN_INTERACTIVE events; unlocks 1 = 1 KEYGUARD_HIDDEN event;
+        DeskClock/Calendar/Chrome 0m14s vs 00:14, Settings 0m16s vs 00:17.
+      - API 26: APP_OPS_LEGACY, unlocks unsupported, Settings 17s for a 15s
+        session, event log shows only MOVE_TO_* events.
+      - Release absence: 0 matches for UsageSelfCheck/usage_self_check in the
+        release dex, 13 in the debug dex; normal launch shows Garden.
+      - Screenshot: docs/screenshots/15_usage_self_check_debug.png.
+
+    Not verified
+      - The Settings-UI grant path (3c) and the --uid/cmd-appops variants (3b)
+        were not needed and were not exercised.
+      - Pickup counting on API 26/27 (K40): that AVD emitted no
+        SCREEN_INTERACTIVE events at all.
+      - K41 remains open: screen-off gaps and force-stop without ACTIVITY_PAUSED
+        can inflate event-paired durations; only bounded in the future (K38).
+      - The 3h32m row for our own app was not decomposed hour by hour; it follows
+        from long foreground-with-screen-off periods on the emulator.
+
+    Next
+      - P06: persist usage through a WorkManager daily sync, after deciding how to
+        bound K41.
 
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS

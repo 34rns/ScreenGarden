@@ -15,6 +15,15 @@ package com.screengarden.app.data.usage
  */
 interface UsageSource {
 
+    /**
+     * False when this platform cannot report unlocks at all.
+     *
+     * `UsageEvents.Event.KEYGUARD_HIDDEN` arrived in API 28, so on API 26-27 the
+     * event simply never occurs. The source states that as a capability rather
+     * than the repository guessing from a zero count (D48).
+     */
+    val supportsUnlocks: Boolean
+
     /** True when the user has granted Usage access to this app. */
     fun hasUsageAccess(): Boolean
 
@@ -65,6 +74,6 @@ enum class UsageEventType {
     /** The screen became interactive - one "pickup". */
     SCREEN_INTERACTIVE,
 
-    /** The keyguard was dismissed - one "unlock". */
+    /** The keyguard was dismissed - one "unlock" (API 28+ only, see D48). */
     KEYGUARD_HIDDEN
 }

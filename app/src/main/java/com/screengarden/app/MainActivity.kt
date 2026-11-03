@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.screengarden.app.debug.DebugCatalog
 import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.ui.navigation.ScreenGardenApp
 import com.screengarden.app.ui.theme.ScreenGardenTheme
@@ -21,14 +22,21 @@ import com.screengarden.app.ui.theme.ScreenGardenTheme
  * preference is read here and handed to [ScreenGardenTheme], because the themed
  * shell cannot be drawn before the setting is known. Screens themselves still
  * never touch the data layer (SECTION 4 layer rules).
+ *
+ * Debug-only extras are read here too, but only in a debuggable build, so a release
+ * APK cannot be steered into a diagnostic screen (D49).
  */
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        val settingsRepository = (application as ScreenGardenApplication).container.settingsRepository
-        val amoledPreview = isAmoledPreviewRequested()
+        val container = (application as ScreenGardenApplication).container
+        val settingsRepository = container.settingsRepository
+        val amoledPreview = isDebugExtraAllowed() && intent.getBooleanExtra(EXTRA_AMOLED, false)
+        // DebugCatalog.destination returns null in release builds (the release
+        // source set has a stub), so this is a no-op there.
+        val debugDestination = requestedDebugScreen()?.let { DebugCatalog.destination(it, this) }
         setContent {
             // SYSTEM is only the initial value: it covers the few milliseconds
             // before DataStore emits the stored choice (K31).
@@ -38,26 +46,26 @@ class MainActivity : ComponentActivity() {
                 themePreference = themePreference,
                 amoled = amoledPreview
             ) {
-                ScreenGardenApp()
+                ScreenGardenApp(debugDestination = debugDestination)
             }
         }
     }
 
+    /** The debug screen requested by an intent extra, or null outside debug builds. */
+    private fun requestedDebugScreen(): String? =
+        if (isDebugExtraAllowed()) intent.getStringExtra(EXTRA_DEBUG_SCREEN) else null
+
     /**
-     * True only in a debuggable build launched with `--ez amoled true`.
-     *
-     * The AMOLED scheme is now a persisted setting, but its picker arrives in P22
-     * and screenshot tooling needs the variant before that, so the debug override
-     * stays until then (D35, K28). A release build always returns false, which
-     * means shipped theme behaviour depends only on the stored preference.
+     * True only in a debuggable build. Every debug hook is gated on this, so
+     * shipped behaviour depends solely on stored settings and normal navigation.
      */
-    private fun isAmoledPreviewRequested(): Boolean {
-        val debuggable = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-        return debuggable && intent.getBooleanExtra(EXTRA_AMOLED, false)
-    }
+    private fun isDebugExtraAllowed(): Boolean = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
     private companion object {
         /** Launch extra: `adb shell am start ... --ez amoled true`. Debug only. */
         const val EXTRA_AMOLED = "amoled"
+
+        /** Launch extra: `adb shell am start ... --es screen usage_self_check`. */
+        const val EXTRA_DEBUG_SCREEN = "screen"
     }
 }

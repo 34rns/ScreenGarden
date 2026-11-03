@@ -6,6 +6,7 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 
 /**
  * The only class in the app that talks to UsageStatsManager (DECISION D43).
@@ -18,10 +19,11 @@ import android.content.Intent
  *   renamed forms of the deprecated `MOVE_TO_FOREGROUND` / `MOVE_TO_BACKGROUND`,
  *   which the platform still reports on older releases; both names carry the same
  *   constant values, so matching the new names also matches pre-29 events. This is
- *   documented behaviour, but it was only exercised on API 35 here (K32).
- * - `KEYGUARD_HIDDEN` exists from API 28. On API 26-27 the framework has no
- *   keyguard event in UsageEvents, so [UsageEventType.KEYGUARD_HIDDEN] simply never
- *   arrives there and unlocks stay 0 instead of being guessed from clock changes.
+ *   documented behaviour and was exercised on API 35 (K32 verified); the API 26-28
+ *   runtime path remains unexercised (K49).
+ * - `KEYGUARD_HIDDEN` exists from API 28. On API 26-27 there is no keyguard event,
+ *   so [supportsUnlocks] is false there and the repository reports
+ *   [UnlockCount.Unsupported] instead of 0 (D48).
  * - `queryUsageStats` returns *buckets*, not an exact window: a daily bucket is
  *   aligned to the device's local day, so its totals can extend past the requested
  *   window. That is why this class only exposes the system's `lastTimeUsed` and the
@@ -35,6 +37,8 @@ class AndroidUsageSource(context: Context) : UsageSource {
         appContext.getSystemService(UsageStatsManager::class.java)
 
     private val packageManager = appContext.packageManager
+
+    override val supportsUnlocks: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
 
     override fun hasUsageAccess(): Boolean = UsageAccess.isGranted(appContext)
 

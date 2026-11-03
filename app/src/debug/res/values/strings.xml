@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Debug-source-set strings (P05b). They exist only in debug builds, so a release
+    APK carries no trace of the diagnostic screen's text.
+-->
+<resources>
+    <string name="usage_self_check_title">Usage self-check</string>
+    <string name="usage_self_check_subtitle">Debug build only. Values come straight from the P05 usage repository.</string>
+    <string name="usage_self_check_refresh">Refresh</string>
+    <string name="usage_self_check_loading">Reading usage stats\u2026</string>
+    <string name="usage_self_check_day">Day starts</string>
+    <string name="usage_self_check_granted">Usage access</string>
+    <string name="usage_self_check_yes">granted</string>
+    <string name="usage_self_check_no">not granted</string>
+    <string name="usage_self_check_method">Check method</string>
+    <string name="usage_self_check_api">API level</string>
+    <string name="usage_self_check_launchable">Launchable packages</string>
+    <string name="usage_self_check_screen_time">Screen time today</string>
+    <string name="usage_self_check_pickups">Pickups today</string>
+    <string name="usage_self_check_unlocks">Unlocks today</string>
+    <string name="usage_self_check_unlocks_unsupported">unsupported (no keyguard event before API 28)</string>
+    <string name="usage_self_check_total_apps">Apps with usage</string>
+    <string name="usage_self_check_top_apps">Top apps</string>
+    <string name="usage_self_check_none">none recorded</string>
+    <string name="usage_self_check_missing">No usage data: Usage access is not granted.</string>
+    <string name="usage_self_check_error">Error</string>
+</resources>
