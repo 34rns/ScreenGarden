@@ -871,8 +871,8 @@ SECTION 11 - CURRENT STATUS
     - Migration suite passes on a real Android SQLite (emulator).
     - 14 screenshots in docs/screenshots (README gallery) and 8 mirrored into
       the F-Droid fastlane layout.
-    - Licensing: GPL-3.0-or-later code + CC BY-SA 4.0 art, SPDX headers in all
-      43 Kotlin files, LICENSE is the verbatim official text.
+    - Licensing: GPL-3.0-or-later code + CC BY-SA 4.0 art, SPDX headers in
+      every Kotlin file, LICENSE is the verbatim official text.
     - Settings (P04): one Preferences DataStore behind SettingsRepository with
       ten 16.7 keys as always-emitting flows, documented defaults, validated
       writes, unknown-value fallbacks and a corruption handler; the stored theme
