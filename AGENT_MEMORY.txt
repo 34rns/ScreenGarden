@@ -572,7 +572,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P02     done    Navigation shell + repository setup: CI, ktlint, docs [0.2, 0.3]
   P03     done    Room database: entities, DAOs, schema export, repo
                   interfaces, time helper, 32 tests [1.1]
-  P04     done    DataStore settings repository + theme wiring, 15 new
+  P04     done    DataStore settings repository + theme wiring, 16 new
                   tests [1.2]
   P04b    NEXT    Implement the six repository interfaces over their DAOs
                   (implementations deferred from P03) [1.2 part]
@@ -853,8 +853,8 @@ SECTION 11 - CURRENT STATUS
   device and drive the app theme.
 
   What exists and works
-    - Public repository https://github.com/34rns/ScreenGarden with a clean
-      five-commit history, topics set, Issues enabled.
+    - Public repository https://github.com/34rns/ScreenGarden with a clean,
+      linear history, topics set, Issues enabled.
     - GitHub Actions CI (ktlint, debug build, lint, unit tests) green on main;
       a separate release workflow builds the unsigned R8 APK on demand and
       weekly.
