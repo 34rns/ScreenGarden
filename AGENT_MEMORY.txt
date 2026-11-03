@@ -902,6 +902,7 @@ SECTION 11 - CURRENT STATUS
     - Emulator: launched on screengarden_api35 with no crash, and a hand-written
       preferences file containing theme=dark made the UI render (16,20,16), so
       the persisted preference demonstrably drives the colour scheme.
+    - CI: run 41570541137 success for the P04 commit.
 
 
 --------------------------------------------------------------------------------
@@ -1071,6 +1072,7 @@ SECTION 13 - SESSION LOG
         instead of (246,251,244), so the stored value really reaches the
         scheme. The probe file was removed afterwards and the app went back to
         the light scheme.
+      - CI run 41570541137: success.
       - Secret sweep and manifest audit: no permissions, no credentials.
 
     Not verified
