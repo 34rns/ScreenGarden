@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-04 (Session 9 / P06 - daily sync persists usage)
+Last updated: 2026-11-04 (Session 10 / P07 - first-run flow)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -120,11 +120,12 @@ SECTION 3 - TECH STACK
                   release.yml  manual + weekly: unsigned R8 release build
   License       GPL-3.0-or-later (code), CC BY-SA 4.0 (art)
   Distribution  GitHub Releases + F-Droid (+ optional IzzyOnDroid). No Play.
-  Testing       JVM unit tests (JUnit 4 + Robolectric + Room in-memory);
-                API 35 + API 26 emulators for visual, RTL, migration and
+  Testing       JVM unit tests (JUnit 4 + Robolectric + Room in-memory), plus
+                Compose UI tests that also run on the JVM through Robolectric
+                (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         67 JVM unit tests (green) + 1 migration suite (green on emulator)
+  Tests         72 JVM unit tests (green) + 1 migration suite (green on emulator)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -204,13 +205,15 @@ SECTION 4 - FOLDER LAYOUT
           |       |-- core/time/LocalDay.kt        the only day-boundary helper
           |       |-- di/AppContainer.kt           manual DI root + database
           |       |-- data/local/                  DB, entity/, dao/
+          |       |-- data/onboarding/             first-run writes (P07)
           |       |-- data/repo/                   6 repository interfaces, 2 impls (P06)
           |       |-- data/settings/               DataStore settings repository (P04)
           |       |-- data/sync/DailyUsageSync.kt  day -> Room, idempotent (P06)
           |       |-- data/usage/                  usage source + aggregator (P05)
           |       |-- data/work/                   WorkManager worker + scheduler (P06)
-          |       |-- domain/model/                ThemePreference, AccentColor (P04)
-          |       `-- ui/  theme/, navigation/, components/, screens/
+          |       |-- domain/model/                ThemePreference, OnboardingChoices (P07)
+          |       `-- ui/  theme/, navigation/, components/, screens/,
+          |                 onboarding/ (OnboardingScreen + GoalSetup, P07)
           |-- debug/                            DEBUG-ONLY source set (P05b)
           |   |-- res/values/strings.xml        self-check strings, never shipped
           |   `-- java/com/screengarden/app/
@@ -221,17 +224,18 @@ SECTION 4 - FOLDER LAYOUT
           |-- test/java/com/screengarden/app/
           |   |-- core/time/LocalDayTest.kt            6 tests
           |   |-- data/local/                          6 DAO test classes (26)
+          |   |-- data/onboarding/                     first-run writes (2 tests)
           |   |-- data/settings/                       settings store (9 tests)
           |   |-- data/sync/                           daily sync idempotency (7 tests)
           |   |-- data/usage/                          usage aggregation (11 tests)
-          |   `-- domain/model/ThemePreferenceTest.kt  7 tests
+          |   |-- domain/model/ThemePreferenceTest.kt  7 tests
+          |   `-- ui/onboarding/OnboardingScreenTest.kt  Compose UI (3 tests)
           `-- androidTest/java/com/screengarden/app/data/local/
               `-- ScreenGardenDatabaseMigrationTest.kt  green on emulator
 
   PLANNED (created by the prompt that needs them, never empty - D17):
     domain/model/      remaining UI models (sessions, plants, summaries)
     domain/usecase/    single-purpose operations, plain classes, unit-testable
-    ui/onboarding/     first-run flow                           (P07)
     assets/plants/     plant packs (plant.json + stage images)  (P25)
 
   RENAMES / SUPERSEDED NAMES
@@ -666,6 +670,41 @@ SECTION 6 - DECISIONS
       throws on a locked direct-boot device and in JVM tests. A missing sync is
       recoverable at the next launch; a crash at startup is not.
 
+  D53 THE FIRST-RUN FLOW IS A COMPOSE STATE MACHINE GATED IN THE ACTIVITY (P07).
+      Three intro pages (garden, privacy, usage), the usage-access step, the
+      optional notification prompt and the goal sliders are one composable with an
+      index into a list of steps, not a navigation graph: the sequence is linear,
+      has exactly one branch (the notification step exists only on Android 13+ while
+      the permission is missing), and nothing in it belongs on the back stack.
+      MainActivity sits between the two states - it collects onboardingDone and
+      shows either the flow or the four tabs. That collector starts at null, not
+      false: an initial false would flash the whole first-run flow at every
+      returning user for one frame (the same cold-start problem as K31), so an
+      unanswered state draws only the background colour.
+
+  D54 THE SCREEN NEVER TOUCHES USAGE ACCESS OR STORAGE ITSELF (P07).
+      UsageAccess stays the one place that can answer "is the app-op granted?" and
+      produce the settings Intent (D47), so OnboardingScreen receives them as two
+      lambdas supplied by the Activity. That keeps ui/ free of data/ imports
+      (SECTION 4), and it is what lets the happy path be tested with a plain
+      `{ usageGranted }` closure instead of a device. Grant detection is lifecycle
+      aware: the state is re-read in LifecycleResumeEffect, because the user leaves
+      for system Settings and comes back through another app, and the same check is
+      repeated right after launching the Intent so an already-granted app-op is not
+      missed. Persistence goes through data/onboarding/OnboardingCompletion, which
+      writes the three goals and then onboardingDone LAST - a process death midway
+      leaves the flow visible instead of locking in half-applied goals.
+
+  D55 THE GOAL CHOICES ARE A DOMAIN MODEL WITH THEIR RANGES (P07).
+      OnboardingChoices lives in domain/model because it is a UI model, and it owns
+      the slider ranges, the default values and the HH:mm parsing/clamping
+      (fromStored). Keeping the ranges out of the composable means the completion
+      path, the sliders and the tests cannot disagree, and an out-of-range stored
+      value is clamped in one place instead of crashing a slider. The bedtime window
+      deliberately does not wrap past midnight (start 20:00-23:30, end 05:00-09:00):
+      a wrapping slider is hard to operate with a screen reader, and a calm default
+      matters more than covering every schedule.
+
 
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
@@ -696,8 +735,12 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P06     done    Daily sync: WorkManager periodic worker + on-open sync,
                   today/yesterday writes, 7-day first-run backfill, 7 new
                   idempotency tests, 1 new dependency [2.2]
-  P07     NEXT    Onboarding + permissions [2.1 part]
-  P08     todo    Health score formula (fills in 16.1) [new]
+  P07     done    First-run flow: three intro pages, usage-access step with
+                  lifecycle-aware grant detection, optional Android 13+
+                  notification prompt, goal sliders; saved through
+                  SettingsRepository with onboardingDone last; 5 new tests
+                  including a Compose UI happy path [2.1 part]
+  P08     NEXT    Health score formula (fills in 16.1) [new]
   P09     todo    Plant lifecycle engine + plant count cap [1.5 part]
   P10     todo    Garden screen [1.4]
   P11     todo    Animations [new]
@@ -729,12 +772,10 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P07 (onboarding + the Usage-access flow) is the next step;
-  P06 already persists usage into app_usage_daily, so the numbers now exist
-  before anything explains them to the user. P04b is still open for the
-  remaining four repositories (the two the sync needed are implemented). P08
-  (the formula) must precede P09/P10, and K41 must be bounded before P08/P19
-  read the stored rows (K44). Only one prompt is executed per turn (H11).
+  Sequencing note: P08 (the health-score formula) is the next step and must
+  precede P09/P10. P04b is still open for the remaining four repositories (the
+  two the sync needed are implemented). K41 must be bounded before P08/P19 read
+  the stored rows (K44). Only one prompt is executed per turn (H11).
 
 
 --------------------------------------------------------------------------------
@@ -748,7 +789,11 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   no dependency: usage stats come from the platform (UsageStatsManager,
   UsageEvents, AppOpsManager). P06 added androidx.work:work-runtime-ktx 2.10.0
   (Apache-2.0), the only way to get a Doze-friendly periodic job without writing
-  a JobScheduler/JobService pair by hand.
+  a JobScheduler/JobService pair by hand. P07 added
+  androidx.compose.ui:ui-test-junit4 and ui-test-manifest (both Apache-2.0, both
+  driven by the Compose BOM): Compose UI tests that run on the JVM through
+  Robolectric, so the first-run happy path is part of the normal gate without an
+  emulator. Neither artifact ships in the APK.
 
   Name / version                    License       Why / scope
   ---------------------------------------------------------------------------
@@ -788,6 +833,9 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
                                                   RECEIVE_BOOT_COMPLETED and pulls
                                                   androidx.room:room-runtime (already
                                                   used) plus androidx.startup
+  androidx.compose.ui:ui-test-junit4 and ui-test-manifest
+                          (BOM)     Apache-2.0    Compose UI tests on the JVM via
+                                                  Robolectric (P07); test only
   org.jetbrains.kotlinx:kotlinx-coroutines-test
                           1.9.0     Apache-2.0    runTest, test only
   androidx.test:core-ktx  1.6.1     Apache-2.0    ApplicationProvider, test only
@@ -855,6 +903,11 @@ SECTION 9 - PERMISSIONS
                           reschedule the periodic sync after a reboot; without
                           it the schedule would restart only on the next launch.
                           The reboot path itself is unverified (K43).
+    POST_NOTIFICATIONS    Declared in P07 for the optional reminder prompt the
+                          first-run flow shows on Android 13+. Nothing posts a
+                          notification yet (P12/P16 use it); "Not now", a denial
+                          and the pre-13 path all store notificationsOn = false,
+                          so the app never claims a reminder ability it lacks.
   No <uses-feature> is declared. Room, DataStore and WorkManager add none.
 
   REMOVED BY MANIFEST MERGE (P06, D52): ACCESS_NETWORK_STATE and
@@ -879,7 +932,6 @@ SECTION 9 - PERMISSIONS
   file under files/datastore/.
 
   APPROVED FOR FUTURE USE (does not exist yet - add an entry here before use):
-    POST_NOTIFICATIONS    API 33+ prompt for focus reminders. (P12/P16)
     FOREGROUND_SERVICE    If a focus session must survive leaving the app. (P12)
     USE_EXACT_ALARM / SCHEDULE_EXACT_ALARM
                           Only if session completion must fire exactly.
@@ -1064,21 +1116,34 @@ SECTION 10 - KNOWN ISSUES
       read at most about seven days of system events, so a fresh install on an
       old device cannot show the month before it. Accepted and documented in the
       code; a user-visible explanation belongs to the Insights empty state (P19).
+  K46 Lint warning (accepted): android.Manifest.permission.POST_NOTIFICATIONS is
+      flagged [InlinedApi] because the constant arrived in API 33 whereas minSdk is
+      26. It is a compile-time constant and is only ever touched inside a
+      Build.VERSION.SDK_INT >= 33 check, so the warning is noise; suppressing it
+      would hide a real InlinedApi problem later (D15).
+  K47 The first-run flow has no screenshots. It was verified by Compose UI tests
+      (Robolectric) but not captured on an emulator, so docs/screenshots/ still
+      shows only the tab shell. Re-capture with P22 or the next visual pass.
+  K48 Onboarding cannot be re-run once it is done: there is no "show the intro
+      again" action, and clearing app data is the only way back. A reset belongs to
+      the Settings screen (P22), not to a debug hook.
 
-  Current lint state: 0 errors, 2 accepted warnings (K11, K12). No baseline.
+  Current lint state: 0 errors, 3 accepted warnings (K11, K12, K46). No baseline.
   Current ktlint state: clean (0 violations).
-  Current test state: 67 JVM tests green; migration suite green on the emulator.
+  Current test state: 72 JVM tests green; migration suite green on the emulator.
   Current CI state: green on main (ci.yml and release.yml both dispatched).
 
 
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00, P00b, P04, P05, P05b and P06 are COMPLETE. The project is published, CI
-  is green, settings persist and theme the app, screen time is read from the
-  system and verified against dumpsys on API 35 and API 26, and a WorkManager
-  sync now stores that usage in Room - idempotently, on a schedule and on every
-  app open, with a one-week backfill.
+  P00, P00b, P04, P05, P05b, P06 and P07 are COMPLETE. The project is published,
+  CI is green, settings persist and theme the app, screen time is read from the
+  system and verified against dumpsys on API 35 and API 26, a WorkManager sync
+  stores that usage in Room - idempotently, on a schedule and on every app open,
+  with a one-week backfill - and a first-run flow now explains the garden, asks
+  for Usage access, offers reminders and records the user's goals before the tabs
+  appear.
 
   What exists and works
     - Public repository https://github.com/34rns/ScreenGarden with a clean,
@@ -1122,7 +1187,15 @@ SECTION 11 - CURRENT STATUS
       backfilling (7 days max, D51). UsageSyncWorker runs it from WorkManager on
       a 6-hour battery-friendly period and on every app open (D52); the sync
       itself is a plain class tested with fakes (7 tests, D50).
-    - Decisions D1-D52 recorded; no open questions (SECTION 14); standing
+    - First-run flow (P07): three intro pages (garden, privacy, why Usage
+      access), a usage step whose button opens system Settings and whose state is
+      re-checked on resume plus a skip that states the consequence, an optional
+      Android 13+ notification prompt, and four discrete goal sliders (screen time,
+      pickups, bedtime start/end); everything is stored through
+      OnboardingCompletion with onboardingDone written last, and the four tabs
+      appear only after it. 5 new tests, including a Compose UI happy path on the
+      JVM (D53-D55).
+    - Decisions D1-D55 recorded; no open questions (SECTION 14); standing
       orders for every future turn in SECTION 18.
 
   Evidence from P00b
@@ -1218,31 +1291,58 @@ SECTION 11 - CURRENT STATUS
     - Not on a device-run list: reboot rescheduling (K43) and the 6-hour period
       actually firing twice (only its registration was observed).
 
+  Evidence from P07 (2026-11-04)
+    - Gate: ktlintFormat then ktlintCheck --no-build-cache 0 violations;
+      :app:testDebugUnitTest 72/72, 0 skipped, 0 failures (5 new);
+      :app:lintDebug 0 errors, 3 accepted warnings (K11, K12, K46);
+      :app:assembleDebug BUILD SUCCESSFUL.
+    - The three Compose UI tests run through Robolectric and walk the real
+      composable: Garden -> Privacy -> Usage -> Notifications -> Goals with the
+      grant flipping the usage step to "Continue", "Not now" recorded as false,
+      Finish reporting the default choices; the skip path keeps the explanation
+      on screen and still reaches Goals; the progress row exposes "Step 1 of 5".
+    - The completion path is covered by a fake repository that asserts the write
+      order dailyGoal -> pickupGoal -> bedtimeStart -> bedtimeEnd -> onboardingDone.
+    - Merged debug manifest now carries POST_NOTIFICATIONS alongside
+      PACKAGE_USAGE_STATS, WAKE_LOCK and RECEIVE_BOOT_COMPLETED; still no INTERNET.
+    - Lint caught one real defect before shipping: mapping the onboardingDone Flow
+      inside composition recreated it on every recomposition, which restarts the
+      collector and would have re-read DataStore constantly. The map is now inside
+      remember (FlowOperatorInvokedInComposition).
+    - Not verified on a device: no emulator run this session, so the system
+      Settings round-trip, the real Android 13 permission dialog and the
+      "show only on first launch" behaviour in a shipped build are unproven (K47).
+    - Not verified at all: what the flow looks like at 1.3x font, in RTL, or on
+      API 26 (no notification step there).
+
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  NEXT: P07 - onboarding and the Usage-access flow.
+  NEXT: P08 - the daily health-score formula (SECTION 16.1).
 
-  Scope of P07 (nothing else):
-    - A first-run flow, gated on SettingsRepository.onboardingDone (already
-      stored, P04), that explains the garden and the privacy promise.
-    - The Usage-access step through UsageAccess.check() and
-      UsageAccess.settingsIntent() (D47), re-checking when the screen resumes,
-      because the user leaves to system Settings and comes back.
-    - No new permission and no measurement: the flow explains; the sync (P06)
-      already collects.
+  Scope of P08 (nothing else):
+    - Define the score in SECTION 16.1: inputs (screen time vs dailyGoalMs,
+      per-app breaches, pickups vs pickupGoal, bedtime usage, focus minutes),
+      the exact weights, and the smoothness rule (no cliffs, one bad input cannot
+      zero the day).
+    - Implement it as pure Kotlin in domain/ over plain inputs, with unit tests
+      that pin each curve and the boundaries.
+    - No schema change: DailyStat.score is the K24 v2 field, so persisting the
+      score needs a Migration, a migration test and 2.json - only when the prompt
+      asks for storage.
 
-  Before P08/P19 read the stored numbers: K41 must be bounded (K44). The sync
-  now persists inflated foreground time, so the health score and the charts
-  would report it as fact.
+  BLOCKING: K41 must be bounded before the score reads stored rows (K44). The
+  sync currently persists foreground time across screen-off periods, so a score
+  computed from daily_stats would reward or punish the user for time the phone
+  spent asleep.
 
-  Do NOT do in P07: the health score (P08), the plant engine (P09), schema v2
-  (only when a prompt needs those fields, K24), settings UI beyond the
-  onboarding flow (P22), or any redesign of the four tabs. P04b (the remaining
-  four repository implementations) stays open and independent.
+  Do NOT do in P08: the plant engine (P09), garden UI (P10), Insights charts
+  (P19), schema v2 beyond what the prompt asks, or any change to the first-run
+  flow. P04b (the remaining four repository implementations) stays open and
+  independent.
 
-  Then in order: P08 -> P09/P10, with P04b scheduled by the owner.
+  Then in order: P09 -> P10.
 
   Every turn also follows the standing orders in SECTION 18: local gate, commit,
   push, watch CI, refresh screenshots if a screen changed, update this file.
@@ -1569,6 +1669,60 @@ SECTION 13 - SESSION LOG
 
     Next
       - P07: onboarding plus the Usage-access flow, reusing UsageAccess (D47).
+
+  SESSION 10 - 2026-11-04 - P07 (first-run flow, Task 2.1 + 2.2)
+
+    Did
+      - Added domain/model/OnboardingChoices: the four answers (screen-time goal,
+        pickup goal, bedtime start/end) with their slider ranges, default values
+        and the HH:mm parse/clamp used when the flow is seeded from storage.
+      - Added data/onboarding/OnboardingCompletion: the one writer of the first-run
+        answers, with onboardingDone written last so an interrupted run cannot
+        lock in half-applied goals; the notification answer is stored on its own.
+      - Added ui/onboarding/OnboardingScreen: a five-step Compose machine (three
+        calm intro pages, the usage step, the optional Android 13+ reminder step,
+        the goals step) with a dot progress row that announces "Step n of m".
+      - Added ui/onboarding/GoalSetup: four discrete Material 3 sliders with the
+        value spelled out next to each label and a combined content description.
+      - MainActivity now decides between onboarding and the four tabs from
+        settingsRepository.onboardingDone, starting at null so a returning user
+        never sees the flow flash; the debug intent extras still bypass it.
+      - Declared POST_NOTIFICATIONS for the reminder prompt (SECTION 9); nothing
+        posts a notification yet.
+      - Added androidx.compose.ui:ui-test-junit4 and ui-test-manifest so Compose UI
+        tests run in the JVM gate through Robolectric.
+      - 5 new tests: 2 for the completion order and 3 Compose UI tests (happy path,
+        skip path with its explanation, screen-reader progress).
+
+    Decided
+      - D53 the flow is a Compose state machine gated in the Activity, with a null
+        "not answered yet" state instead of an initial false.
+      - D54 the screen owns no data access: usage check, settings Intent and
+        persistence arrive as lambdas from the composition root.
+      - D55 OnboardingChoices in domain/model owns the ranges and clamping; the
+        bedtime window deliberately does not wrap past midnight.
+
+    Verified
+      - ktlintFormat then ktlintCheck --no-build-cache: 0 violations.
+      - :app:testDebugUnitTest: 72/72, 0 skipped, 0 failures (5 new).
+      - :app:lintDebug: 0 errors, 3 accepted warnings (K11, K12, K46).
+      - :app:assembleDebug: BUILD SUCCESSFUL; merged manifest has
+        POST_NOTIFICATIONS and still no INTERNET.
+      - The Compose UI happy path drives the real composable end to end and the
+        completion test asserts the write order.
+      - Lint found one real defect (Flow operator inside composition) which was
+        fixed by hoisting the map into remember.
+
+    Not verified
+      - Nothing ran on an emulator or device this session: the Settings round-trip,
+        the platform permission dialog and "onboarding only on first launch" in a
+        real build are unproven (K47).
+      - No screenshots of the flow (K47); 1.3x font, RTL and API 26 rendering of
+        these screens are unchecked.
+      - There is no way to re-run the flow after finishing it (K48).
+
+    Next
+      - P08: define and implement the daily health-score formula.
 
 
 --------------------------------------------------------------------------------

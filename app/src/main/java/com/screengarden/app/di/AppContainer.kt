@@ -5,6 +5,7 @@ package com.screengarden.app.di
 import android.content.Context
 import androidx.work.WorkManager
 import com.screengarden.app.data.local.ScreenGardenDatabase
+import com.screengarden.app.data.onboarding.OnboardingCompletion
 import com.screengarden.app.data.repo.AppUsageRepository
 import com.screengarden.app.data.repo.AppUsageRepositoryImpl
 import com.screengarden.app.data.repo.DailyStatRepository
@@ -45,6 +46,15 @@ class AppContainer(context: Context) {
      */
     val settingsRepository: SettingsRepository by lazy {
         DataStoreSettingsRepository(appContext.settingsDataStore)
+    }
+
+    /**
+     * Persists the first-run answers (P07). Built here rather than in the Activity so
+     * the flow and a future settings screen share one write path, and so the write
+     * order (goals first, onboardingDone last) lives in one place.
+     */
+    val onboardingCompletion: OnboardingCompletion by lazy {
+        OnboardingCompletion(settingsRepository)
     }
 
     /**
