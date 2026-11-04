@@ -3,13 +3,20 @@
 package com.screengarden.app.di
 
 import android.content.Context
+import androidx.work.WorkManager
 import com.screengarden.app.data.local.ScreenGardenDatabase
+import com.screengarden.app.data.repo.AppUsageRepository
+import com.screengarden.app.data.repo.AppUsageRepositoryImpl
+import com.screengarden.app.data.repo.DailyStatRepository
+import com.screengarden.app.data.repo.DailyStatRepositoryImpl
 import com.screengarden.app.data.settings.DataStoreSettingsRepository
 import com.screengarden.app.data.settings.SettingsRepository
 import com.screengarden.app.data.settings.settingsDataStore
+import com.screengarden.app.data.sync.DailyUsageSync
 import com.screengarden.app.data.usage.AndroidUsageSource
 import com.screengarden.app.data.usage.DefaultUsageRepository
 import com.screengarden.app.data.usage.UsageRepository
+import com.screengarden.app.data.work.UsageSyncScheduler
 
 /**
  * Manual dependency injection root, created once by [com.screengarden.app.ScreenGardenApplication].
@@ -46,5 +53,34 @@ class AppContainer(context: Context) {
      */
     val usageRepository: UsageRepository by lazy {
         DefaultUsageRepository(AndroidUsageSource(appContext))
+    }
+
+    /** Day aggregates; written by the daily sync (P06), read by Insights later. */
+    val dailyStatRepository: DailyStatRepository by lazy {
+        DailyStatRepositoryImpl(database.dailyStatDao())
+    }
+
+    /** Per-app screen time; written by the daily sync (P06). */
+    val appUsageRepository: AppUsageRepository by lazy {
+        AppUsageRepositoryImpl(database.appUsageDailyDao())
+    }
+
+    /**
+     * The one object that turns a day of OS usage into Room rows (P06). Built here so
+     * both the worker and the on-open sync use the same instance and the same zones.
+     */
+    val dailyUsageSync: DailyUsageSync by lazy {
+        DailyUsageSync(
+            usageRepository = usageRepository,
+            dailyStatRepository = dailyStatRepository,
+            appUsageRepository = appUsageRepository
+        )
+    }
+
+    /** Enqueues the sync work; see [UsageSyncScheduler] for the two triggers. */
+    val usageSyncScheduler: UsageSyncScheduler by lazy {
+        // A provider, not an instance: WorkManager.getInstance throws when the library
+        // is not initialised yet (direct boot, tests), and that must not crash a launch.
+        UsageSyncScheduler { WorkManager.getInstance(appContext) }
     }
 }

@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Day aggregates for Insights and the garden's daily summary.
  *
- * INTERFACE ONLY for now (Task 1.1): the implementation lands with the
- * aggregation use case, so nothing can accidentally start reading half-built
- * data through it.
+ * Implemented by [DailyStatRepositoryImpl] over Room since P06, because the daily
+ * sync has to persist a day's screen time. The remaining aggregation (the health
+ * score) still belongs to a later prompt, which is why no screen reads this yet.
  */
 interface DailyStatRepository {
 

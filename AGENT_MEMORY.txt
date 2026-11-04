@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-03 (Session 8 / P05b - usage verified on devices)
+Last updated: 2026-11-04 (Session 9 / P06 - daily sync persists usage)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -108,9 +108,9 @@ SECTION 3 - TECH STACK
   Persistence   Room 2.6.1 (KSP), 6 tables, schema export + migrations.
                 Preferences DataStore 1.1.2 behind SettingsRepository (P04).
   Async         Kotlin coroutines + Flow (Room DAOs expose Flow queries).
-                WorkManager arrives with the daily sync (P06).
+                WorkManager 2.10.0 runs the daily usage sync (P06).
   Usage stats   UsageStatsManager + UsageEvents behind a pure UsageSource
-                (P05). Read-only; P06 persists what it returns.
+                (P05), read into Room by DailyUsageSync (P06).
   Build         Gradle 8.13 (wrapper), AGP 8.9.2, KSP 2.1.0-1.0.29,
                 Kotlin DSL, version catalog
   SDK           compileSdk 35, targetSdk 35, minSdk 26
@@ -124,7 +124,7 @@ SECTION 3 - TECH STACK
                 API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         60 JVM unit tests (green) + 1 migration suite (green on emulator)
+  Tests         67 JVM unit tests (green) + 1 migration suite (green on emulator)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -204,9 +204,11 @@ SECTION 4 - FOLDER LAYOUT
           |       |-- core/time/LocalDay.kt        the only day-boundary helper
           |       |-- di/AppContainer.kt           manual DI root + database
           |       |-- data/local/                  DB, entity/, dao/
-          |       |-- data/repo/                   6 repository interfaces
+          |       |-- data/repo/                   6 repository interfaces, 2 impls (P06)
           |       |-- data/settings/               DataStore settings repository (P04)
+          |       |-- data/sync/DailyUsageSync.kt  day -> Room, idempotent (P06)
           |       |-- data/usage/                  usage source + aggregator (P05)
+          |       |-- data/work/                   WorkManager worker + scheduler (P06)
           |       |-- domain/model/                ThemePreference, AccentColor (P04)
           |       `-- ui/  theme/, navigation/, components/, screens/
           |-- debug/                            DEBUG-ONLY source set (P05b)
@@ -220,13 +222,13 @@ SECTION 4 - FOLDER LAYOUT
           |   |-- core/time/LocalDayTest.kt            6 tests
           |   |-- data/local/                          6 DAO test classes (26)
           |   |-- data/settings/                       settings store (9 tests)
+          |   |-- data/sync/                           daily sync idempotency (7 tests)
           |   |-- data/usage/                          usage aggregation (11 tests)
           |   `-- domain/model/ThemePreferenceTest.kt  7 tests
           `-- androidTest/java/com/screengarden/app/data/local/
               `-- ScreenGardenDatabaseMigrationTest.kt  green on emulator
 
   PLANNED (created by the prompt that needs them, never empty - D17):
-    data/work/         WorkManager daily sync                   (P06)
     domain/model/      remaining UI models (sessions, plants, summaries)
     domain/usecase/    single-purpose operations, plain classes, unit-testable
     ui/onboarding/     first-run flow                           (P07)
@@ -630,6 +632,40 @@ SECTION 6 - DECISIONS
       APK contains no reference to the screen (verified by grepping the release
       dex: 0 matches for UsageSelfCheck / usage_self_check).
 
+  D50 THE DAILY SYNC IS A PLAIN CLASS OVER THE REPOSITORIES (P06).
+      data/sync/DailyUsageSync takes UsageRepository, DailyStatRepository,
+      AppUsageRepository and a clock; UsageSyncWorker only resolves the container
+      and maps the outcome to a WorkManager result. So every rule that decides
+      what lands in Room is tested on the JVM with fakes - no Robolectric, no
+      WorkManager, no UsageStatsManager - and there is exactly one copy of "which
+      days, which rows". It lives in data/ and not domain/usecase/ because
+      SECTION 4 forbids domain/ from depending on data/, and this class is
+      nothing but data plumbing.
+
+  D51 THE BACKFILL IS MARKED BY YESTERDAY'S ROW, CAPPED AT SEVEN DAYS (P06).
+      Every run syncs today and yesterday. When yesterday has no daily_stats row
+      - the first run ever, or the first run after a break - the six days before
+      it are synced too. An existing row is the marker instead of a settings
+      flag: the backfill then self-heals after a gap, and the settings store does
+      not grow a key that only one class reads. Seven is not arbitrary:
+      UsageStatsManager keeps roughly a week of events (the exact retention is
+      not part of the SDK contract and varies by OEM), so older days usually
+      cannot be read at all, which is why the cap is documented rather than made
+      configurable.
+
+  D52 WORKMANAGER'S UNUSED PERMISSIONS ARE REMOVED BY MANIFEST MERGE (P06).
+      work-runtime 2.10 merges WAKE_LOCK, RECEIVE_BOOT_COMPLETED,
+      ACCESS_NETWORK_STATE and FOREGROUND_SERVICE. Only the first two are real
+      here: WAKE_LOCK lets a started worker finish its write, and
+      RECEIVE_BOOT_COMPLETED lets WorkManager reschedule after a reboot. The
+      other two are removed with tools:node="remove" because every constraint we
+      set is local and no worker calls setForeground(); an offline-first app must
+      not even appear to watch connectivity (SECTION 9). Scheduling is defensive
+      for the same reason: UsageSyncScheduler takes a WorkManager provider and
+      treats IllegalStateException as "skip this process", because getInstance()
+      throws on a locked direct-boot device and in JVM tests. A missing sync is
+      recoverable at the next launch; a crash at startup is not.
+
 
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
@@ -651,14 +687,16 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P04     done    DataStore settings repository + theme wiring, 16 new
                   tests [1.2]
   P04b    todo    Implement the six repository interfaces over their DAOs
-                  (implementations deferred from P03) [1.2 part]
+                  (2 of 6 done in P06: DailyStat, AppUsage) [1.2 part]
   P05     done    Usage stats repository: screen time, per-app usage,
                   pickups, unlocks, access check [2.1 part]
   P05b    done    Debug-only usage self-check; granted usage access on the
                   emulator; measured real usage against dumpsys; API 26 check;
                   1 production bug found and fixed [2.1 verification]
-  P06     NEXT    Daily sync worker (WorkManager) [2.2]
-  P07     todo    Onboarding + permissions [2.1 part]
+  P06     done    Daily sync: WorkManager periodic worker + on-open sync,
+                  today/yesterday writes, 7-day first-run backfill, 7 new
+                  idempotency tests, 1 new dependency [2.2]
+  P07     NEXT    Onboarding + permissions [2.1 part]
   P08     todo    Health score formula (fills in 16.1) [new]
   P09     todo    Plant lifecycle engine + plant count cap [1.5 part]
   P10     todo    Garden screen [1.4]
@@ -691,10 +729,12 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P06 (the daily sync) is the next step and is what persists
-  usage into app_usage_daily; P04b (the six repository implementations) is still
-  open and unblocks Phase 1 reads. P08 (the formula) must precede P09/P10. Only
-  one prompt is executed per turn (H11).
+  Sequencing note: P07 (onboarding + the Usage-access flow) is the next step;
+  P06 already persists usage into app_usage_daily, so the numbers now exist
+  before anything explains them to the user. P04b is still open for the
+  remaining four repositories (the two the sync needed are implemented). P08
+  (the formula) must precede P09/P10, and K41 must be bounded before P08/P19
+  read the stored rows (K44). Only one prompt is executed per turn (H11).
 
 
 --------------------------------------------------------------------------------
@@ -706,7 +746,9 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   P00b added no dependency (screenshots used only adb and the emulator). P04
   added androidx.datastore:datastore-preferences 1.1.2 (Apache-2.0). P05 added
   no dependency: usage stats come from the platform (UsageStatsManager,
-  UsageEvents, AppOpsManager).
+  UsageEvents, AppOpsManager). P06 added androidx.work:work-runtime-ktx 2.10.0
+  (Apache-2.0), the only way to get a Doze-friendly periodic job without writing
+  a JobScheduler/JobService pair by hand.
 
   Name / version                    License       Why / scope
   ---------------------------------------------------------------------------
@@ -740,6 +782,12 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   androidx.datastore:datastore-preferences
                           1.1.2     Apache-2.0    settings persistence (shipped),
                                                   pulls okio 3.x (Apache-2.0)
+  androidx.work:work-runtime-ktx
+                          2.10.0    Apache-2.0    periodic background sync (P06,
+                                                  shipped); merges WAKE_LOCK and
+                                                  RECEIVE_BOOT_COMPLETED and pulls
+                                                  androidx.room:room-runtime (already
+                                                  used) plus androidx.startup
   org.jetbrains.kotlinx:kotlinx-coroutines-test
                           1.9.0     Apache-2.0    runTest, test only
   androidx.test:core-ktx  1.6.1     Apache-2.0    ApplicationProvider, test only
@@ -776,8 +824,8 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
 
   Deliberately NOT included: Hilt/Dagger, Retrofit/OkHttp/Ktor, Firebase,
   Play Services, AppCompat, Material Components (MDC), kotlinx.serialization,
-  WorkManager (P06), detekt (D16), material-icons-extended,
-  any paid SDK.
+  androidx.work:work-testing (the sync is tested through its own seam, D50),
+  detekt (D16), material-icons-extended, any paid SDK.
 
   CI actions (not Gradle dependencies, not shipped):
     actions/checkout@v4, actions/setup-java@v4,
@@ -800,7 +848,23 @@ SECTION 9 - PERMISSIONS
                           with P05; lint's ProtectedPermissions warning is
                           suppressed on the element with tools:ignore and this
                           entry is the justification (K36).
-  No <uses-feature> is declared. Room and DataStore add none.
+    WAKE_LOCK             Merged by androidx.work (P06). Held only while a
+                          started worker finishes, so the sync is not killed
+                          between its database writes.
+    RECEIVE_BOOT_COMPLETED  Merged by androidx.work (P06). Lets WorkManager
+                          reschedule the periodic sync after a reboot; without
+                          it the schedule would restart only on the next launch.
+                          The reboot path itself is unverified (K43).
+  No <uses-feature> is declared. Room, DataStore and WorkManager add none.
+
+  REMOVED BY MANIFEST MERGE (P06, D52): ACCESS_NETWORK_STATE and
+  FOREGROUND_SERVICE. Both are merged in by androidx.work and neither is used
+  here (no network constraint, no setForeground), so the manifest cancels them.
+  The merged manifest must contain exactly PACKAGE_USAGE_STATS, WAKE_LOCK and
+  RECEIVE_BOOT_COMPLETED (plus the androidx receiver permission); re-check it
+  with `grep -o '<uses-permission[^>]*>'
+  app/build/intermediates/merged_manifest/debug/processDebugMainManifest/
+  AndroidManifest.xml` after any dependency bump.
 
   <queries> (not a permission): MAIN/LAUNCHER intent, so PackageManager can
   name the apps that have a launcher icon on API 30+ (D44). This is the narrow
@@ -978,20 +1042,43 @@ SECTION 10 - KNOWN ISSUES
       visible symptom. P06/P19 must combine screen time with SCREEN_INTERACTIVE
       coverage (or ignore intervals longer than a threshold) before any of these
       numbers reach the UI; the fix is deliberately NOT invented here.
+  K42 WorkManager runs the periodic job once when it is first enqueued, so the
+      very first launch produced two concurrent syncs (one-time + periodic),
+      each backfilling seven days. Harmless - both reported SUCCESS and the
+      second wrote the same rows - but it doubles the read work once per
+      install. If it ever matters, enqueue the periodic work only when the
+      unique name is not already registered instead of UPDATE.
+  K43 The reboot path is unproven. RECEIVE_BOOT_COMPLETED is merged in and
+      rescheduling after reboot is WorkManager's documented behaviour, but the
+      emulator was not rebooted to watch the periodic job come back. Verify
+      with `adb reboot`, then `adb shell dumpsys jobscheduler | grep
+      androidx.work.systemjobscheduler` before opening the app.
+  K44 THE SYNC NOW PERSISTS K41. The stored daily rows contain whatever the
+      repository measured, including foreground time across screen-off
+      periods: on the emulator that wrote 296 screenMinutes for 2026-11-02 and
+      892 for 2026-11-03. That is a data-quality problem, not a sync bug, and
+      it becomes user-visible the moment P08/P19 read these rows - so the K41
+      bound must land before then. Do not "fix" it by clamping numbers in the
+      sync; the measurement is where the bug is.
+  K45 Usage history older than roughly a week is gone (D51): the backfill can
+      read at most about seven days of system events, so a fresh install on an
+      old device cannot show the month before it. Accepted and documented in the
+      code; a user-visible explanation belongs to the Insights empty state (P19).
 
   Current lint state: 0 errors, 2 accepted warnings (K11, K12). No baseline.
   Current ktlint state: clean (0 violations).
-  Current test state: 60 JVM tests green; migration suite green on the emulator.
+  Current test state: 67 JVM tests green; migration suite green on the emulator.
   Current CI state: green on main (ci.yml and release.yml both dispatched).
 
 
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00, P00b, P04, P05 and P05b are COMPLETE. The project is published, CI is
-  green, settings persist and theme the app, and screen time, per-app usage,
-  pickups and unlocks are read from the system and verified against dumpsys on
-  API 35 and API 26.
+  P00, P00b, P04, P05, P05b and P06 are COMPLETE. The project is published, CI
+  is green, settings persist and theme the app, screen time is read from the
+  system and verified against dumpsys on API 35 and API 26, and a WorkManager
+  sync now stores that usage in Room - idempotently, on a schedule and on every
+  app open, with a one-week backfill.
 
   What exists and works
     - Public repository https://github.com/34rns/ScreenGarden with a clean,
@@ -1029,7 +1116,13 @@ SECTION 11 - CURRENT STATUS
       top apps and launchable package count; usage access granted over adb on
       both emulators; numbers compared with `dumpsys usagestats`; one real bug
       found and fixed (K38); the debug screen is absent from the release dex.
-    - Decisions D1-D47 recorded; no open questions (SECTION 14); standing
+    - Daily sync (P06): DailyUsageSync turns a day of DayUsage into
+      app_usage_daily rows plus a daily_stats aggregate, keeps fields it does not
+      own, and only ever writes today + yesterday unless the week still needs
+      backfilling (7 days max, D51). UsageSyncWorker runs it from WorkManager on
+      a 6-hour battery-friendly period and on every app open (D52); the sync
+      itself is a plain class tested with fakes (7 tests, D50).
+    - Decisions D1-D52 recorded; no open questions (SECTION 14); standing
       orders for every future turn in SECTION 18.
 
   Evidence from P00b
@@ -1098,28 +1191,58 @@ SECTION 11 - CURRENT STATUS
     - Screenshot: docs/screenshots/15_usage_self_check_debug.png (emulator,
       no personal data).
 
+  Evidence from P06 (2026-11-04)
+    - Gate: ktlintFormat then ktlintCheck --no-build-cache 0 violations;
+      :app:testDebugUnitTest 67/67, 0 skipped, 0 failures (7 new);
+      :app:lintDebug 0 errors, 2 accepted warnings (K11, K12);
+      :app:assembleDebug and :app:assembleRelease BUILD SUCCESSFUL.
+    - Merged debug manifest permissions: PACKAGE_USAGE_STATS, WAKE_LOCK,
+      RECEIVE_BOOT_COMPLETED (plus the androidx DYNAMIC_RECEIVER entry).
+      ACCESS_NETWORK_STATE and FOREGROUND_SERVICE are gone (D52).
+    - Release dex still contains the name UsageSyncWorker (2 matches), so R8
+      keeps the worker instantiable; DailyUsageSync is obfuscated (0 matches),
+      which is correct for directly-called code.
+    - API 35 emulator with Usage access granted by appops: the first launch ran
+      the worker twice ("Synced usage for 7 day(s)" each, K42); after a
+      force-stop and relaunch it logged "Synced usage for 2 day(s)", proving the
+      backfill happens once (D51).
+    - Database read back with `adb exec-out run-as ... cat databases/
+      screengarden.db` plus its -wal file: 7 daily_stats rows
+      (2026-10-29..2026-11-04) and 11 app_usage_daily rows across 3 days, 0
+      duplicate composite keys. After the second launch the counts were still
+      7/11, the six past days were identical, and only today's row could grow.
+    - JobScheduler lists the app's periodic job as TIME=+5h59m with the
+      BATNOTLOW constraint satisfied, so the 6-hour period really registered.
+    - The 296/892 screen minutes stored for 2026-11-02/03 are K41 inflation
+      captured faithfully, not a sync defect (K44).
+    - Not on a device-run list: reboot rescheduling (K43) and the 6-hour period
+      actually firing twice (only its registration was observed).
+
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  NEXT: P06 - the WorkManager daily sync that persists usage.
+  NEXT: P07 - onboarding and the Usage-access flow.
 
-  Scope of P06 (nothing else):
-    - A worker that reads UsageRepository for yesterday and today and upserts
-      app_usage_daily (+ the daily aggregate fields that exist).
-    - Scheduling through WorkManager, which is the one new dependency it adds
-      (SECTION 8 entry required before use).
-    - No behaviour change when Usage access is missing: skip, do not retry
-      forever (D46).
+  Scope of P07 (nothing else):
+    - A first-run flow, gated on SettingsRepository.onboardingDone (already
+      stored, P04), that explains the garden and the privacy promise.
+    - The Usage-access step through UsageAccess.check() and
+      UsageAccess.settingsIntent() (D47), re-checking when the screen resumes,
+      because the user leaves to system Settings and comes back.
+    - No new permission and no measurement: the flow explains; the sync (P06)
+      already collects.
 
-  Open before P06 writes numbers: K41 (screen-off gaps inflate event-paired
-  durations) must be bounded, or the sync persists inflated screen time.
+  Before P08/P19 read the stored numbers: K41 must be bounded (K44). The sync
+  now persists inflated foreground time, so the health score and the charts
+  would report it as fact.
 
-  Do NOT do in P06: the health score (P08), the plant engine (P09), schema v2
-  (only when a prompt needs those fields, K24), settings UI (P22), or any UI
-  redesign. P04b (repository implementations) remains open and independent.
+  Do NOT do in P07: the health score (P08), the plant engine (P09), schema v2
+  (only when a prompt needs those fields, K24), settings UI beyond the
+  onboarding flow (P22), or any redesign of the four tabs. P04b (the remaining
+  four repository implementations) stays open and independent.
 
-  Then in order: P07 -> P08 -> P09/P10, with P04b scheduled by the owner.
+  Then in order: P08 -> P09/P10, with P04b scheduled by the owner.
 
   Every turn also follows the standing orders in SECTION 18: local gate, commit,
   push, watch CI, refresh screenshots if a screen changed, update this file.
@@ -1382,6 +1505,71 @@ SECTION 13 - SESSION LOG
     Next
       - P06: persist usage through a WorkManager daily sync, after deciding how to
         bound K41.
+
+  SESSION 9 - 2026-11-04 - P06 (daily sync, Task 1.4)
+
+    Did
+      - Added androidx.work:work-runtime-ktx 2.10.0 (Apache-2.0) to the catalog:
+        the only dependency the sync needs.
+      - Added data/sync/DailyUsageSync (plain class over UsageRepository,
+        DailyStatRepository, AppUsageRepository and a clock) plus
+        DailyUsageSyncResult, so the "which days, which rows" rules are pure
+        Kotlin and unit-testable (D50).
+      - Added data/work: UsageSyncWorker (CoroutineWorker, resolves the container
+        and maps the outcome) and UsageSyncScheduler (6-hour periodic work with a
+        battery constraint + a one-shot sync on app open, both under unique work
+        names).
+      - Implemented DailyStatRepositoryImpl and AppUsageRepositoryImpl over their
+        DAOs - the two repositories the sync writes through (P04b remains open
+        for the other four).
+      - Wired it up: AppContainer exposes the repositories, the sync and the
+        scheduler; ScreenGardenApplication registers the periodic work;
+        MainActivity asks for an immediate sync when the app opens.
+      - Removed the two WorkManager permissions this app does not use
+        (ACCESS_NETWORK_STATE, FOREGROUND_SERVICE) with tools:node="remove"
+        (D52), and made the scheduler tolerate an uninitialised WorkManager
+        instead of crashing the launch - a fault the first test run exposed
+        immediately as 35 Robolectric failures.
+      - 7 new tests covering idempotency, preserved foreign fields, the 7-day
+        backfill, the today+yesterday steady state, missing access, minute
+        rounding and per-day row keys.
+
+    Decided
+      - D50 the sync is a plain class in data/, not a worker full of logic and
+        not a domain/ use case (SECTION 4 forbids domain/ -> data/).
+      - D51 backfill is marked by yesterday's stored row and capped at 7 days.
+      - D52 WorkManager's unused permissions are removed by manifest merge, and
+        scheduling is best-effort rather than launch-fatal.
+
+    Verified
+      - ktlintFormat then ktlintCheck --no-build-cache: 0 violations.
+      - :app:testDebugUnitTest: 67/67, 0 skipped, 0 failures (7 new).
+      - :app:lintDebug: 0 errors, 2 accepted warnings (K11, K12).
+      - :app:assembleDebug and :app:assembleRelease: BUILD SUCCESSFUL.
+      - Merged manifest: PACKAGE_USAGE_STATS, WAKE_LOCK,
+        RECEIVE_BOOT_COMPLETED only; no ACCESS_NETWORK_STATE, no
+        FOREGROUND_SERVICE, no INTERNET.
+      - On the API 35 emulator (appops granted): worker logged "Synced usage for
+        7 day(s)" on the first launch and "Synced usage for 2 day(s)" after a
+        force-stop and relaunch; the database held 7 daily_stats rows and 11
+        app_usage_daily rows with 0 duplicate keys, and the past six days were
+        byte-identical after the re-sync.
+      - JobScheduler showed the periodic job at TIME=+5h59m with BATNOTLOW
+        satisfied.
+      - Release dex: the worker class name survives R8 (2 matches).
+
+    Not verified
+      - The 6-hour period has not actually fired twice; only its registration was
+        observed (K43).
+      - Reboot rescheduling (RECEIVE_BOOT_COMPLETED) was not exercised (K43).
+      - The periodic worker's behaviour under real Doze on a physical device was
+        not tested (no device has been used, H17/D33).
+      - K41 remains open, and the sync now stores its inflated numbers (K44);
+        no attempt was made to clamp them in the sync.
+
+    Next
+      - P07: onboarding plus the Usage-access flow, reusing UsageAccess (D47).
+
 
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS

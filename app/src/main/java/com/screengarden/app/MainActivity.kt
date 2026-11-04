@@ -25,6 +25,10 @@ import com.screengarden.app.ui.theme.ScreenGardenTheme
  *
  * Debug-only extras are read here too, but only in a debuggable build, so a release
  * APK cannot be steered into a diagnostic screen (D49).
+ *
+ * Opening the app also asks for a usage sync (P06). It is deliberately done here and
+ * not in the Application: a sync enqueued from every process start - including the
+ * one WorkManager creates to run the worker - would keep re-queueing itself.
  */
 class MainActivity : ComponentActivity() {
 
@@ -37,6 +41,9 @@ class MainActivity : ComponentActivity() {
         // DebugCatalog.destination returns null in release builds (the release
         // source set has a stub), so this is a no-op there.
         val debugDestination = requestedDebugScreen()?.let { DebugCatalog.destination(it, this) }
+        // Fire-and-forget: the worker reports through logcat, and the UI shows stored
+        // data, so a slow sync must not delay the first frame.
+        container.usageSyncScheduler.syncNow()
         setContent {
             // SYSTEM is only the initial value: it covers the few milliseconds
             // before DataStore emits the stored choice (K31).

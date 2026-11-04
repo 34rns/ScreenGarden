@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Per-app screen time.
  *
- * INTERFACE ONLY for now (Task 1.1). The implementation will sit on
- * [com.screengarden.app.data.local.dao.AppUsageDailyDao] and be fed by the
- * usage-stats collector in Phase 2.
+ * Implemented by [AppUsageRepositoryImpl] over
+ * [com.screengarden.app.data.local.dao.AppUsageDailyDao] since P06. Writes come
+ * from the daily sync; the first reader is the Insights screen (P19).
  */
 interface AppUsageRepository {
 
