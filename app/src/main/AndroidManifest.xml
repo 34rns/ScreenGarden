@@ -21,6 +21,14 @@
         tools:ignore="ProtectedPermissions" />
 
     <!--
+        Reminders (SECTION 9). The first-run flow offers the Android 13+ prompt and
+        stores the answer as `notificationsOn`; denying it changes nothing else, and
+        older platforms never see this permission at all. No notification is posted
+        yet - the focus reminders that will use it arrive in P12/P16.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
         WorkManager (P06) merges its own permissions into this manifest. Two of them
         are ones this app never uses, so they are removed here rather than silently
         shipped:

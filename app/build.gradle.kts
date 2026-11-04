@@ -112,6 +112,10 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core.ktx)
     testImplementation(libs.kotlinx.coroutines.test)
+    // Compose UI tests run on the JVM through Robolectric, so the first-run happy
+    // path is part of the normal gate instead of needing an emulator (D56).
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)

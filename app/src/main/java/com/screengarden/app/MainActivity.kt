@@ -7,21 +7,34 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import com.screengarden.app.data.settings.SettingsDefaults
+import com.screengarden.app.data.usage.UsageAccess
 import com.screengarden.app.debug.DebugCatalog
+import com.screengarden.app.domain.model.OnboardingChoices
 import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.ui.navigation.ScreenGardenApp
+import com.screengarden.app.ui.onboarding.OnboardingScreen
 import com.screengarden.app.ui.theme.ScreenGardenTheme
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /**
  * The app's only Activity. All UI is Compose; navigation lives in
  * [com.screengarden.app.ui.navigation].
  *
- * The Activity is also the composition root for the theme: the persisted
- * preference is read here and handed to [ScreenGardenTheme], because the themed
- * shell cannot be drawn before the setting is known. Screens themselves still
- * never touch the data layer (SECTION 4 layer rules).
+ * The Activity is also the composition root: it reads the settings that decide what
+ * the app shows before any screen exists - the theme, and whether the first-run flow
+ * still has to run (D42, D53). Screens themselves still never touch the data layer
+ * (SECTION 4 layer rules); they receive values and callbacks.
  *
  * Debug-only extras are read here too, but only in a debuggable build, so a release
  * APK cannot be steered into a diagnostic screen (D49).
@@ -37,6 +50,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val container = (application as ScreenGardenApplication).container
         val settingsRepository = container.settingsRepository
+        val onboardingCompletion = container.onboardingCompletion
+        val appContext = applicationContext
         val amoledPreview = isDebugExtraAllowed() && intent.getBooleanExtra(EXTRA_AMOLED, false)
         // DebugCatalog.destination returns null in release builds (the release
         // source set has a stub), so this is a no-op there.
@@ -53,7 +68,54 @@ class MainActivity : ComponentActivity() {
                 themePreference = themePreference,
                 amoled = amoledPreview
             ) {
-                ScreenGardenApp(debugDestination = debugDestination)
+                // null means DataStore has not answered yet. Drawing nothing for that
+                // single frame is deliberate: starting at `false` would flash the
+                // first-run flow at every returning user (D53).
+                // The map is hoisted into remember: a Flow operator inside composition
+                // builds a new Flow on every recomposition and restarts the collector.
+                val onboardingDoneFlow = remember(settingsRepository) {
+                    settingsRepository.onboardingDone.map<Boolean, Boolean?> { done -> done }
+                }
+                val onboardingDone by onboardingDoneFlow.collectAsStateWithLifecycle(initialValue = null)
+                when {
+                    // A debug build launched with a screen extra wins, so the diagnostic
+                    // screens stay reachable even before onboarding was completed.
+                    debugDestination != null -> ScreenGardenApp(debugDestination = debugDestination)
+                    onboardingDone == null -> Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
+                    )
+                    onboardingDone == false -> {
+                        // The flow starts from what is already stored, so the sliders
+                        // open on the user's real values rather than on hardcoded ones.
+                        val dailyGoalMs by settingsRepository.dailyGoalMs
+                            .collectAsStateWithLifecycle(initialValue = SettingsDefaults.DAILY_GOAL_MS)
+                        val pickupGoal by settingsRepository.pickupGoal
+                            .collectAsStateWithLifecycle(initialValue = SettingsDefaults.PICKUP_GOAL)
+                        val bedtimeStart by settingsRepository.bedtimeStart
+                            .collectAsStateWithLifecycle(initialValue = SettingsDefaults.BEDTIME_START)
+                        val bedtimeEnd by settingsRepository.bedtimeEnd
+                            .collectAsStateWithLifecycle(initialValue = SettingsDefaults.BEDTIME_END)
+                        OnboardingScreen(
+                            initialChoices = OnboardingChoices.fromStored(
+                                dailyGoalMs = dailyGoalMs,
+                                pickupGoal = pickupGoal,
+                                bedtimeStart = bedtimeStart,
+                                bedtimeEnd = bedtimeEnd
+                            ),
+                            isUsageAccessGranted = { UsageAccess.isGranted(appContext) },
+                            onOpenUsageAccessSettings = { startActivity(UsageAccess.settingsIntent()) },
+                            onNotificationsChosen = { allowed ->
+                                lifecycleScope.launch { onboardingCompletion.rememberNotifications(allowed) }
+                            },
+                            onComplete = { choices ->
+                                lifecycleScope.launch { onboardingCompletion.complete(choices) }
+                            }
+                        )
+                    }
+                    else -> ScreenGardenApp()
+                }
             }
         }
     }
