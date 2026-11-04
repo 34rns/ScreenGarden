@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-04 (Session 10 / P07 - first-run flow)
+Last updated: 2026-11-04 (Session 11 / P08 - daily health score)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         72 JVM unit tests (green) + 1 migration suite (green on emulator)
+  Tests         94 JVM unit tests (green) + 1 migration suite (green on emulator)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -211,6 +211,7 @@ SECTION 4 - FOLDER LAYOUT
           |       |-- data/sync/DailyUsageSync.kt  day -> Room, idempotent (P06)
           |       |-- data/usage/                  usage source + aggregator (P05)
           |       |-- data/work/                   WorkManager worker + scheduler (P06)
+          |       |-- domain/garden/               HealthScore + calculator (P08)
           |       |-- domain/model/                ThemePreference, OnboardingChoices (P07)
           |       `-- ui/  theme/, navigation/, components/, screens/,
           |                 onboarding/ (OnboardingScreen + GoalSetup, P07)
@@ -228,6 +229,7 @@ SECTION 4 - FOLDER LAYOUT
           |   |-- data/settings/                       settings store (9 tests)
           |   |-- data/sync/                           daily sync idempotency (7 tests)
           |   |-- data/usage/                          usage aggregation (11 tests)
+          |   |-- domain/garden/HealthScoreCalculatorTest.kt  health score (22 tests)
           |   |-- domain/model/ThemePreferenceTest.kt  7 tests
           |   `-- ui/onboarding/OnboardingScreenTest.kt  Compose UI (3 tests)
           `-- androidTest/java/com/screengarden/app/data/local/
@@ -705,6 +707,32 @@ SECTION 6 - DECISIONS
       a wrapping slider is hard to operate with a screen reader, and a calm default
       matters more than covering every schedule.
 
+  D56 COMPOSE UI TESTS RUN ON THE JVM THROUGH ROBOLECTRIC (P07).
+      androidx.compose.ui:ui-test-junit4 plus ui-test-manifest let a real Compose
+      runtime be driven from a normal unit test, so the first-run happy path is
+      part of the gate that every pull request already runs and no emulator is
+      needed for it. Robolectric renders and lays out for real, which is why the
+      tests caught a state-machine mistake (the notification step sits between
+      skipping usage and the goals) instead of only asserting callbacks. The
+      trade-off is accepted: it is not a device, so platform dialogs and the
+      Settings round-trip still need K47's emulator pass.
+
+  D57 THE HEALTH SCORE IS A PURE FUNCTION WITH RENORMALISED MISSING DATA (P08).
+      domain/garden/HealthScoreCalculator takes plain minutes and counts and
+      returns a breakdown, so the curve can be pinned by tests before anything
+      stores or displays it. Three choices matter:
+      (a) the same exponential curve is used for every "less is better" part, so
+          "each goal-length over multiplies what is left by about 0.37" is one
+          sentence the user can be told, and no part can ever snap to zero;
+      (b) a part whose data is missing is REMOVED and the rest is renormalised,
+          because a day without usage access is unknown, not perfect - and a day
+          where nothing is known returns null instead of a number;
+      (c) the weights are data (HealthScoreWeights) seeded from the
+          HealthScoreTuning constants, so tuning never means editing arithmetic
+          and a test can pin a specific curve.
+      The focus target is a tuning constant, not a settings key: 16.7 lists no
+      focus goal and D40 forbids inventing keys (K50).
+
 
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
@@ -740,8 +768,10 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
                   notification prompt, goal sliders; saved through
                   SettingsRepository with onboardingDone last; 5 new tests
                   including a Compose UI happy path [2.1 part]
-  P08     NEXT    Health score formula (fills in 16.1) [new]
-  P09     todo    Plant lifecycle engine + plant count cap [1.5 part]
+  P08     done    Daily health score: pure calculator in domain/garden with
+                  configurable weights, smooth curves, an honest missing-data
+                  rule, 22 tests, and the formula written into 16.1 [new]
+  P09     NEXT    Plant lifecycle engine + plant count cap [1.5 part]
   P10     todo    Garden screen [1.4]
   P11     todo    Animations [new]
   P12     todo    Focus logic + foreground service [1.3]
@@ -772,10 +802,11 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P08 (the health-score formula) is the next step and must
-  precede P09/P10. P04b is still open for the remaining four repositories (the
-  two the sync needed are implemented). K41 must be bounded before P08/P19 read
-  the stored rows (K44). Only one prompt is executed per turn (H11).
+  Sequencing note: P09 (the plant engine) is the next step and must precede P10.
+  P04b is still open for the remaining four repositories (the two the sync
+  needed are implemented). The score now exists but nothing computes it from
+  stored rows yet: K41 must be bounded before a caller feeds daily_stats into it
+  (K44/K49). Only one prompt is executed per turn (H11).
 
 
 --------------------------------------------------------------------------------
@@ -793,7 +824,9 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   androidx.compose.ui:ui-test-junit4 and ui-test-manifest (both Apache-2.0, both
   driven by the Compose BOM): Compose UI tests that run on the JVM through
   Robolectric, so the first-run happy path is part of the normal gate without an
-  emulator. Neither artifact ships in the APK.
+  emulator. Neither artifact ships in the APK. P08 added no dependency at all:
+  the score is arithmetic over plain numbers, so it needs nothing beyond the
+  Kotlin standard library.
 
   Name / version                    License       Why / scope
   ---------------------------------------------------------------------------
@@ -1127,23 +1160,34 @@ SECTION 10 - KNOWN ISSUES
   K48 Onboarding cannot be re-run once it is done: there is no "show the intro
       again" action, and clearing app data is the only way back. A reset belongs to
       the Settings screen (P22), not to a debug hook.
+  K49 THE SCORE HAS NO CALLER YET. HealthScoreCalculator is tested but nothing
+      builds its inputs: no daily_stats row is read, nothing is persisted, no
+      screen shows it, and the focus minutes come from the focus feature that is
+      still P12. That is deliberate for P08 (the curve had to be pinned first),
+      but it means the weights have never been checked against real data - and
+      the only stored numbers available today are K41-inflated (K44). Build the
+      caller only after the K41 bound lands.
+  K50 The focus target (60 minutes) is a HealthScoreTuning constant, not a
+      setting: 16.7 has no focus goal and D40 forbids inventing a key that only
+      one class reads. If a prompt adds a focus goal to SettingsRepository, move
+      it into HealthScoreWeights at the same time or the two will disagree.
 
   Current lint state: 0 errors, 3 accepted warnings (K11, K12, K46). No baseline.
   Current ktlint state: clean (0 violations).
-  Current test state: 72 JVM tests green; migration suite green on the emulator.
+  Current test state: 94 JVM tests green; migration suite green on the emulator.
   Current CI state: green on main (ci.yml and release.yml both dispatched).
 
 
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00, P00b, P04, P05, P05b, P06 and P07 are COMPLETE. The project is published,
-  CI is green, settings persist and theme the app, screen time is read from the
-  system and verified against dumpsys on API 35 and API 26, a WorkManager sync
-  stores that usage in Room - idempotently, on a schedule and on every app open,
-  with a one-week backfill - and a first-run flow now explains the garden, asks
-  for Usage access, offers reminders and records the user's goals before the tabs
-  appear.
+  P00, P00b, P04, P05, P05b, P06, P07 and P08 are COMPLETE. The project is
+  published, CI is green, settings persist and theme the app, screen time is read
+  from the system and verified against dumpsys on API 35 and API 26, a WorkManager
+  sync stores that usage in Room - idempotently, on a schedule and on every app
+  open, with a one-week backfill - a first-run flow explains the garden and
+  records the user's goals before the tabs appear, and a pure Kotlin calculator
+  can now turn a day of those numbers into an explainable 0-100 score.
 
   What exists and works
     - Public repository https://github.com/34rns/ScreenGarden with a clean,
@@ -1195,7 +1239,13 @@ SECTION 11 - CURRENT STATUS
       OnboardingCompletion with onboardingDone written last, and the four tabs
       appear only after it. 5 new tests, including a Compose UI happy path on the
       JVM (D53-D55).
-    - Decisions D1-D55 recorded; no open questions (SECTION 14); standing
+    - Daily health score (P08): domain/garden/HealthScoreCalculator scores a day
+      from five weighted parts (screen time 35, pickups 20, bedtime 15, app limits
+      15, focus 15) using one continuous exponential curve instead of cliffs,
+      renormalises around missing data, returns null when nothing can be judged,
+      and reports the per-part breakdown. 22 tests pin the curves, the boundaries
+      and the absurd inputs; the formula is written out in 16.1.
+    - Decisions D1-D57 recorded; no open questions (SECTION 14); standing
       orders for every future turn in SECTION 18.
 
   Evidence from P00b
@@ -1315,34 +1365,54 @@ SECTION 11 - CURRENT STATUS
     - Not verified at all: what the flow looks like at 1.3x font, in RTL, or on
       API 26 (no notification step there).
 
+  Evidence from P08 (2026-11-04)
+    - Gate: ktlintFormat then ktlintCheck --no-build-cache 0 violations;
+      :app:testDebugUnitTest 94/94, 0 skipped, 0 failures (22 new);
+      :app:lintDebug 0 errors, 3 accepted warnings (K11, K12, K46, unchanged);
+      :app:assembleDebug BUILD SUCCESSFUL.
+    - The tests pin behaviour, not just one total: a day inside every goal is
+      100; zero usage without focus is 85 (only the achievement part is empty);
+      twice the screen goal keeps 37% of that part; 50x the goal with everything
+      else perfect still scores 60+; a 22x bedtime overshoot scores worse than
+      one grace-length over; focus ramps to exactly its weight and no further.
+    - Smoothness is asserted directly: stepping screen time from 0 to 1200
+      minutes one minute at a time never moves the score by more than one point,
+      so there is no cliff at the goal.
+    - Missing data is asserted three ways: a null part is dropped and the rest
+      renormalised (still 100 when the known parts are perfect), a zero goal is
+      not judged, and a day with nothing judgeable returns null.
+    - Absurd inputs (Int.MAX_VALUE minutes, pickups and limits) stay inside
+      0..100; negative inputs are clamped rather than rewarded.
+    - Weights are validated: negative parts, an all-zero set and non-positive
+      curve settings throw, and the shipped weights sum to exactly 100.
+    - Not verified: nothing calls the calculator (K49), so no real day has ever
+      been scored; the weights are untuned against device data; no device run.
+
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  NEXT: P08 - the daily health-score formula (SECTION 16.1).
+  NEXT: P09 - the plant lifecycle engine and the plant-count cap (16.2).
 
-  Scope of P08 (nothing else):
-    - Define the score in SECTION 16.1: inputs (screen time vs dailyGoalMs,
-      per-app breaches, pickups vs pickupGoal, bedtime usage, focus minutes),
-      the exact weights, and the smoothness rule (no cliffs, one bad input cannot
-      zero the day).
-    - Implement it as pure Kotlin in domain/ over plain inputs, with unit tests
-      that pin each curve and the boundaries.
-    - No schema change: DailyStat.score is the K24 v2 field, so persisting the
-      score needs a Migration, a migration test and 2.json - only when the prompt
-      asks for storage.
+  Scope of P09 (nothing else):
+    - GrowthStage and the SEED -> SPROUT -> BUD -> BLOOM progression, plus
+      WILTING and RECOVERING: gradual, always recoverable, never a dead plant.
+    - How a day's health score (P08) and a completed focus session move a plant,
+      and how many plants the garden may hold (the cap was left to P09 on
+      purpose - 16.2).
+    - Pure Kotlin in domain/garden, tested without Android; the plants table
+      already stores stage + health, so growthPoints/position (K24) wait for a
+      prompt that needs them.
 
-  BLOCKING: K41 must be bounded before the score reads stored rows (K44). The
-  sync currently persists foreground time across screen-off periods, so a score
-  computed from daily_stats would reward or punish the user for time the phone
-  spent asleep.
+  BLOCKING: none for the pure engine, but nothing may feed it stored daily_stats
+  rows until the K41 bound lands (K44/K49): a score built from screen-off time
+  would wilt a garden for a phone that was asleep.
 
-  Do NOT do in P08: the plant engine (P09), garden UI (P10), Insights charts
-  (P19), schema v2 beyond what the prompt asks, or any change to the first-run
-  flow. P04b (the remaining four repository implementations) stays open and
-  independent.
+  Do NOT do in P09: the garden screen or its visuals (P10), animations (P11),
+  focus sessions themselves (P12/P13), schema v2, or any change to the score's
+  curve (P08 is closed; tuning is a constants change plus its tests).
 
-  Then in order: P09 -> P10.
+  Then in order: P10 -> P11.
 
   Every turn also follows the standing orders in SECTION 18: local gate, commit,
   push, watch CI, refresh screenshots if a screen changed, update this file.
@@ -1724,6 +1794,53 @@ SECTION 13 - SESSION LOG
     Next
       - P08: define and implement the daily health-score formula.
 
+  SESSION 11 - 2026-11-04 - P08 (daily health score, Task 3.1)
+
+    Did
+      - Added domain/garden/HealthScore.kt: HealthInput (the five judged parts),
+        HealthScoreInputs (a day of plain minutes and counts, with null meaning
+        "unknown"), HealthScoreComponent (weight, quality, points) and
+        HealthScore (0-100 plus its breakdown).
+      - Added domain/garden/HealthScoreCalculator.kt: HealthScoreTuning holds the
+        weights and curve settings as constants, HealthScoreWeights carries them
+        as a validated data class, and calculate() scores a day as a pure
+        function with no Android import.
+      - One exponential curve serves every "less is better" part (screen time,
+        pickups, bedtime grace, limit overage), focus ramps linearly, missing
+        parts are dropped and the rest renormalised, and a day with nothing to
+        judge returns null instead of a fabricated number.
+      - 22 unit tests pin the shape rather than one magic total: perfect day,
+        zero usage, missing data, no data at all, a goal-sized overshoot, the
+        no-cliff property minute by minute, absurd and negative inputs, limits
+        configured versus not, the bedtime grace, the focus ramp and the
+        validation of the weights.
+      - Wrote the formula in plain language into SECTION 16.1.
+
+    Decided
+      - D56 Compose UI tests stay on the JVM through Robolectric (the decision
+        the P07 build file already cited).
+      - D57 the score is a pure function, one exponential curve, missing data is
+        renormalised rather than counted as zero, and the weights are data seeded
+        from the tuning constants.
+
+    Verified
+      - ktlintFormat then ktlintCheck --no-build-cache: 0 violations.
+      - :app:testDebugUnitTest: 94/94, 0 skipped, 0 failures (22 new).
+      - :app:lintDebug: 0 errors, 3 accepted warnings (K11, K12, K46).
+      - :app:assembleDebug: BUILD SUCCESSFUL.
+      - Smoothness is asserted directly across 0..1200 screen minutes (no step
+        larger than one point), and the breakdown sums to the shown value.
+
+    Not verified
+      - No caller: no stored day has been scored, nothing is persisted and no
+        screen shows the number (K49).
+      - The weights are untuned: they have never been compared with the user's
+        real days, and the stored rows are K41-inflated (K44).
+      - No device run and no UI change this session.
+
+    Next
+      - P09: the plant lifecycle engine and the plant-count cap.
+
 
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
@@ -1824,8 +1941,51 @@ SECTION 16 - CORE DESIGN
     It must degrade SMOOTHLY: no cliffs. One minute over a goal must not drop the
     score by ten points; every input contributes a continuous curve and a single
     bad input cannot zero the day.
-    THE EXACT FORMULA IS DEFINED IN P08 AND IS "TBD" UNTIL THEN. Do not invent it
-    elsewhere, and do not build UI that depends on a specific curve before P08.
+
+    THE FORMULA (defined in P08). The implementation is
+    domain/garden/HealthScoreCalculator.kt; HealthScoreTuning holds every number
+    below, and HealthScoreWeights lets a caller pass a different set without
+    touching the arithmetic.
+
+    THE FIVE PARTS - the weights add up to the 100 points:
+      screen time   35   less is better, free up to dailyGoalMs
+      pickups       20   less is better, free up to pickupGoal
+      bedtime       15   less is better, the first 15 minutes inside the window
+                         are free
+      app limits    15   optional; judged only when at least one limit is set
+      focus         15   more is better, a straight ramp to a 60-minute target
+    Screen time carries the most weight because it is the number the app exists
+    for; limits are optional, so they are the smallest part; focus is the only
+    part that rewards instead of forgiving.
+
+    THE CURVE - one shape for every part, which is what makes it explainable:
+      For each "less is better" part, quality is 1 while used <= budget. Past the
+      budget, quality = e^(-(used / budget - 1)): every further goal-length of
+      use multiplies what is left of that part by about 0.37. Twice the goal
+      keeps 37%, five times keeps 2%. It is continuous everywhere, so one extra
+      minute near the goal moves the whole score by roughly half a point.
+      Bedtime uses a 15-minute grace as its budget, so 30 minutes inside the
+      window is one grace-length over and the part keeps 37%.
+      Limits are judged by their total overage: every 60 minutes over the sum of
+      the enabled limits multiplies the limit part by the same factor, and a
+      limit that was not breached adds zero overage.
+      Focus is quality = min(1, focusMinutes / 60), so 30 minutes earns half of
+      its part and an hour or more earns all of it.
+
+    MISSING DATA IS NOT ZERO. A part whose input is null, or whose goal is zero,
+    is dropped and the remaining weights are renormalised, so a day without
+    usage access is scored on the parts that are known. A day where nothing at
+    all can be judged has NO score: the calculator returns null, and the UI shows
+    an empty state (P19) rather than 0 or 100.
+
+    THE TOTAL is round(sum of weight x quality over the judged parts / sum of
+    the judged weights x 100), clamped to 0..100, returned together with the
+    per-part breakdown so a screen can say where the points went.
+
+    NOT DECIDED HERE: the streak threshold stays 60 (16.4); the score is not
+    persisted (DailyStat.score is the v2 column, K24) and no caller builds its
+    inputs yet, because K41 must be bounded first (K44/K49). Do not build UI on
+    a specific curve other than through this calculator.
 
   16.2 PLANT LIFECYCLE
     States: SEED -> SPROUT -> BUD -> BLOOM, plus WILTING and RECOVERING.
