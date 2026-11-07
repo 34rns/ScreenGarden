@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-07 (Session 22 / P15 verified; publication checkpoint)
+Last updated: 2026-11-07 (Session 22 / P15 published, CI green; paused before P16)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -808,6 +808,9 @@ SECTION 6 - DECISIONS
       debug-only garden/usage data before every public screenshot; never capture
       a real device or real usage. Prior captures are historical evidence, not
       verification of future screens. P09 changes no screen and needs no capture.
+      P15: dump to a unique emulator XML path on each attempt; a null root can
+      leave an old file despite exit 0. Require fresh route-specific demo content
+      and the foreground app before taking a capture, not just a matching title.
 
   D63 ROOM v2 IS THE MINIMUM P10 STORAGE CHANGE.
       DailyStat adds nullable score/pickups/unlocks, usageIsBounded and
@@ -973,7 +976,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P14 are published. P15 is verified locally; P04b has only the
+  Sequencing note: P00-P15 are published and verified. P04b has only the
   Badge implementation left, owned by P18.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
@@ -1319,7 +1322,9 @@ SECTION 10 - KNOWN ISSUES
   K48 Onboarding cannot be re-run once it is done: there is no "show the intro
       again" action, and clearing app data is the only way back. A reset belongs to
       the Settings screen (P22), not to a debug hook.
-  K49  CLOSED in P10. GardenViewModel scores bounded daily records using HealthScoreCalculator. Focus, limits and bedtime inputs stay unknown until their prompts. Weights are still untuned against real-device daily use.
+  K49 CLOSED in P10. GardenViewModel scores bounded daily records using
+      HealthScoreCalculator. Focus (P14) and app limits (P15) now feed score;
+      bedtime remains unknown until P17. Weights remain untuned against real days.
   K50 The focus target (60 minutes) is a HealthScoreTuning constant, not a
       setting: 16.7 has no focus goal and D40 forbids inventing a key that only
       one class reads. If a prompt adds a focus goal to SettingsRepository, move
@@ -1353,23 +1358,23 @@ SECTION 10 - KNOWN ISSUES
   P15 emulator UI proves app inventory, save, pause and persistence after Back/reopen.
   Ten final fake emulator captures are reviewed; RTL punctuation/durations are fixed.
   Capture helpers now require a fresh UI tree and route-specific demo content.
-  Current CI state: P14 544689a pushed; CI 42388004432 SUCCESS.
+  Current CI state: P15 9cf70b3 pushed; CI 42391402734 SUCCESS (all four checks).
   No signed release has been published.
 
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P14 are published; P14 544689a CI 42388004432 SUCCESS.
-  P15 complete locally: launcher-only searchable inventory, inline 1..1440-minute
+  P00-P15 are published; P15 9cf70b3 CI 42391402734 SUCCESS.
+  P15 complete: launcher-only searchable inventory, inline 1..1440-minute
   editor, saved/paused limits, Settings navigation and enabled breaches in the
   garden score. Room remains v3; no dependency/permission added.
   Fresh four gates PASS: 210 JVM tests, no failures/errors/skips; lint 0 errors
   and 3 accepted warnings; style and debug build pass. Emulator interaction
   verifies save/pause/navigation; ten fake-only captures reviewed, including
-  light/dark/AMOLED, editor, empty, 1.3x font and forced RTL. P15 publication/CI
-  is the final checkpoint. P14's six API 35 migration/service tests still pass
+  light/dark/AMOLED, editor, empty, 1.3x font and forced RTL. P15 publication
+  and all GitHub CI checks PASS. P14's six API 35 migration/service tests pass
   as recorded; no schema/domain/service change in P15 required another migration.
-  Owner requested a break after P15. Do not start P16 in this turn.
+  Stopped after P15 at the owner's request. The next resume starts P16.
   No signed APK release or Pages site. Distribution is GitHub only (D69/P33);
   remaining prompts stay authorized when the owner says resume.
   Video not available (Session 12). No secret was requested, read or printed.
@@ -1377,7 +1382,7 @@ SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Finish P15 commit/push/CI, record the result, then STOP for the requested break.
+  PAUSED after completing and publishing P15. No half-done P15 work remains.
   When the owner says resume: start P16 gentle notifications from docs/PROMPTS.md.
   Continue P16-P33 in order with per-prompt gates, memory, commit/push/CI. All Room
   changes require preserving migrations, immutable schemas and emulator tests.
@@ -2034,14 +2039,17 @@ SECTION 13 - SESSION LOG
               assembleDebug pass. The RTL test failed before the content-direction
               fix and passes afterwards. Final captures reviewed for themes, editor,
               empty state, 1.3x text and mirrored controls with correct reading order.
-              Emulator save/pause/persistence check passes with fresh UI trees. Privacy manifest, unchanged schemas,
+              Emulator save/pause/persistence check passes with fresh UI trees.
+              Privacy manifest, unchanged schemas,
               secret sweep and git diff whitespace checks PASS.
     Not ver.  API 26 limits rendering, other screen sizes, physical-device behavior,
               signed release and Pages. Earlier saved local UI run had an idle
               timeout; it did not recur in the fresh 210-test run. No suppression
               or check weakening added. Video not available (Session 12).
-    Next      Publish P15, confirm CI and save the final pause checkpoint. Resume
-              at P16 when the owner asks; do not start it during this break.
+    CI        P15 9cf70b3 pushed; 42391402734 SUCCESS, all four checks.
+              https://github.com/34rns/ScreenGarden/actions/runs/42391402734
+    Next      Stopped at the requested break. Resume P16 gentle notifications
+              when the owner asks. No P15 work remains half-done.
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
