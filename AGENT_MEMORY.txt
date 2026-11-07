@@ -1252,12 +1252,18 @@ SECTION 10 - KNOWN ISSUES
       by a briefly started Gradle invocation using the default cache. It was
       interrupted before tasks completed. Outside-project startup cache changes
       cannot be verified; all subsequent builds use project-local caches.
+  K54 CI warnings, not failures: the v4 GitHub actions target deprecated Node 20
+      (currently forced to Node 24), setup-java v4 is deprecated, and the
+      ubuntu-latest image is moving to Ubuntu 26. P09 CI remains green. Review
+      action/runtime upgrades in the quality pass; no workflow change in P09.
 
   Current lint state: 0 errors, 3 accepted warnings (K11, K12, K46). No baseline.
   Current ktlint state: clean (0 violations).
   Current test state: 132 JVM tests green (38 lifecycle tests); migration suite
   last green in P00b, not re-run this session because the schema did not change.
-  Current CI state: P08 CI confirmed green; P09 push/CI pending at this checkpoint.
+  Current CI state: P09 feature commit 347fa59 is pushed and CI run 42372949327
+  completed SUCCESS (job 2m42s); all four checks passed. The final memory-only
+  checkpoint is checked separately before ending the session.
   The unsigned release workflow was not dispatched in this session.
 
 
@@ -1278,6 +1284,10 @@ SECTION 11 - CURRENT STATUS
       all Git history and is restored from the owner's supplied prompt pack.
     - No new dependency or permission. No UI change or new screenshot. K41 must
       be fixed before stored usage drives the garden; no schema change yet.
+    - Final feature commit 347fa59 and entry-point commit 1d5dc1d are pushed.
+      P09 CI 42372949327 completed success (2m42s):
+      https://github.com/34rns/ScreenGarden/actions/runs/42372949327
+      Working tree is clean; final memory checkpoint follows without code changes.
 
   P00-P09 plus P00b/P05b are COMPLETE (P04b is partial). The project is
   published, CI is green, settings persist and theme the app, screen time is read
@@ -1996,14 +2006,18 @@ SECTION 13 - SESSION LOG
               exactly the documented four permissions plus androidx receiver,
               no INTERNET, allowBackup=false. Schema 1.json unchanged. Secret
               sweep finds no credential patterns or forbidden private files.
-    Not ver.  P09 feature CI is pending until commit/push completes; update the
-              verified CI evidence after it finishes. No emulator/device run,
+              Pushed 1d5dc1d (memory entry point/prompts) and 347fa59 (P09).
+              CI 42372949327 SUCCESS, job 2m42s; build, style, lint and unit tests
+              all passed. https://github.com/34rns/ScreenGarden/actions/runs/42372949327
+    Not ver.  No emulator/device run,
               no real-day score, no persistence/caller, no migration execution
               this session. No rendered Garden UI or refreshed screenshot.
               No signed release; optional video not available (Session 12).
     Next      P10, starting with K41 measurement bounds and careful K51 storage
               planning. Resume from this memory and docs/PROMPTS.md in a new
               session after this task's final commit/push/CI checkpoint.
+              The next development milestone is the garden MVP through P11,
+              identified by docs/PROMPTS.md; no signed release exists yet.
 
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
