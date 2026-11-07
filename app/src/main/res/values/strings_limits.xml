@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="limits_title">App limits</string>
+    <string name="limits_copy">Make a little room for what matters. Choose daily limits for apps you open. Enabled limits shape your garden score; they never block an app.</string>
+    <string name="limits_back">Back to Settings</string>
+    <string name="limits_search">Search apps</string>
+    <string name="limits_set">Set daily limit</string>
+    <string name="limits_duration">%1$d min each day</string>
+    <string name="limits_toggle">Enable daily limit for %1$s</string>
+    <string name="limits_paused">Paused · your chosen time is saved</string>
+    <string name="limits_minutes">Daily limit in minutes</string>
+    <string name="limits_range">Choose from 1 to 1,440 minutes.</string>
+    <string name="limits_save">Save limit</string>
+    <string name="limits_cancel">Cancel</string>
+    <string name="limits_error">Apps or limits could not be updated. Your saved limits are kept. Try again.</string>
+    <string name="limits_retry">Try again</string>
+    <string name="limits_no_apps">No launchable apps are available. Try refreshing the list.</string>
+    <string name="limits_no_match">No apps match this search. Try a different name.</string>
+    <string name="limits_settings_copy">Choose gentle daily limits for individual apps.</string>
+</resources>

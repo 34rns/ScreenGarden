@@ -4,7 +4,7 @@ A calm, offline garden that grows while you focus and keep your screen time in
 check.
 
 > **Status: work in progress.** Onboarding, local settings, usage collection and
-> the Garden and Focus screens are implemented. Insights and Settings controls are
+> the Garden, Focus and App limits screens are implemented. Insights and Settings controls are
 > still being built. There is no installable signed release yet.
 
 [![CI](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml)
@@ -21,8 +21,8 @@ nothing is uploaded or sold.
 ## Screenshots
 
 Captured on an Android 15 emulator (1080 × 2400) with demo mode enabled.
-Garden and Focus images use fake debug-only demo data. Insights and Settings
-still show their earlier placeholder screens. No image contains personal phone data.
+Garden, Focus and App limits images use fake debug-only demo data. Settings shows
+the App limits entry; Insights remains a placeholder. No image contains personal phone data.
 
 | | Light | Dark | AMOLED |
 | --- | --- | --- | --- |
@@ -30,6 +30,7 @@ still show their earlier placeholder screens. No image contains personal phone d
 | **Focus** | <img src="docs/screenshots/focus_light.png" width="200" alt="Focus tab, light theme"> | <img src="docs/screenshots/focus_dark.png" width="200" alt="Focus tab, dark theme"> | <img src="docs/screenshots/focus_amoled.png" width="200" alt="Focus tab, AMOLED theme"> |
 | **Insights** | <img src="docs/screenshots/insights_light.png" width="200" alt="Insights tab, light theme"> | <img src="docs/screenshots/insights_dark.png" width="200" alt="Insights tab, dark theme"> | <img src="docs/screenshots/insights_amoled.png" width="200" alt="Insights tab, AMOLED theme"> |
 | **Settings** | <img src="docs/screenshots/settings_light.png" width="200" alt="Settings tab, light theme"> | <img src="docs/screenshots/settings_dark.png" width="200" alt="Settings tab, dark theme"> | <img src="docs/screenshots/settings_amoled.png" width="200" alt="Settings tab, AMOLED theme"> |
+| **App limits** | <img src="docs/screenshots/limits_light.png" width="200" alt="App limits, light theme"> | <img src="docs/screenshots/limits_dark.png" width="200" alt="App limits, dark theme"> | <img src="docs/screenshots/limits_amoled.png" width="200" alt="App limits, AMOLED theme"> |
 
 Accessibility and layout:
 
@@ -42,6 +43,10 @@ All current public screenshots are stored in `docs/screenshots/`.
 | Focusing | Completed session | Large text | Right-to-left layout |
 | --- | --- | --- | --- |
 | <img src="docs/screenshots/focus_running.png" width="200" alt="Focus countdown and growing plant"> | <img src="docs/screenshots/focus_result.png" width="200" alt="Completed focus session"> | <img src="docs/screenshots/focus_large_font.png" width="200" alt="Focus setup at 1.3x font scale"> | <img src="docs/screenshots/focus_rtl.png" width="200" alt="Focus setup with a right-to-left layout"> |
+
+| Edit a limit | No apps available | Large text | Right-to-left layout |
+| --- | --- | --- | --- |
+| <img src="docs/screenshots/limits_editor.png" width="200" alt="Daily app limit editor"> | <img src="docs/screenshots/limits_empty.png" width="200" alt="App limits empty state and refresh action"> | <img src="docs/screenshots/limits_large_font.png" width="200" alt="App limits at 1.3x font scale"> | <img src="docs/screenshots/limits_rtl.png" width="200" alt="App limits with mirrored controls and correct text order"> |
 
 ## Privacy promise
 
@@ -79,9 +84,11 @@ by intention. A pull request that adds network access or telemetry is rejected.
   gently, preserving every plant's stage and health. The first two completed
   sessions each day grow and heal the garden, with a new seed for an empty plot.
   Detection needs Usage access and reliable screen events (Android 9+).
+- Search launchable apps and choose daily limits from Settings. Pausing a limit
+  keeps its chosen time. Enabled breaches shape the score without blocking apps.
 - Usage without reliable screen events (including Android 8.0–8.1) is shown as
-  incomplete rather than given a fabricated score. Insights and Settings remain
-  placeholders until their roadmap steps are finished.
+  incomplete rather than given a fabricated score. Insights and the remaining
+  Settings controls are still being built.
 
 ## Requirements
 

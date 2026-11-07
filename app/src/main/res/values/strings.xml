@@ -10,7 +10,6 @@
 
     <!-- Placeholder copy for the skeleton screens -->
     <string name="insights_placeholder">Weekly screen time and focus trends will appear here.</string>
-    <string name="settings_placeholder">App limits, themes and privacy options will be configured here.</string>
 
     <!-- First-run flow (P07). Every string is user-facing copy, so none of it is
          hardcoded in Compose; the flow reads them by resource id. -->

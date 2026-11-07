@@ -141,7 +141,8 @@ class GardenViewModel(
             dailyGoalMinutes = goals.dailyMinutes,
             pickups = day.pickups,
             pickupGoal = goals.pickups,
-            focusMinutes = day.focusMinutes
+            focusMinutes = day.focusMinutes,
+            limitOveragesMinutes = day.limitOveragesMinutes
         )
     )?.value
 

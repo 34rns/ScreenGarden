@@ -16,5 +16,6 @@ data class GardenDayRecord(
     val unlocks: Int?,
     val usageIsBounded: Boolean,
     val gardenApplied: Boolean,
-    val updatedAtUtcMillis: Long
+    val updatedAtUtcMillis: Long,
+    val limitOveragesMinutes: List<Int>? = null
 )

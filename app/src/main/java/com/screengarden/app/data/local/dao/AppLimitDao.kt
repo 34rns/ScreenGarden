@@ -23,6 +23,9 @@ interface AppLimitDao {
     @Query("SELECT * FROM app_limits ORDER BY packageName ASC")
     fun observeAll(): Flow<List<AppLimit>>
 
+    @Query("SELECT * FROM app_limits ORDER BY packageName ASC")
+    suspend fun getAll(): List<AppLimit>
+
     /** Only the limits that are currently switched on. */
     @Query("SELECT * FROM app_limits WHERE isEnabled = 1 ORDER BY packageName ASC")
     fun observeEnabled(): Flow<List<AppLimit>>

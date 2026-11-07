@@ -206,6 +206,25 @@ class GardenRepositoryImplTest {
 
     private fun stat(day: Long = DAY_ONE): DailyStat = DailyStat(dayStartUtcMillis = day, updatedAtUtcMillis = day)
 
+    @Test
+    fun snapshotsIncludeOnlyEnabledLimitOveragesForTheMatchingDay() = runTest {
+        database.dailyStatDao().upsert(stat())
+        database.appLimitDao().upsert(com.screengarden.app.data.local.entity.AppLimit("fake", 30, true, DAY_ONE))
+        database.appLimitDao().upsert(com.screengarden.app.data.local.entity.AppLimit("paused", 1, false, DAY_ONE))
+        database.appUsageDailyDao().upsert(
+            com.screengarden.app.data.local.entity.AppUsageDaily(DAY_ONE, "fake", 90 * 60_000L, 1, DAY_ONE)
+        )
+        database.appUsageDailyDao().upsert(
+            com.screengarden.app.data.local.entity.AppUsageDaily(DAY_TWO, "fake", 200 * 60_000L, 1, DAY_TWO)
+        )
+        assertEquals(
+            listOf(60),
+            repository.observeSnapshot(DAY_ONE, DAY_ONE).first().days.single().limitOveragesMinutes
+        )
+        database.appLimitDao().upsert(com.screengarden.app.data.local.entity.AppLimit("fake", 30, false, DAY_ONE))
+        assertNull(repository.observeSnapshot(DAY_ONE, DAY_ONE).first().days.single().limitOveragesMinutes)
+    }
+
     private fun plant(): Plant = Plant(id = "plant-1", species = "fern", plantedAtUtcMillis = DAY_ONE)
 
     private fun day(score: Int?): GardenDay = GardenDay(score = score, dayStartUtcMillis = DAY_ONE)

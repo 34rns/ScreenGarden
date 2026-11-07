@@ -13,6 +13,8 @@ import com.screengarden.app.domain.focus.FocusStatus
 import com.screengarden.app.domain.focus.FocusTag
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
+import com.screengarden.app.domain.limits.AppLimitRule
+import com.screengarden.app.domain.limits.LaunchableApp
 import com.screengarden.app.ui.debug.UsageSelfCheckScreen
 import com.screengarden.app.ui.navigation.DebugDestination
 import com.screengarden.app.ui.navigation.ScreenGardenDestination
@@ -21,6 +23,9 @@ import com.screengarden.app.ui.screens.focus.FocusUiState
 import com.screengarden.app.ui.screens.garden.GardenAvailability
 import com.screengarden.app.ui.screens.garden.GardenScreen
 import com.screengarden.app.ui.screens.garden.GardenUiState
+import com.screengarden.app.ui.screens.limits.AppLimitsScreen
+import com.screengarden.app.ui.screens.limits.AppLimitsUiState
+import com.screengarden.app.ui.screens.settings.SettingsScreen
 
 /**
  * The debug-build catalogue of diagnostic screens (P05b).
@@ -39,6 +44,36 @@ object DebugCatalog {
 
     /** The requested debug destination, or null when [requested] names none. */
     fun destination(requested: String?, context: Context): DebugDestination? {
+        if (requested == "settings_demo") {
+            return DebugDestination(requested, ScreenGardenDestination.Settings) { SettingsScreen({ }) }
+        }
+        if (requested in setOf("limits_demo", "limits_empty_demo", "limits_rtl_demo")) {
+            val state = AppLimitsUiState(
+                apps = if (requested == "limits_empty_demo") {
+                    emptyList()
+                } else {
+                    listOf(
+                        LaunchableApp("demo.reader", "Reading"),
+                        LaunchableApp("demo.notes", "Notes"),
+                        LaunchableApp("demo.video", "Videos"),
+                        LaunchableApp("demo.games", "Games")
+                    )
+                },
+                limits = listOf(AppLimitRule("demo.video", 30), AppLimitRule("demo.games", 45, false)),
+                loading = false
+            )
+            return DebugDestination(requireNotNull(requested), ScreenGardenDestination.Settings) {
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides if (requested == "limits_rtl_demo") {
+                        LayoutDirection.Rtl
+                    } else {
+                        LocalLayoutDirection.current
+                    }
+                ) {
+                    AppLimitsScreen(state, { _, _, _ -> }, { }, { })
+                }
+            }
+        }
         if (requested in
             setOf("focus_demo", "focus_running_demo", "focus_result_demo", "focus_soft_demo", "focus_rtl_demo")
         ) {

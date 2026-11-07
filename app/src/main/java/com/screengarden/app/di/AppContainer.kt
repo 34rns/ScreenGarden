@@ -10,6 +10,7 @@ import com.screengarden.app.data.focus.FocusController
 import com.screengarden.app.data.focus.FocusUseReader
 import com.screengarden.app.data.local.ScreenGardenDatabase
 import com.screengarden.app.data.onboarding.OnboardingCompletion
+import com.screengarden.app.data.repo.AppLimitRepositoryImpl
 import com.screengarden.app.data.repo.AppUsageRepository
 import com.screengarden.app.data.repo.AppUsageRepositoryImpl
 import com.screengarden.app.data.repo.DailyStatRepository
@@ -22,9 +23,11 @@ import com.screengarden.app.data.settings.settingsDataStore
 import com.screengarden.app.data.sync.DailyUsageSync
 import com.screengarden.app.data.usage.AndroidUsageSource
 import com.screengarden.app.data.usage.DefaultUsageRepository
+import com.screengarden.app.data.usage.LaunchableAppCatalog
 import com.screengarden.app.data.work.UsageSyncScheduler
 import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenViewModel
+import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
 
 /**
  * Manual dependency injection root, created once by [com.screengarden.app.ScreenGardenApplication].
@@ -78,6 +81,11 @@ class AppContainer(context: Context) {
     }
 
     val gardenRepository: GardenRepositoryImpl by lazy { GardenRepositoryImpl(database) }
+
+    val appLimitRepository: AppLimitRepositoryImpl by lazy { AppLimitRepositoryImpl(database.appLimitDao()) }
+    private val appCatalog: LaunchableAppCatalog by lazy { LaunchableAppCatalog(appContext) }
+
+    fun appLimitsViewModel(): AppLimitsViewModel = AppLimitsViewModel(appLimitRepository, appCatalog::installedApps)
 
     val focusSessionRepository: FocusSessionRepositoryImpl by lazy { FocusSessionRepositoryImpl(database) }
     val focusController: FocusController by lazy { FocusController(appContext) }

@@ -20,7 +20,8 @@ fun ScreenGardenNavHost(
     modifier: Modifier = Modifier,
     debugDestination: DebugDestination? = null,
     gardenContent: @Composable (() -> Unit) -> Unit,
-    focusContent: @Composable () -> Unit
+    focusContent: @Composable () -> Unit,
+    limitsContent: @Composable (() -> Unit) -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -37,7 +38,10 @@ fun ScreenGardenNavHost(
             InsightsScreen()
         }
         composable(ScreenGardenDestination.Settings.route) {
-            SettingsScreen()
+            SettingsScreen(onAppLimits = { navController.navigate("app_limits") { launchSingleTop = true } })
+        }
+        composable("app_limits") {
+            limitsContent { navController.popBackStack() }
         }
         if (debugDestination != null) {
             composable(debugDestination.route) {

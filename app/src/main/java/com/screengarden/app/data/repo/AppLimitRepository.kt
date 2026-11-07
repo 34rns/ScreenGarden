@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * User-configured per-app daily limits.
  *
- * INTERFACE ONLY for now (Task 1.1); Phase 3.2 implements it.
+ * Room-backed implementation and domain editor boundary are implemented by P15.
  */
 interface AppLimitRepository {
 

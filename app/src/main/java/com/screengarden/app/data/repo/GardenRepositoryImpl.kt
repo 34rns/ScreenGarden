@@ -41,12 +41,27 @@ class GardenRepositoryImpl(private val database: ScreenGardenDatabase) :
     }
 
     override fun observeSnapshot(fromDayStartUtcMillis: Long, toDayStartUtcMillis: Long): Flow<GardenSnapshot> =
-        combine(plants.observeAll(), days.observeRange(fromDayStartUtcMillis, toDayStartUtcMillis)) { _, _ ->
+        combine(
+            plants.observeAll(),
+            days.observeRange(fromDayStartUtcMillis, toDayStartUtcMillis),
+            database.appLimitDao().observeAll(),
+            database.appUsageDailyDao().observeRange(fromDayStartUtcMillis, toDayStartUtcMillis)
+        ) { _, _, _, _ ->
             // Separate table flows can emit in either order; re-read their shared committed state.
             database.withTransaction {
+                val enabled = database.appLimitDao().getAll().filter { it.isEnabled }
+                val usage = database.appUsageDailyDao().getRange(fromDayStartUtcMillis, toDayStartUtcMillis)
+                    .associateBy { it.dayStartUtcMillis to it.packageName }
                 GardenSnapshot(
                     plants = plants.getAll().map { it.toDomain() },
-                    days = days.getRange(fromDayStartUtcMillis, toDayStartUtcMillis).map { it.toDomain() }
+                    days = days.getRange(fromDayStartUtcMillis, toDayStartUtcMillis).map { row ->
+                        row.toDomain().copy(
+                            limitOveragesMinutes = enabled.takeIf { it.isNotEmpty() }?.map { limit ->
+                                val used = usage[row.dayStartUtcMillis to limit.packageName]?.usageMillis ?: 0L
+                                (used / 60_000L - limit.dailyLimitMinutes).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+                            }
+                        )
+                    }
                 )
             }
         }.distinctUntilChanged()

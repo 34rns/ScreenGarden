@@ -33,6 +33,12 @@ interface AppUsageDailyDao {
     )
     fun observeDay(dayStartUtcMillis: Long): Flow<List<AppUsageDaily>>
 
+    @Query("SELECT * FROM app_usage_daily WHERE dayStartUtcMillis BETWEEN :fromDay AND :toDay")
+    fun observeRange(fromDay: Long, toDay: Long): Flow<List<AppUsageDaily>>
+
+    @Query("SELECT * FROM app_usage_daily WHERE dayStartUtcMillis BETWEEN :fromDay AND :toDay")
+    suspend fun getRange(fromDay: Long, toDay: Long): List<AppUsageDaily>
+
     @Query(
         "SELECT * FROM app_usage_daily " +
             "WHERE packageName = :packageName " +

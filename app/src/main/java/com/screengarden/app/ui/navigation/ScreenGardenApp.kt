@@ -22,7 +22,8 @@ fun ScreenGardenApp(
     modifier: Modifier = Modifier,
     debugDestination: DebugDestination? = null,
     gardenContent: @Composable (() -> Unit) -> Unit,
-    focusContent: @Composable () -> Unit
+    focusContent: @Composable () -> Unit,
+    limitsContent: @Composable (() -> Unit) -> Unit
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -54,7 +55,8 @@ fun ScreenGardenApp(
             modifier = Modifier.padding(innerPadding),
             debugDestination = debugDestination,
             gardenContent = gardenContent,
-            focusContent = focusContent
+            focusContent = focusContent,
+            limitsContent = limitsContent
         )
     }
 }

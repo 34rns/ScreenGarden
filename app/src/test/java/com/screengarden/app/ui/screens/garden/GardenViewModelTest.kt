@@ -100,6 +100,16 @@ class GardenViewModelTest {
         store, flowOf(10_800_000L), flowOf(80), flowOf(60), access, { }, { today + 60_000 }, zone, dispatcher
     )
 
+    @Test
+    fun enabledLimitBreachesReachTheDisplayedHealthScore() = runTest(dispatcher) {
+        val limited = model(FakeStore(listOf(day(today).copy(limitOveragesMinutes = listOf(120)))))
+        val baseline = model(FakeStore(listOf(day(today))))
+        advanceUntilIdle()
+        org.junit.Assert.assertTrue(
+            requireNotNull(limited.uiState.value.score) < requireNotNull(baseline.uiState.value.score)
+        )
+    }
+
     private fun day(key: Long) = GardenDayRecord(key, null, 30, 0, 0, 3, 1, true, false, 7L)
 
     private class FakeStore(days: List<GardenDayRecord>) : GardenStore {
