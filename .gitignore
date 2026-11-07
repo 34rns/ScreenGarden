@@ -19,7 +19,6 @@ output.json
 # Signing material - never commit these (AGENT_MEMORY H8)
 *.jks
 *.keystore
-!debug.keystore
 keystore.properties
 signing.properties
 

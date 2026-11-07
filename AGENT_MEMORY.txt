@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-04 (Session 11 / P08 - daily health score)
+Last updated: 2026-11-07 (Session 12 / takeover and P09 recovery)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -164,6 +164,7 @@ SECTION 3 - TECH STACK
 SECTION 4 - FOLDER LAYOUT
 --------------------------------------------------------------------------------
   ScreenGarden/
+  |-- AGENTS.md                         <- read AGENT_MEMORY.txt first
   |-- AGENT_MEMORY.txt                  <- this file (authoritative)
   |-- LICENSE                           GPL-3.0 text (verbatim, official)
   |-- ART_LICENSE.md                    CC BY-SA 4.0 for art and plant packs
@@ -185,6 +186,7 @@ SECTION 4 - FOLDER LAYOUT
   |   |-- libs.versions.toml            ONLY place dependency versions live
   |   `-- wrapper/
   |-- docs/
+  |   |-- PROMPTS.md                    owner-supplied P01-P33 and resume prompts
   |   `-- screenshots/                  15 emulator captures (D36), README gallery
   |       `-- 15_usage_self_check_debug.png   debug self-check (P05b)
   |-- fastlane/metadata/android/en-US/images/phoneScreenshots/
@@ -318,7 +320,7 @@ SECTION 5 - CONVENTIONS
     - Imperative, specific commit subjects; one logical change per commit.
     - Conventional Commits (feat:, fix:, docs:, test:, chore:, refactor:, ci:).
     - Update AGENT_MEMORY.txt in the same commit as the code change.
-    - Never force-push and never rewrite published history (H18/SECTION 18).
+    - Never force-push and never rewrite published history (SECTION 18).
 
 
 --------------------------------------------------------------------------------
@@ -771,7 +773,8 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P08     done    Daily health score: pure calculator in domain/garden with
                   configurable weights, smooth curves, an honest missing-data
                   rule, 22 tests, and the formula written into 16.1 [new]
-  P09     NEXT    Plant lifecycle engine + plant count cap [1.5 part]
+  P09     active  Plant lifecycle engine + plant count cap [1.5 part]
+                  Uncommitted draft recovered at takeover; finish and verify it.
   P10     todo    Garden screen [1.4]
   P11     todo    Animations [new]
   P12     todo    Focus logic + foreground service [1.3]
@@ -946,8 +949,9 @@ SECTION 9 - PERMISSIONS
   REMOVED BY MANIFEST MERGE (P06, D52): ACCESS_NETWORK_STATE and
   FOREGROUND_SERVICE. Both are merged in by androidx.work and neither is used
   here (no network constraint, no setForeground), so the manifest cancels them.
-  The merged manifest must contain exactly PACKAGE_USAGE_STATS, WAKE_LOCK and
-  RECEIVE_BOOT_COMPLETED (plus the androidx receiver permission); re-check it
+  The merged manifest must contain exactly PACKAGE_USAGE_STATS, WAKE_LOCK,
+  RECEIVE_BOOT_COMPLETED and POST_NOTIFICATIONS (plus the androidx receiver
+  permission); re-check it
   with `grep -o '<uses-permission[^>]*>'
   app/build/intermediates/merged_manifest/debug/processDebugMainManifest/
   AndroidManifest.xml` after any dependency bump.
@@ -987,10 +991,10 @@ SECTION 10 - KNOWN ISSUES
       yet: the picker is P22's work, so on device it is still reachable only
       through the debug intent extra (D35). Close in P22.
   K2  All four tabs are placeholders by design (no feature screens yet).
-  K3  No UI reads the database yet: the Room layer is still exercised only by
-      tests and the migration suite. The one persisted value the running app
-      reads is the theme setting (P04); the six repositories stay interfaces
-      until P04b.
+  K3  No UI reads the database yet. DailyUsageSync reads and writes Room through
+      the two P06 repository implementations (DailyStat and AppUsage); four
+      implementations remain for P04b. The Activity reads DataStore settings
+      for the theme and onboarding, including saved goals.
   K4  kotlinOptions { jvmTarget } is deprecated in Kotlin 2.1 (still compiles).
       Migrate to the compilerOptions DSL before AGP 9 / Kotlin 2.2.
   K5  Gradle 8.13 prints "Deprecated Gradle features ... incompatible with
@@ -1053,7 +1057,7 @@ SECTION 10 - KNOWN ISSUES
       FocusSession.tag, .status (16.3/16.4). When a prompt needs one, do it
       properly: bump DATABASE_VERSION, add a Migration, add a migration case,
       commit the exported 2.json (H14/H15). Never edit or regenerate 1.json.
-  K25 SECTION 16 was reconstructed from the P00 brief; 16.1 is TBD until P08.
+  K25 CLOSED in P08: SECTION 16.1 now specifies the implemented score formula.
   K26 COSMETIC: the status bar in every screenshot still shows the emulator's
       "no internet" wifi/mobile icons. The demo-mode `command network -e wifi
       hide` broadcast did not take effect on API 35, and the emulator itself
@@ -1171,6 +1175,20 @@ SECTION 10 - KNOWN ISSUES
       setting: 16.7 has no focus goal and D40 forbids inventing a key that only
       one class reads. If a prompt adds a focus goal to SettingsRepository, move
       it into HealthScoreWeights at the same time or the two will disagree.
+  K51 P09 was left as three untracked files at takeover: domain/garden/Plant.kt,
+      domain/garden/GardenEngine.kt and domain/garden/GardenEngineTest.kt under
+      the main and test source sets. The initial gate reproduced 121 tests with
+      one failure (aPlantIsNeverPermanentlyLost). Finish validation and commit
+      these files before starting P10; there is no persisted garden caller yet.
+  K52 RELEASE PROTOCOL GAP: SECTION 17 contains the completed first-push record,
+      not a release milestone schedule. The owner supplied docs/PROMPTS.md during
+      takeover, but no additional release milestone protocol. Do not invent a
+      published-release schedule or publish unsigned APKs (K7/D34). Per-prompt
+      gates/CI remain mandatory; signed release setup is still P33.
+  K53 During takeover a failed attempt to save a local build setup was followed
+      by a briefly started Gradle invocation using the default cache. It was
+      interrupted before tasks completed. Outside-project startup cache changes
+      cannot be verified; all subsequent builds use project-local caches.
 
   Current lint state: 0 errors, 3 accepted warnings (K11, K12, K46). No baseline.
   Current ktlint state: clean (0 violations).
@@ -1181,6 +1199,20 @@ SECTION 10 - KNOWN ISSUES
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
+  TAKEOVER CHECKPOINT (2026-11-07): read this before the historical evidence below.
+    - git fetch succeeded after enabling command-runner network access. HEAD and
+      origin/main both equal e09f823; no published history was changed.
+    - P08 CI run 41772362278 is confirmed success. No GitHub Releases exist.
+    - Initial gates: ktlintCheck --no-build-cache PASS; 121 unit tests with one
+      P09 failure; lintDebug PASS (0 errors, 3 warnings); assembleDebug PASS.
+    - P09 is active, not merely NEXT as the older notes claimed. Its three
+      untracked files contain a draft engine and 27 tests. Corrections are being
+      verified before the feature commit. P04b still has four implementations left.
+    - AGENTS.md was missing and is now created; docs/PROMPTS.md was absent from
+      all Git history and is restored from the owner's supplied prompt pack.
+    - No new dependency or permission. No UI change or new screenshot. K41 must
+      be fixed before stored usage drives the garden; no schema change yet.
+
   P00, P00b, P04, P05, P05b, P06, P07 and P08 are COMPLETE. The project is
   published, CI is green, settings persist and theme the app, screen time is read
   from the system and verified against dumpsys on API 35 and API 26, a WorkManager
@@ -1392,7 +1424,7 @@ SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  NEXT: P09 - the plant lifecycle engine and the plant-count cap (16.2).
+  NEXT: finish the recovered P09 draft, run all gates, commit/push and watch CI.
 
   Scope of P09 (nothing else):
     - GrowthStage and the SEED -> SPROUT -> BUD -> BLOOM progression, plus
@@ -1412,7 +1444,7 @@ SECTION 12 - NEXT STEP
   focus sessions themselves (P12/P13), schema v2, or any change to the score's
   curve (P08 is closed; tuning is a constants change plus its tests).
 
-  Then in order: P10 -> P11.
+  Then in order: P10 -> P11. The task definitions now exist in docs/PROMPTS.md.
 
   Every turn also follows the standing orders in SECTION 18: local gate, commit,
   push, watch CI, refresh screenshots if a screen changed, update this file.
@@ -1421,6 +1453,28 @@ SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
 --------------------------------------------------------------------------------
+  SESSION 12 - 2026-11-07 - takeover, memory entry point and initial verification
+    Did       Read the complete memory; checked status and 20-commit history;
+              fetched origin; found the untracked P09 draft and its stale failed
+              test report; created AGENTS.md; restored the owner's prompt pack
+              to docs/PROMPTS.md; removed .gitignore's debug.keystore exception
+              so all keystores stay ignored under H8; corrected stale K3/K25 and
+              the expected POST_NOTIFICATIONS manifest entry.
+    Decided   Keep original prompt text; its older section references map as in
+              the ORIGIN NOTE. Existing decisions override superseded setup
+              prompts (license is already D27/D28). Do not invent missing release
+              milestones. Use gradlew.bat from PowerShell, without paid services.
+    Verified  Initial gates: style PASS; 121 unit tests, 1 P09 failure; lint PASS
+              with 0 errors/3 warnings; debug build PASS. Fetch proves local and
+              remote main at e09f823. P08 CI 41772362278 success; no releases.
+    Not ver.  P09 corrected code is awaiting final gates/CI at this checkpoint.
+              No emulator/device run. Video not available: public watch page
+              retrieved, but the English caption endpoint returned 0 bytes; no
+              summary or adopted ideas inferred. One aborted Gradle startup may
+              have touched its default outside-project cache (K53).
+    Next      Finish P09 and save the final feature checkpoint, then P10 with
+              K41 bounded before usage feeds the garden.
+
   SESSION 1 - 2026-11-02 - Task 0.1 + 0.2 (project skeleton + nav shell)
     Did       Gradle 8.13 + version catalog + one :app module; Compose shell;
               theme (light/dark/AMOLED); nav shell; manual DI; manifest with no
