@@ -67,6 +67,8 @@ by intention. A pull request that adds network access or telemetry is rejected.
   Android versions, plus a battery-friendly daily sync.
 - A Canvas garden with tappable plant details, today's score, streak and a Focus
   tab action. Completed days grow plants once; refreshing never duplicates rewards.
+- Gentle growth, bloom, wilt and recovery transitions. The garden's idle motion
+  stops when it is hidden or system animations are disabled.
 - Usage without reliable screen events (including Android 8.0–8.1) is shown as
   incomplete rather than given a fabricated score. Focus and Insights remain
   placeholders until their roadmap steps are finished.

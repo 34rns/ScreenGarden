@@ -85,7 +85,11 @@ fun GardenScreen(
                     GardenBody(stringResource(R.string.garden_subtitle))
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    GardenScene(plants = state.plants, onPlantSelected = { selectedPlantId = it.id })
+                    GardenScene(
+                        plants = state.plants,
+                        onPlantSelected = { selectedPlantId = it.id },
+                        streakDays = state.streakDays
+                    )
                     if (state.plants.isNotEmpty()) GardenBody(stringResource(R.string.garden_plant_hint))
                 }
                 GardenSummary(score = state.score, streakDays = state.streakDays)

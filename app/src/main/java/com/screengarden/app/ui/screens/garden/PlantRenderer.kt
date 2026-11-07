@@ -13,7 +13,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.lerp
 import com.screengarden.app.domain.garden.Plant
-import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.domain.garden.PlantStage
 import java.util.Locale
 import kotlin.math.min
@@ -33,8 +32,11 @@ data class PlantPalette(
  * accessibility, storage or time. A validated plant pack can supply an image renderer here.
  */
 fun interface PlantRenderer {
-    fun draw(scope: DrawScope, plant: Plant, palette: PlantPalette)
+    fun draw(scope: DrawScope, plant: Plant, palette: PlantPalette, visuals: PlantVisuals)
 }
+
+/** Drawing inputs only; time, lifecycle and animation state belong to the composable. */
+data class PlantVisuals(val growth: Float, val bloom: Float, val wilt: Float, val swayDegrees: Float = 0f)
 
 /** Override at the garden's composition boundary when a plant pack is selected. */
 val LocalPlantRenderer = staticCompositionLocalOf<PlantRenderer> { VectorPlantRenderer }
@@ -42,7 +44,7 @@ val LocalPlantRenderer = staticCompositionLocalOf<PlantRenderer> { VectorPlantRe
 /** Original offline vector art; unknown species receive the same safe drawing as a fern. */
 object VectorPlantRenderer : PlantRenderer {
 
-    override fun draw(scope: DrawScope, plant: Plant, palette: PlantPalette) {
+    override fun draw(scope: DrawScope, plant: Plant, palette: PlantPalette, visuals: PlantVisuals) {
         with(scope) {
             val unit = min(size.width, size.height) / 100f
             withTransform({
@@ -50,25 +52,23 @@ object VectorPlantRenderer : PlantRenderer {
                 scale(unit, unit, pivot = Offset.Zero)
             }) {
                 drawOval(palette.soil.copy(alpha = 0.16f), Offset(24f, 85f), Size(52f, 8f))
-                if (plant.stage == PlantStage.SEED) {
-                    drawOval(palette.soil, Offset(45f, 79f), Size(10f, 7f))
+                if (visuals.growth < 0.35f) {
+                    drawOval(
+                        palette.soil.copy(alpha = (1f - visuals.growth / 0.35f).coerceIn(0f, 1f)),
+                        Offset(45f, 79f),
+                        Size(10f, 7f)
+                    )
                     drawLine(palette.mutedLeaf, Offset(50f, 79f), Offset(53f, 75f), 2f, StrokeCap.Round)
-                } else {
-                    val growthScale = when (plant.stage) {
-                        PlantStage.SEED -> 0f
-                        PlantStage.SPROUT -> 0.5f
-                        PlantStage.BUD -> 0.78f
-                        PlantStage.BLOOM -> 1f
-                    }
-                    val leaf = if (plant.condition == PlantCondition.WILTING) {
-                        lerp(palette.leaf, palette.mutedLeaf, 0.75f)
-                    } else {
-                        palette.leaf
-                    }
-                    withTransform({ scale(growthScale, growthScale, pivot = Offset(50f, 87f)) }) {
-                        val droop = if (plant.condition == PlantCondition.WILTING) 11f else 0f
+                }
+                if (visuals.growth > 0f) {
+                    val leaf = lerp(palette.leaf, palette.mutedLeaf, visuals.wilt * 0.75f)
+                    withTransform({
+                        rotate(visuals.swayDegrees + visuals.wilt * 6f, pivot = Offset(50f, 87f))
+                        scale(visuals.growth, visuals.growth, pivot = Offset(50f, 87f))
+                    }) {
+                        val droop = visuals.wilt * 11f
                         when (plant.species.lowercase(Locale.ROOT)) {
-                            "flower" -> drawFlower(plant, palette, leaf, droop)
+                            "flower" -> drawFlower(plant, palette, leaf, droop, visuals.bloom)
                             "bonsai" -> drawBonsai(palette, leaf, droop)
                             "cactus" -> drawCactus(plant, palette, leaf)
                             else -> drawFern(palette, leaf, droop)
@@ -80,7 +80,7 @@ object VectorPlantRenderer : PlantRenderer {
     }
 }
 
-private fun DrawScope.drawFlower(plant: Plant, palette: PlantPalette, leaf: Color, droop: Float) {
+private fun DrawScope.drawFlower(plant: Plant, palette: PlantPalette, leaf: Color, droop: Float, bloom: Float) {
     val tip = Offset(50f + droop, 28f + droop)
     val stem = Path().apply {
         moveTo(50f, 87f)
@@ -89,10 +89,10 @@ private fun DrawScope.drawFlower(plant: Plant, palette: PlantPalette, leaf: Colo
     drawPath(stem, palette.stem, style = Stroke(3f, cap = StrokeCap.Round))
     drawLeaf(Offset(48f, 66f), Offset(28f, 49f), leaf)
     drawLeaf(Offset(49f, 73f), Offset(71f, 57f), leaf)
-    if (plant.stage == PlantStage.BLOOM) {
+    if (bloom > 0f) {
         val petals = listOf(Offset(-10f, 0f), Offset(10f, 0f), Offset(0f, -10f), Offset(0f, 10f))
-        petals.forEach { drawCircle(palette.bloom, 9f, tip + it) }
-        drawCircle(palette.bloomCenter, 5f, tip)
+        petals.forEach { drawCircle(palette.bloom, 4f + 5f * bloom, tip + it * bloom) }
+        drawCircle(palette.bloomCenter, 5f * bloom, tip)
     } else if (plant.stage == PlantStage.BUD) {
         drawOval(palette.bloom, tip - Offset(6f, 9f), Size(12f, 18f))
     } else {

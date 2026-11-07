@@ -170,7 +170,7 @@ class GardenScreenTest {
             view = LocalView.current
             ScreenGardenTheme {
                 CompositionLocalProvider(
-                    LocalPlantRenderer provides PlantRenderer { _, _, _ -> draws.incrementAndGet() }
+                    LocalPlantRenderer provides PlantRenderer { _, _, _, _ -> draws.incrementAndGet() }
                 ) {
                     GardenScreen(
                         GardenUiState(false, GardenAvailability.READY, listOf(flower)),

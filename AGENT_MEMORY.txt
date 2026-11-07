@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-07 (Session 15 / P10 verified; commit and CI pending)
+Last updated: 2026-11-07 (Session 16 / P11 local checks passed; CI next)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         168 JVM tests (green); v1->v2 migration verified on API 35 in P10
+  Tests         171 JVM tests (green); v1->v2 migration verified on API 35 in P10
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -238,6 +238,7 @@ SECTION 4 - FOLDER LAYOUT
           |       `-- ui/  theme/, navigation/, components/, screens/,
           |                 onboarding/ (OnboardingScreen + GoalSetup, P07),
           |                 screens/garden/ (ViewModel/state, Canvas, renderer, details)
+          |                 screens/garden/GardenMotion.kt (P11 lifecycle/motion policy)
           |-- debug/                            DEBUG-ONLY source set (P05b)
           |   |-- res/values/strings.xml        self-check strings, never shipped
           |   `-- java/com/screengarden/app/
@@ -829,6 +830,16 @@ SECTION 6 - DECISIONS
       they read/write no usage or database. Public captures use emulator-5558's
       project-local AVD, fixed demo clock/battery, and a rendered-content guard.
 
+  D67 P11 MOTION IS PRESENTATION ONLY.
+      One eight-second scene phase drives sway, six motes and a butterfly after
+      a three-day streak. Growth, bloom and health use 900ms Compose transitions.
+      PlantVisuals separates animation inputs from the pure vector renderer.
+      Motion runs only while the destination is RESUMED and the platform's
+      ValueAnimator.areAnimatorsEnabled() is true (official API 26+ docs checked).
+      Observe animator duration scale and battery saver changes; dispose observers
+      and the infinite transition when hidden. No timer/state in the ViewModel,
+      no new permission, dependency or schema. Public captures freeze animations.
+
 
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
@@ -870,7 +881,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P09     done    Pure plant lifecycle, growth/health rules, recoverable wilting,
                   five-plant cap, event outcomes and 38 tests [1.5 part]
   P10     done    Garden screen, bounded usage and Room v2; 168 tests and migration
-  P11     todo    Animations [new]
+  P11     done    Growth/bloom/wilt/recovery, idle motion, system/lifecycle policy
   P12     todo    Focus logic + foreground service [1.3]
   P13     todo    Focus UI [1.3]
   P14     todo    Soft-fail + rewards [new]
@@ -899,7 +910,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P10 are complete. P11 is next; P04b has AppLimit,
+  Sequencing note: P00-P11 are complete locally. P12 is next; P04b has AppLimit,
   FocusSession and Badge implementations left, each owned by its feature prompt.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
@@ -1252,15 +1263,23 @@ SECTION 10 - KNOWN ISSUES
 
   Current lint state: 0 errors, 3 accepted warnings (K11, K12, K46). No baseline.
   Current ktlint state: clean (0 violations).
-  Current test state: 168 JVM tests, no failures/errors/skips. Both v1->v2
-  migration tests passed on API 35. Current four local gates passed.
-  Current CI state: P09 main e2e5131 green; P10 commit/push/CI pending.
+  Current test state: 171 JVM tests pass, no failures/errors/skips. All four
+  P11 local gates pass, lint 0 errors/3 accepted warnings. Both v1->v2 migration
+  tests passed on API 35 in P10; P11 changes no schema.
+  Current CI state: P10 e26d19b pushed; CI 42378881042 SUCCESS (2m11s).
   No signed release has been published.
 
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P10 implemented and verified locally. P10 commit/push/CI pending.
+  P00-P10 complete and pushed. P10 CI 42378881042 passed all four checks.
+  https://github.com/34rns/ScreenGarden/actions/runs/42378881042
+  P11 locally verified, commit/push/CI next: GardenMotion.kt, GardenScene.kt, PlantRenderer.kt,
+  GardenScreen.kt, renderer-test signature update and three GardenMotionTest
+  cases. Emulator pixel comparison proves visible motion and identical garden
+  pixels after system animator scale=0. All three new motion tests pass after
+  correcting test frame publication. Fresh fake emulator captures are reviewed
+  before commit. P12-P33 remain.
   Existing AGENTS.md is committed; owner prompt pack is docs/PROMPTS.md.
   Fetch confirms HEAD/origin main=e2e5131 before the P10 commit; no history rewrite.
   P10: bounded event measurement, transactional usage writes, Room v2 migration,
@@ -1270,7 +1289,7 @@ SECTION 11 - CURRENT STATUS
   debug APK. Both migration tests pass on emulator-5558 (API 35).
   Fake debug-only emulator captures cover light/dark/AMOLED, 1.3x font, forced
   Compose RTL, no-data and no-permission. Demo clock is reapplied after config.
-  Remaining P11-P33, including optional P29/P30, are not implemented.
+  Remaining P12-P33, including optional P29/P30, are not implemented.
   No signed release or GitHub Pages publication. No secrets requested or printed.
   Continuous completion/release is authorized by the owner; do not stop at
   milestones. Normal one-time approvals may be requested for blocked tools.
@@ -1278,8 +1297,8 @@ SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Finish P10 secret sweep, commit/push, inspect GitHub CI to success, and record
-  its URL. Then P11 animations as in docs/PROMPTS.md. Continue P12-P33 in order
+  Finish P11 screenshot review, then memory/secret sweep/commit/push/CI.
+  Continue P12-P33 in order
   through professional GitHub publication with emulator-only fake screenshots.
   One prompt per logical commit; all four gates and CI per SECTION 18. Any new
   Room schema requires Migration, running emulator test and immutable schema export.
@@ -1800,6 +1819,27 @@ SECTION 13 - SESSION LOG
               service/reboot tests for later features remain unverified. No
               signed release or Pages site. Video not available (Session 12).
     Next      Commit/push P10 and check CI; then P11-P33 in order to release.
+
+  SESSION 16 - 2026-11-07 - P10 CI complete; P11 completed locally
+    Did       Pushed P10 e26d19b, confirmed CI SUCCESS (42378881042, 2m11s).
+              Added shared scene motion, health-proportional droop/recovery,
+              growth/bloom transitions, particles and a streak butterfly.
+              Added lifecycle/timer and intermediate-frame tests (D67).
+    Decided   Reuse Compose animation APIs and platform motion switch. Freeze
+              public captures; animation values never alter plant persistence.
+    Verified  P11 final gates all pass: 171 JVM tests, 0 failures/errors/skips;
+              lint 0 errors/3 accepted warnings; style and debug build pass.
+              All three motion tests pass, proving the clock stops, lifecycle
+              disables motion and growth/bloom/wilt/recovery interpolate.
+              Emulator
+              fake demo: moving frames differ; disabled-animation frames have
+              identical garden pixels (local Compare-Motion.py assertions pass).
+              Fake-only captures refreshed and reviewed in light/dark/AMOLED,
+              large text and forced RTL; empty/permission states retained.
+    Not ver.  P11 CI pending. No real-device battery/performance profiling,
+              signed release or Pages site. Intermediate-frame test originally
+              advanced before target publication; fixed the test timing.
+    Next      Commit/push/check P11 CI; then P12-P33 through final publication.
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------

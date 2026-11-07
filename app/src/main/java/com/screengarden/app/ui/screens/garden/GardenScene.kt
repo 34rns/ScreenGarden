@@ -2,6 +2,9 @@
 
 package com.screengarden.app.ui.screens.garden
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -35,11 +39,22 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import com.screengarden.app.R
 import com.screengarden.app.domain.garden.Plant
+import com.screengarden.app.domain.garden.PlantCondition
+import com.screengarden.app.domain.garden.PlantStage
+import kotlin.math.PI
+import kotlin.math.sin
 
 /** A scroll-friendly plot with native, keyboard and screen-reader accessible plant controls. */
 @Composable
-fun GardenScene(plants: List<Plant>, onPlantSelected: (Plant) -> Unit, modifier: Modifier = Modifier) {
+fun GardenScene(
+    plants: List<Plant>,
+    onPlantSelected: (Plant) -> Unit,
+    modifier: Modifier = Modifier,
+    streakDays: Int = 0
+) {
     val colors = MaterialTheme.colorScheme
+    val motionEnabled = rememberGardenMotionEnabled()
+    val phase = rememberGardenPhase(motionEnabled && plants.isNotEmpty())
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -69,6 +84,21 @@ fun GardenScene(plants: List<Plant>, onPlantSelected: (Plant) -> Unit, modifier:
                         Offset(size.width * 0.62f, size.height * 0.08f),
                         Size(size.width * 0.24f, 12.dp.toPx())
                     )
+                    if (plants.isNotEmpty()) {
+                        val time = phase.value
+                        repeat(6) { index ->
+                            val x = size.width * ((index * 0.17f + time * 0.08f) % 1f)
+                            val y = size.height * (0.15f + index * 0.07f) +
+                                sin((time * 2 * PI + index).toFloat()) * 4.dp.toPx()
+                            drawCircle(colors.onTertiaryContainer.copy(alpha = 0.12f), 1.5.dp.toPx(), Offset(x, y))
+                        }
+                        if (streakDays >= 3) {
+                            val center = Offset(size.width * (0.18f + time * 0.6f), size.height * 0.16f)
+                            val wing = 2.dp.toPx() + kotlin.math.abs(sin(time * 12 * PI).toFloat()) * 3.dp.toPx()
+                            drawOval(colors.tertiary, center - Offset(wing, 3.dp.toPx()), Size(wing, 6.dp.toPx()))
+                            drawOval(colors.tertiary, center, Size(wing, 6.dp.toPx()))
+                        }
+                    }
                 }
                 Column(
                     modifier = Modifier
@@ -84,7 +114,9 @@ fun GardenScene(plants: List<Plant>, onPlantSelected: (Plant) -> Unit, modifier:
                                     PlantTarget(
                                         plant = plant,
                                         onClick = { onPlantSelected(plant) },
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
+                                        motionEnabled = motionEnabled,
+                                        phase = phase
                                     )
                                 }
                             }
@@ -98,7 +130,13 @@ fun GardenScene(plants: List<Plant>, onPlantSelected: (Plant) -> Unit, modifier:
 }
 
 @Composable
-private fun PlantTarget(plant: Plant, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun PlantTarget(
+    plant: Plant,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    motionEnabled: Boolean,
+    phase: State<Float>
+) {
     val name = stringResource(plantNameResource(plant.species))
     val stage = stringResource(plantStageResource(plant.stage))
     val condition = stringResource(plantConditionResource(plant.condition))
@@ -118,7 +156,7 @@ private fun PlantTarget(plant: Plant, onClick: () -> Unit, modifier: Modifier = 
         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
     ) {
         Column {
-            GardenPlantArt(plant, Modifier.fillMaxWidth().height(108.dp))
+            GardenPlantArt(plant, Modifier.fillMaxWidth().height(108.dp), motionEnabled, phase)
             Text(
                 text = name,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp).clearAndSetSemantics { },
@@ -130,7 +168,12 @@ private fun PlantTarget(plant: Plant, onClick: () -> Unit, modifier: Modifier = 
 }
 
 @Composable
-internal fun GardenPlantArt(plant: Plant, modifier: Modifier = Modifier) {
+internal fun GardenPlantArt(
+    plant: Plant,
+    modifier: Modifier = Modifier,
+    motionEnabled: Boolean = false,
+    phase: State<Float>? = null
+) {
     val colors = MaterialTheme.colorScheme
     val palette = PlantPalette(
         leaf = colors.primary,
@@ -141,5 +184,30 @@ internal fun GardenPlantArt(plant: Plant, modifier: Modifier = Modifier) {
         soil = colors.onSecondaryContainer
     )
     val renderer = LocalPlantRenderer.current
-    Canvas(modifier = modifier) { renderer.draw(this, plant, palette) }
+    val animation = if (motionEnabled) tween<Float>(900) else snap<Float>()
+    val growth = animateFloatAsState(
+        when (plant.stage) {
+            PlantStage.SEED -> 0f
+            PlantStage.SPROUT -> 0.5f
+            PlantStage.BUD -> 0.78f
+            PlantStage.BLOOM -> 1f
+        },
+        animation,
+        label = "plant growth"
+    )
+    val bloom = animateFloatAsState(if (plant.stage == PlantStage.BLOOM) 1f else 0f, animation, label = "bloom opening")
+    val wilt = animateFloatAsState(
+        if (plant.condition != PlantCondition.GROWING) {
+            ((60 - plant.health) / 50f).coerceIn(0f, 1f)
+        } else {
+            0f
+        },
+        animation,
+        label = "plant recovery"
+    )
+    Canvas(modifier = modifier) {
+        val offset = Math.floorMod(plant.id.hashCode(), 100) / 100f
+        val sway = if (motionEnabled) sin(((phase?.value ?: 0f) + offset) * (2 * PI).toFloat()) * 2f else 0f
+        renderer.draw(this, plant, palette, PlantVisuals(growth.value, bloom.value, wilt.value, sway))
+    }
 }
