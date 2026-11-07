@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-07 (Session 12 / takeover and P09 recovery)
+Last updated: 2026-11-07 (Session 13 / P09 - lifecycle engine complete)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         94 JVM unit tests (green) + 1 migration suite (green on emulator)
+  Tests         132 JVM unit tests (green); migration suite last verified in P00b
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -158,6 +158,24 @@ SECTION 3 - TECH STACK
     Release build gradlew.bat :app:assembleRelease   (unsigned for now)
   Android Studio: open the ScreenGarden folder, let Gradle sync, pick the
   "app" run configuration, run on an API 26+ emulator or device.
+
+  CODEX TAKEOVER BUILD ENVIRONMENT (2026-11-07, PowerShell)
+    The JDK and SDK paths above are present. The restricted command runner could
+    not read the JDK until access was enabled; it was not a missing installation.
+    Keep generated files inside D:/FreeCodeChats/ScreenGarden. Before gradlew.bat:
+      JAVA_HOME = C:/Users/siamr/AppData/Local/jdk/jdk-17.0.20.1+1
+      ANDROID_HOME = C:/Users/siamr/AppData/Local/Android/Sdk
+      GRADLE_USER_HOME = D:/FreeCodeChats/ScreenGarden/.tools/gradle-home
+      ANDROID_USER_HOME = D:/FreeCodeChats/ScreenGarden/.tools/android
+      TEMP and TMP = D:/FreeCodeChats/ScreenGarden/.tools/tmp
+      JAVA_TOOL_OPTIONS = -Duser.home=D:/FreeCodeChats/ScreenGarden/.tools/home
+                          -Djava.io.tmpdir=D:/FreeCodeChats/ScreenGarden/.tools/tmp
+    Create these .tools directories first. Local .tools/Build-Environment.ps1
+    sets the variables; dot-source it, then run the four gates with --no-daemon.
+    .tools/ is excluded in .git/info/exclude, not tracked. A new clone must create
+    the directories and exclusion. Do not copy global credentials/configuration.
+    Network access for free dependency retrieval/GitHub needed command-runner
+    access, not a new account. See K53 for the one aborted setup invocation.
 
 
 --------------------------------------------------------------------------------
@@ -213,7 +231,8 @@ SECTION 4 - FOLDER LAYOUT
           |       |-- data/sync/DailyUsageSync.kt  day -> Room, idempotent (P06)
           |       |-- data/usage/                  usage source + aggregator (P05)
           |       |-- data/work/                   WorkManager worker + scheduler (P06)
-          |       |-- domain/garden/               HealthScore + calculator (P08)
+          |       |-- domain/garden/               HealthScore + calculator (P08),
+          |       |                                Plant + GardenEngine (P09)
           |       |-- domain/model/                ThemePreference, OnboardingChoices (P07)
           |       `-- ui/  theme/, navigation/, components/, screens/,
           |                 onboarding/ (OnboardingScreen + GoalSetup, P07)
@@ -232,6 +251,7 @@ SECTION 4 - FOLDER LAYOUT
           |   |-- data/sync/                           daily sync idempotency (7 tests)
           |   |-- data/usage/                          usage aggregation (11 tests)
           |   |-- domain/garden/HealthScoreCalculatorTest.kt  health score (22 tests)
+          |   |-- domain/garden/GardenEngineTest.kt  lifecycle and cap (38 tests)
           |   |-- domain/model/ThemePreferenceTest.kt  7 tests
           |   `-- ui/onboarding/OnboardingScreenTest.kt  Compose UI (3 tests)
           `-- androidTest/java/com/screengarden/app/data/local/
@@ -735,6 +755,45 @@ SECTION 6 - DECISIONS
       The focus target is a tuning constant, not a settings key: 16.7 lists no
       focus goal and D40 forbids inventing keys (K50).
 
+  D58 PLANT SIZE AND CONDITION ARE SEPARATE (P09).
+      PlantStage is SEED/SPROUT/BUD/BLOOM, derived from growthPoints; PlantCondition
+      is GROWING/WILTING/RECOVERING. A wilted bloom retains its size, so healing
+      never resets it to a seed. RECOVERING means health is rising below the
+      healthy line; it is preserved on an unknown or unchanged day. This is a
+      pure domain model, distinct from data/local/entity/Plant. No schema change.
+
+  D59 GARDEN RULES ARE VALIDATED DATA SEEDED FROM CONSTANTS (P09).
+      GardenRules uses GardenTuning/PlantTuning defaults; all values and limits
+      are documented in 16.2. One completed focus session forgives that day's
+      poor-score health loss and heals, so it can always start recovery under
+      the shipped rules. Unknown scores give no score/streak reward or loss;
+      known focus completions still grow and heal. Reward arithmetic uses Long
+      intermediates and growth saturates at Int.MAX_VALUE, never wrapping a
+      bloom back to a seed. Existing oversized gardens are kept, not deleted.
+
+  D60 THE ENGINE HAS NO CLOCK OR PERSISTENCE (P09).
+      GardenDay carries the caller's LocalDay-produced day key and an optional
+      actual latest completed-focus timestamp. Never substitute midnight for a
+      session time; missing timestamps preserve the previous value, older ones
+      cannot move it backward, and a newly planted seed claims no past sessions.
+      IDs come from an injectable UUID factory, invoked only when planting; a
+      duplicate or blank new ID is rejected. The caller must advance each local
+      day once, in order, transactionally with a processed-day marker (K51).
+
+  D61 REPOSITORY FILES ARE THE RESUME ENTRY POINT (takeover).
+      AGENTS.md sends Codex to this full memory, prompt IDs and SECTION 18.
+      docs/PROMPTS.md is the owner's restored prompt pack, including P01-P33
+      and R1-R6; use the ORIGIN NOTE's section mapping and existing decisions
+      when an old setup brief is superseded. Each prompt stays one logical task
+      and commit; the owner may authorize a batch, but save a checkpoint before
+      stopping for context. No separate skill file or external memory is needed.
+
+  D62 FUTURE SCREENSHOTS REQUIRE DEBUG-ONLY FAKE DATA (takeover safety rule).
+      H17's emulator-only capture still applies. Once P10 reads data, seed fake
+      debug-only garden/usage data before every public screenshot; never capture
+      a real device or real usage. Prior captures are historical evidence, not
+      verification of future screens. P09 changes no screen and needs no capture.
+
 
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
@@ -773,9 +832,9 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P08     done    Daily health score: pure calculator in domain/garden with
                   configurable weights, smooth curves, an honest missing-data
                   rule, 22 tests, and the formula written into 16.1 [new]
-  P09     active  Plant lifecycle engine + plant count cap [1.5 part]
-                  Uncommitted draft recovered at takeover; finish and verify it.
-  P10     todo    Garden screen [1.4]
+  P09     done    Pure plant lifecycle, growth/health rules, recoverable wilting,
+                  five-plant cap, event outcomes and 38 tests [1.5 part]
+  P10     NEXT    Garden screen [1.4]; bound K41 before stored usage drives it
   P11     todo    Animations [new]
   P12     todo    Focus logic + foreground service [1.3]
   P13     todo    Focus UI [1.3]
@@ -805,11 +864,12 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P09 (the plant engine) is the next step and must precede P10.
+  Sequencing note: P09 is complete; P10 is next, then P11.
   P04b is still open for the remaining four repositories (the two the sync
   needed are implemented). The score now exists but nothing computes it from
   stored rows yet: K41 must be bounded before a caller feeds daily_stats into it
-  (K44/K49). Only one prompt is executed per turn (H11).
+  (K44/K49). Keep one prompt's feature scope per commit (H11); the owner has
+  authorized batches, with a saved checkpoint when a session needs to end.
 
 
 --------------------------------------------------------------------------------
@@ -830,6 +890,8 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   emulator. Neither artifact ships in the APK. P08 added no dependency at all:
   the score is arithmetic over plain numbers, so it needs nothing beyond the
   Kotlin standard library.
+  P09 added no dependency: the lifecycle uses plain Kotlin arithmetic and the
+  existing JVM JUnit tests, with java.util.UUID as its default ID factory.
 
   Name / version                    License       Why / scope
   ---------------------------------------------------------------------------
@@ -1175,11 +1237,12 @@ SECTION 10 - KNOWN ISSUES
       setting: 16.7 has no focus goal and D40 forbids inventing a key that only
       one class reads. If a prompt adds a focus goal to SettingsRepository, move
       it into HealthScoreWeights at the same time or the two will disagree.
-  K51 P09 was left as three untracked files at takeover: domain/garden/Plant.kt,
-      domain/garden/GardenEngine.kt and domain/garden/GardenEngineTest.kt under
-      the main and test source sets. The initial gate reproduced 121 tests with
-      one failure (aPlantIsNeverPermanentlyLost). Finish validation and commit
-      these files before starting P10; there is no persisted garden caller yet.
+  K51 P09 HAS NO PERSISTED CALLER. The engine's domain growthPoints/condition
+      do not exist in schema v1. Applying the same day twice rewards it twice:
+      the function has no processed-day state. P10 must plan storage/mapping and
+      atomic day-once application, with a schema Migration and a running migration
+      test for new fields. Do not call the engine on every usage sync. The three
+      recovered P09 draft files and the failing recovery test are now complete.
   K52 RELEASE PROTOCOL GAP: SECTION 17 contains the completed first-push record,
       not a release milestone schedule. The owner supplied docs/PROMPTS.md during
       takeover, but no additional release milestone protocol. Do not invent a
@@ -1192,8 +1255,10 @@ SECTION 10 - KNOWN ISSUES
 
   Current lint state: 0 errors, 3 accepted warnings (K11, K12, K46). No baseline.
   Current ktlint state: clean (0 violations).
-  Current test state: 94 JVM tests green; migration suite green on the emulator.
-  Current CI state: green on main (ci.yml and release.yml both dispatched).
+  Current test state: 132 JVM tests green (38 lifecycle tests); migration suite
+  last green in P00b, not re-run this session because the schema did not change.
+  Current CI state: P08 CI confirmed green; P09 push/CI pending at this checkpoint.
+  The unsigned release workflow was not dispatched in this session.
 
 
 --------------------------------------------------------------------------------
@@ -1205,21 +1270,25 @@ SECTION 11 - CURRENT STATUS
     - P08 CI run 41772362278 is confirmed success. No GitHub Releases exist.
     - Initial gates: ktlintCheck --no-build-cache PASS; 121 unit tests with one
       P09 failure; lintDebug PASS (0 errors, 3 warnings); assembleDebug PASS.
-    - P09 is active, not merely NEXT as the older notes claimed. Its three
-      untracked files contain a draft engine and 27 tests. Corrections are being
-      verified before the feature commit. P04b still has four implementations left.
+    - P09 was active, not merely NEXT as the older notes claimed. The three
+      untracked draft files are now finished: 38 lifecycle tests and 132 total
+      tests pass. All four final local gates passed. P04b still has four
+      implementations left; P10 is next after bounding K41 in the usage layer.
     - AGENTS.md was missing and is now created; docs/PROMPTS.md was absent from
       all Git history and is restored from the owner's supplied prompt pack.
     - No new dependency or permission. No UI change or new screenshot. K41 must
       be fixed before stored usage drives the garden; no schema change yet.
 
-  P00, P00b, P04, P05, P05b, P06, P07 and P08 are COMPLETE. The project is
+  P00-P09 plus P00b/P05b are COMPLETE (P04b is partial). The project is
   published, CI is green, settings persist and theme the app, screen time is read
   from the system and verified against dumpsys on API 35 and API 26, a WorkManager
   sync stores that usage in Room - idempotently, on a schedule and on every app
   open, with a one-week backfill - a first-run flow explains the garden and
   records the user's goals before the tabs appear, and a pure Kotlin calculator
-  can now turn a day of those numbers into an explainable 0-100 score.
+  can now turn a day of those numbers into an explainable 0-100 score. The pure
+  plant engine turns a supplied score, focus completions and streak into growth,
+  health and recoverable conditions with a five-plant cap. No running screen
+  scores stored usage or persists this domain garden yet (K41/K49/K51).
 
   What exists and works
     - Public repository https://github.com/34rns/ScreenGarden with a clean,
@@ -1233,8 +1302,9 @@ SECTION 11 - CURRENT STATUS
       navigation shell (Garden, Focus, Insights, Settings).
     - Calm green light / dark / true-black AMOLED themes, verified by pixel
       probe, plus an RTL-correct and 1.3x-font-tolerant placeholder shell.
-    - Manifest: PACKAGE_USAGE_STATS (user-granted, SECTION 9) and a launcher
-      <queries> block; allowBackup="false"; no INTERNET permission.
+    - Manifest: PACKAGE_USAGE_STATS, POST_NOTIFICATIONS, WAKE_LOCK and
+      RECEIVE_BOOT_COMPLETED (SECTION 9) plus the androidx receiver permission;
+      launcher <queries>; allowBackup="false"; no INTERNET permission.
     - Room 2.6.1 data layer: six entities, six DAOs, ScreenGardenDatabase v1
       with schema export and no destructive fallback, core/time/LocalDay,
       six repository interfaces, 26 in-memory DAO tests + 6 time tests.
@@ -1277,7 +1347,12 @@ SECTION 11 - CURRENT STATUS
       renormalises around missing data, returns null when nothing can be judged,
       and reports the per-part breakdown. 22 tests pin the curves, the boundaries
       and the absurd inputs; the formula is written out in 16.1.
-    - Decisions D1-D57 recorded; no open questions (SECTION 14); standing
+    - Plant lifecycle (P09): PlantStage separates size from PlantCondition,
+      GardenRules validates tuning, GardenEngine returns immutable plants and
+      planted/bloomed/wilted/recovered outcomes; 38 pure JVM tests cover recovery
+      of the same plant after 400 poor days, limits, missing data, focus timestamps
+      and overflow. No new dependency, permission, UI or schema.
+    - Decisions D1-D62 recorded; no product questions (SECTION 14); standing
       orders for every future turn in SECTION 18.
 
   Evidence from P00b
@@ -1424,27 +1499,32 @@ SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  NEXT: finish the recovered P09 draft, run all gates, commit/push and watch CI.
+  NEXT: P10 - Garden UI, as defined in docs/PROMPTS.md. P09 is finished.
 
-  Scope of P09 (nothing else):
-    - GrowthStage and the SEED -> SPROUT -> BUD -> BLOOM progression, plus
-      WILTING and RECOVERING: gradual, always recoverable, never a dead plant.
-    - How a day's health score (P08) and a completed focus session move a plant,
-      and how many plants the garden may hold (the cap was left to P09 on
-      purpose - 16.2).
-    - Pure Kotlin in domain/garden, tested without Android; the plants table
-      already stores stage + health, so growthPoints/position (K24) wait for a
-      prompt that needs them.
+  Begin with the required data-quality prerequisite: fix K41 at measurement,
+  using tested screen-interactive/event coverage after checking actual platform
+  behavior. Never mask inflated data by clamping it in the sync or UI. Stored
+  rows cannot feed a health score/garden until that bound is proven (K44/K49).
 
-  BLOCKING: none for the pure engine, but nothing may feed it stored daily_stats
-  rows until the K41 bound lands (K44/K49): a score built from screen-off time
-  would wilt a garden for a phone that was asleep.
+  Then implement GardenViewModel and one UiState, a calm Canvas scene with
+  replaceable plant drawing, score/streak/focus action, plant detail sheet,
+  no-permission/no-data states, previews and a Compose UI test. Preserve the
+  existing theme, accessibility, RTL and font scaling. P04b needs its Garden
+  repository implementation as part of wiring; four implementations remain now.
 
-  Do NOT do in P09: the garden screen or its visuals (P10), animations (P11),
-  focus sessions themselves (P12/P13), schema v2, or any change to the score's
-  curve (P08 is closed; tuning is a constants change plus its tests).
+  Plan the domain-to-Room mapping first (K24/K51). Persist growth and the
+  processed-day marker safely so resyncs/recomposition cannot reward a day
+  twice. Any schema bump MUST include a Migration, a migration test executed on
+  the emulator, and a newly exported version file; keep 1.json unchanged.
+  No destructive fallback. Do not store fake debug screenshot data in release.
 
-  Then in order: P10 -> P11. The task definitions now exist in docs/PROMPTS.md.
+  Verify the new screen on the dedicated emulator with debug-only fake demo
+  data, including light/dark/AMOLED, 1.3x font and RTL; refresh affected docs and
+  fastlane images. Use local/free drawing and tools; no network in the app.
+
+  Then P11 animations. Do not start P12/focus service as part of Garden UI.
+  Signing/public release remains P33; SECTION 17 has no supplied milestone
+  protocol (K52). Save a checkpoint after every prompt before changing scope.
 
   Every turn also follows the standing orders in SECTION 18: local gate, commit,
   push, watch CI, refresh screenshots if a screen changed, update this file.
@@ -1453,28 +1533,6 @@ SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
 --------------------------------------------------------------------------------
-  SESSION 12 - 2026-11-07 - takeover, memory entry point and initial verification
-    Did       Read the complete memory; checked status and 20-commit history;
-              fetched origin; found the untracked P09 draft and its stale failed
-              test report; created AGENTS.md; restored the owner's prompt pack
-              to docs/PROMPTS.md; removed .gitignore's debug.keystore exception
-              so all keystores stay ignored under H8; corrected stale K3/K25 and
-              the expected POST_NOTIFICATIONS manifest entry.
-    Decided   Keep original prompt text; its older section references map as in
-              the ORIGIN NOTE. Existing decisions override superseded setup
-              prompts (license is already D27/D28). Do not invent missing release
-              milestones. Use gradlew.bat from PowerShell, without paid services.
-    Verified  Initial gates: style PASS; 121 unit tests, 1 P09 failure; lint PASS
-              with 0 errors/3 warnings; debug build PASS. Fetch proves local and
-              remote main at e09f823. P08 CI 41772362278 success; no releases.
-    Not ver.  P09 corrected code is awaiting final gates/CI at this checkpoint.
-              No emulator/device run. Video not available: public watch page
-              retrieved, but the English caption endpoint returned 0 bytes; no
-              summary or adopted ideas inferred. One aborted Gradle startup may
-              have touched its default outside-project cache (K53).
-    Next      Finish P09 and save the final feature checkpoint, then P10 with
-              K41 bounded before usage feeds the garden.
-
   SESSION 1 - 2026-11-02 - Task 0.1 + 0.2 (project skeleton + nav shell)
     Did       Gradle 8.13 + version catalog + one :app module; Compose shell;
               theme (light/dark/AMOLED); nav shell; manual DI; manifest with no
@@ -1896,6 +1954,57 @@ SECTION 13 - SESSION LOG
       - P09: the plant lifecycle engine and the plant-count cap.
 
 
+  SESSION 12 - 2026-11-07 - takeover, memory entry point and initial verification
+    Did       Read the complete memory; checked status and 20-commit history;
+              fetched origin; found the untracked P09 draft and its stale failed
+              test report; created AGENTS.md; restored the owner's prompt pack
+              to docs/PROMPTS.md; removed .gitignore's debug.keystore exception
+              so all keystores stay ignored under H8; corrected stale K3/K25 and
+              the expected POST_NOTIFICATIONS manifest entry.
+    Decided   Keep original prompt text; its older section references map as in
+              the ORIGIN NOTE. Existing decisions override superseded setup
+              prompts (license is already D27/D28). Do not invent missing release
+              milestones. Use gradlew.bat from PowerShell, without paid services.
+    Verified  Initial gates: style PASS; 121 unit tests, 1 P09 failure; lint PASS
+              with 0 errors/3 warnings; debug build PASS. Fetch proves local and
+              remote main at e09f823. P08 CI 41772362278 success; no releases.
+    Not ver.  P09 corrected code is awaiting final gates/CI at this checkpoint.
+              No emulator/device run. Video not available: public watch page
+              retrieved, but the English caption endpoint returned 0 bytes; no
+              summary or adopted ideas inferred. One aborted Gradle startup may
+              have touched its default outside-project cache (K53).
+    Next      Finish P09 and save the final feature checkpoint, then P10 with
+              K41 bounded before usage feeds the garden.
+
+  SESSION 13 - 2026-11-07 - P09 completion and durable handoff
+    Did       Finished the recovered Plant/GardenEngine/GardenEngineTest draft;
+              separated growth stages from health conditions; capped planting
+              at five, growth at ten points/day and rewards from two focus
+              completions; added honest focus timestamps and overflow-safe
+              arithmetic. Fixed the recovery test to heal the same starved plant,
+              rather than compare it with a separate 400-day healthy simulation.
+              Expanded 27 draft lifecycle tests to 38. Updated 16.2 and NEXT STEP.
+    Decided   D58-D62. Wilting keeps size; a completed focus session forgives the
+              poor-day health loss and can start recovery. No score means no
+              score/streak growth or health loss; known focus still rewards.
+              Pure engine callers must apply a local day once, atomically (K51).
+              Screenshots for future UI require emulator fake debug-only data.
+    Verified  Final local gates all PASS: ktlintCheck --no-build-cache; 132 JVM
+              tests (38 lifecycle), 0 failures/errors/skips; lintDebug 0 errors,
+              3 accepted warnings (K11/K12/K46); assembleDebug successful.
+              Targeted 38-test lifecycle run also passed. Merged manifest has
+              exactly the documented four permissions plus androidx receiver,
+              no INTERNET, allowBackup=false. Schema 1.json unchanged. Secret
+              sweep finds no credential patterns or forbidden private files.
+    Not ver.  P09 feature CI is pending until commit/push completes; update the
+              verified CI evidence after it finishes. No emulator/device run,
+              no real-day score, no persistence/caller, no migration execution
+              this session. No rendered Garden UI or refreshed screenshot.
+              No signed release; optional video not available (Session 12).
+    Next      P10, starting with K41 measurement bounds and careful K51 storage
+              planning. Resume from this memory and docs/PROMPTS.md in a new
+              session after this task's final commit/push/CI checkpoint.
+
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
@@ -2042,14 +2151,43 @@ SECTION 16 - CORE DESIGN
     a specific curve other than through this calculator.
 
   16.2 PLANT LIFECYCLE
-    States: SEED -> SPROUT -> BUD -> BLOOM, plus WILTING and RECOVERING.
-    Growth comes from good daily scores, completed focus sessions and streak
-    bonuses (16.4). Wilting is GRADUAL and ALWAYS RECOVERABLE: a plant is never
-    permanently lost, which is why there is no "dead plant" state to delete.
-    Recovery comes from a completed focus session or a good day. The maximum
-    number of plants is decided in P09, not here.
-    Stored today as Plant.stage (Int) + health (0-100); growthPoints and position
-    are a v2 addition (K24).
+    P09 implementation: domain/garden/Plant.kt and GardenEngine.kt (D58-D60).
+    Size: SEED at 0 points, SPROUT at 10, BUD at 25, BLOOM at 45. PlantStage
+    derives from growthPoints; WILTING and RECOVERING are PlantCondition values,
+    so a wilted bloom stays a bloom. Growth never decreases due to a poor day
+    and saturates at Int.MAX_VALUE instead of overflowing.
+
+    Defaults live in PlantTuning/GardenTuning and validated GardenRules:
+      - Daily growth = round(clamped score / 100 x 5), plus 2 points for each
+        of the first 2 completed focus sessions, plus a streak bonus: 0 before
+        day 3, then 1 on day 3, 2 on day 4, 3 from day 5. Total capped at 10.
+      - Health gains 10 for a score >= 60, loses 6 for a score < 40, and is
+        unchanged for scores 40..59. Each counted focus completion adds 4 and
+        forgives that day's poor-score health loss, so one can start recovery.
+      - Health is bounded to 10..100; new seeds start at 60. Health >= 60 is
+        GROWING; rising below 60 is RECOVERING; falling below 60 is WILTING.
+        An unchanged day keeps the previous condition. Seven poor days take a
+        full-health plant to 58, not permanent loss; the floor is always 10.
+      - Unknown score: no score/streak growth and no health penalty. Known
+        focus completions still grow and heal. Negative counts give no rewards.
+      - One new fern seed after a score >= 60, only while there are fewer than
+        FIVE plants. Never delete an existing plant, even if an imported garden
+        exceeds the configured cap. The new seed receives no previous rewards
+        or completed-focus timestamp.
+
+    advance() returns immutable plants plus planted/bloomed/wilted/recovered
+    events; grow() updates one plant. UUID creation is injectable and only runs
+    when planting. Timestamp inputs are UTC epoch millis supplied by the caller;
+    latest focus time must be an actual completion time, never the day boundary.
+    A missing focus timestamp keeps the previous one; an older one cannot rewind.
+    Completed local days must be applied ONCE in order by the future persisted
+    caller. Re-reading today's usage must not plant/reward it again (K51).
+
+    Tests: 38 JVM cases, including 400 poor days followed by recovery of the
+    SAME plant, stage retention, focus rescue, missing inputs, planting/caps,
+    events, timestamps, custom rules and large-number bounds.
+    Still stored as schema v1 stage + health; growthPoints/position and the
+    persistence/mapping required by P10 need a real schema Migration (K24/K51).
 
   16.3 FOCUS SESSIONS
     A session has a planned duration and a tag (Study / Work / Reading / Other).
