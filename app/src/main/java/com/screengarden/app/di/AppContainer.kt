@@ -4,12 +4,14 @@ package com.screengarden.app.di
 
 import android.content.Context
 import androidx.work.WorkManager
+import com.screengarden.app.data.focus.FocusController
 import com.screengarden.app.data.local.ScreenGardenDatabase
 import com.screengarden.app.data.onboarding.OnboardingCompletion
 import com.screengarden.app.data.repo.AppUsageRepository
 import com.screengarden.app.data.repo.AppUsageRepositoryImpl
 import com.screengarden.app.data.repo.DailyStatRepository
 import com.screengarden.app.data.repo.DailyStatRepositoryImpl
+import com.screengarden.app.data.repo.FocusSessionRepositoryImpl
 import com.screengarden.app.data.repo.GardenRepositoryImpl
 import com.screengarden.app.data.settings.DataStoreSettingsRepository
 import com.screengarden.app.data.settings.SettingsRepository
@@ -73,6 +75,9 @@ class AppContainer(context: Context) {
     }
 
     val gardenRepository: GardenRepositoryImpl by lazy { GardenRepositoryImpl(database) }
+
+    val focusSessionRepository: FocusSessionRepositoryImpl by lazy { FocusSessionRepositoryImpl(database) }
+    val focusController: FocusController by lazy { FocusController(appContext) }
 
     fun gardenViewModel(): GardenViewModel = GardenViewModel(
         store = gardenRepository,

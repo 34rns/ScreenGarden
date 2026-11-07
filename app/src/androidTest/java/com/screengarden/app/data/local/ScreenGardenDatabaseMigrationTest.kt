@@ -150,6 +150,40 @@ class ScreenGardenDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun migratingFrom2To3PreservesSessionsAndClosesLegacyTimers() {
+        helper.createDatabase(TEST_DATABASE, 2).use { old ->
+            for (completed in 0..1) {
+                old.execSQL(
+                    "INSERT INTO focus_sessions " +
+                        "(sessionId, dayStartUtcMillis, startedAtUtcMillis, endedAtUtcMillis, " +
+                        "plannedMinutes, wasCompleted, plantId) VALUES " +
+                        "('session-$completed', 1700000000000, 1700000000000, " +
+                        "${if (completed == 1) "1700000060000" else "NULL"}, 1, $completed, 'plant')"
+                )
+            }
+            old.execSQL("INSERT INTO badges VALUES ('first-bloom', 1700000001000)")
+        }
+        helper.runMigrationsAndValidate(TEST_DATABASE, 3, true, ScreenGardenDatabase.MIGRATION_2_3).use { migrated ->
+            migrated.query("SELECT * FROM focus_sessions ORDER BY sessionId").use { rows ->
+                assertEquals(2, rows.count)
+                for (completed in 0..1) {
+                    assertTrue(rows.moveToNext())
+                    assertEquals("OTHER", rows.getString(rows.getColumnIndexOrThrow("tag")))
+                    assertEquals(
+                        if (completed == 1) "COMPLETED" else "CANCELLED",
+                        rows.getString(rows.getColumnIndexOrThrow("status"))
+                    )
+                    assertEquals(completed * 60_000L, rows.getLong(rows.getColumnIndexOrThrow("actualDurationMs")))
+                    assertEquals("plant", rows.getString(rows.getColumnIndexOrThrow("plantId")))
+                    assertTrue(!rows.isNull(rows.getColumnIndexOrThrow("endedAtUtcMillis")))
+                    assertEquals(-1, rows.getInt(rows.getColumnIndexOrThrow("bootCount")))
+                }
+            }
+            migrated.query("SELECT * FROM badges").use { assertEquals(1, it.count) }
+        }
+    }
+
     private companion object {
         const val TEST_DATABASE = "migration-test.db"
     }

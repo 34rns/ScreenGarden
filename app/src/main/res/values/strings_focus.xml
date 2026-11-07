@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="focus_channel">Focus timer</string>
+    <string name="focus_channel_description">An ongoing countdown for sessions you start, with a stop action.</string>
+    <string name="focus_notification_title">A little time for yourself</string>
+    <string name="focus_preparing">Preparing your focus session…</string>
+    <string name="focus_remaining_minutes">%1$d min remaining</string>
+    <string name="focus_stop">Stop focus</string>
+</resources>

@@ -2,6 +2,7 @@
 
 package com.screengarden.app.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -28,5 +29,10 @@ data class FocusSession(
     val endedAtUtcMillis: Long? = null,
     val plannedMinutes: Int,
     val wasCompleted: Boolean = false,
-    val plantId: String? = null
+    val plantId: String? = null,
+    @ColumnInfo(defaultValue = "'OTHER'") val tag: String = "OTHER",
+    @ColumnInfo(defaultValue = "'RUNNING'") val status: String = "RUNNING",
+    @ColumnInfo(defaultValue = "0") val actualDurationMs: Long = 0,
+    @ColumnInfo(defaultValue = "0") val updatedAtUtcMillis: Long = startedAtUtcMillis,
+    @ColumnInfo(defaultValue = "-1") val bootCount: Int = -1
 )

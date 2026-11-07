@@ -22,7 +22,7 @@ import com.screengarden.app.data.local.entity.FocusSession
 import com.screengarden.app.data.local.entity.Plant
 
 /** Bumped together with [DATABASE_VERSION] when the schema changes (D22). */
-private const val DATABASE_VERSION = 2
+private const val DATABASE_VERSION = 3
 
 /**
  * The app's single Room database: everything ScreenGarden knows, stored on device.
@@ -87,7 +87,26 @@ abstract class ScreenGardenDatabase : RoomDatabase() {
         }
 
         /** Append migrations here; never rewrite an already shipped migration. */
-        private val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2)
+        val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE focus_sessions ADD COLUMN tag TEXT NOT NULL DEFAULT 'OTHER'")
+                db.execSQL("ALTER TABLE focus_sessions ADD COLUMN status TEXT NOT NULL DEFAULT 'RUNNING'")
+                db.execSQL("ALTER TABLE focus_sessions ADD COLUMN actualDurationMs INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE focus_sessions ADD COLUMN updatedAtUtcMillis INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE focus_sessions ADD COLUMN bootCount INTEGER NOT NULL DEFAULT -1")
+                // Legacy rows had no reliable timer checkpoints; never resurrect them.
+                db.execSQL(
+                    "UPDATE focus_sessions SET status = CASE WHEN wasCompleted = 1 THEN 'COMPLETED' " +
+                        "ELSE 'CANCELLED' END, " +
+                        "actualDurationMs = MAX(0, MIN(plannedMinutes * 60000, " +
+                        "COALESCE(endedAtUtcMillis, startedAtUtcMillis) - startedAtUtcMillis)), " +
+                        "updatedAtUtcMillis = COALESCE(endedAtUtcMillis, startedAtUtcMillis), " +
+                        "endedAtUtcMillis = COALESCE(endedAtUtcMillis, startedAtUtcMillis)"
+                )
+            }
+        }
+
+        private val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
 
         /** Builds the on-disk database. The DI container calls this lazily (D1). */
         fun build(context: Context): ScreenGardenDatabase =

@@ -35,8 +35,6 @@
         - ACCESS_NETWORK_STATE: only needed by network-constrained work; every
           constraint we set is local (battery), and an offline-first app must not
           even look like it watches connectivity (SECTION 9).
-        - FOREGROUND_SERVICE: only needed when a worker calls setForeground(); ours is
-          a short CoroutineWorker, so the permission would be an unused capability.
         WAKE_LOCK and RECEIVE_BOOT_COMPLETED stay: the first lets the worker finish
         once started, the second lets WorkManager reschedule the periodic sync after
         a reboot. Both are documented in SECTION 9.
@@ -44,9 +42,9 @@
     <uses-permission
         android:name="android.permission.ACCESS_NETWORK_STATE"
         tools:node="remove" />
-    <uses-permission
-        android:name="android.permission.FOREGROUND_SERVICE"
-        tools:node="remove" />
+    <!-- P12 user-started focus countdown; justified in memory SECTION 9. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!--
         Launcher-app visibility on API 30+. Reading usage stats gives package
@@ -75,6 +73,21 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ScreenGarden">
+
+        <service
+            android:name=".data.focus.FocusTimerService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-started offline focus countdown with an ongoing notification and stop action" />
+        </service>
+        <receiver android:name=".data.focus.FocusBootReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".MainActivity"

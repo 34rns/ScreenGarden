@@ -36,8 +36,17 @@ interface FocusSessionDao {
      * Sessions with no end instant. A non-empty result after a cold start means
      * the app was killed mid-session and the session needs recovering (Phase 1.3).
      */
-    @Query("SELECT * FROM focus_sessions WHERE endedAtUtcMillis IS NULL ORDER BY startedAtUtcMillis ASC")
+    @Query(
+        "SELECT * FROM focus_sessions WHERE endedAtUtcMillis IS NULL AND status = 'RUNNING' " +
+            "ORDER BY startedAtUtcMillis ASC"
+    )
     fun observeRunning(): Flow<List<FocusSession>>
+
+    @Query(
+        "SELECT * FROM focus_sessions WHERE endedAtUtcMillis IS NULL AND status = 'RUNNING' " +
+            "ORDER BY startedAtUtcMillis ASC LIMIT 1"
+    )
+    suspend fun activeSession(): FocusSession?
 
     @Update
     suspend fun update(session: FocusSession): Int
