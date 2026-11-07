@@ -2,14 +2,13 @@
 
 package com.screengarden.app.data.repo
 
-import com.screengarden.app.data.local.entity.Plant
+import com.screengarden.app.domain.garden.Plant
 import kotlinx.coroutines.flow.Flow
 
 /**
  * The garden: which plants exist and how they are doing.
  *
- * INTERFACE ONLY for now (Task 1.1); Phase 1.4 renders it and Phase 1.5 owns the
- * growth rules that write to it.
+ * Room mappings stay inside [GardenRepositoryImpl]; callers use domain plants.
  */
 interface GardenRepository {
 

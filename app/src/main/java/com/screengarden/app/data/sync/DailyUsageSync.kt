@@ -9,6 +9,7 @@ import com.screengarden.app.data.repo.AppUsageRepository
 import com.screengarden.app.data.repo.DailyStatRepository
 import com.screengarden.app.data.usage.DayUsage
 import com.screengarden.app.data.usage.DayUsageResult
+import com.screengarden.app.data.usage.UnlockCount
 import com.screengarden.app.data.usage.UsageRepository
 import java.time.ZoneId
 
@@ -111,15 +112,14 @@ class DailyUsageSync(
         // The aggregate belongs to several features (focus, plants, score), so it is
         // read back and only this sync's own fields are replaced. A missing row means
         // the other fields are still their defaults, which the entity already is.
-        val existing = dailyStatRepository.getDay(dayStartUtcMillis)
         val screenMinutes = (usage.totalScreenTimeMillis / MILLIS_PER_MINUTE).toInt()
-        dailyStatRepository.save(
-            existing?.copy(
-                screenMinutes = screenMinutes,
-                updatedAtUtcMillis = nowMillis
-            ) ?: DailyStat(
+        dailyStatRepository.saveUsage(
+            DailyStat(
                 dayStartUtcMillis = dayStartUtcMillis,
                 screenMinutes = screenMinutes,
+                pickups = if (usage.usageIsBounded) usage.pickups else null,
+                unlocks = (usage.unlocks as? UnlockCount.Supported)?.count,
+                usageIsBounded = usage.usageIsBounded,
                 updatedAtUtcMillis = nowMillis
             )
         )

@@ -7,6 +7,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.screengarden.app.data.local.dao.AppLimitDao
 import com.screengarden.app.data.local.dao.AppUsageDailyDao
 import com.screengarden.app.data.local.dao.BadgeDao
@@ -21,7 +22,7 @@ import com.screengarden.app.data.local.entity.FocusSession
 import com.screengarden.app.data.local.entity.Plant
 
 /** Bumped together with [DATABASE_VERSION] when the schema changes (D22). */
-private const val DATABASE_VERSION = 1
+private const val DATABASE_VERSION = 2
 
 /**
  * The app's single Room database: everything ScreenGarden knows, stored on device.
@@ -67,17 +68,31 @@ abstract class ScreenGardenDatabase : RoomDatabase() {
 
         const val NAME: String = "screengarden.db"
 
-        /** Empty until version 2 exists; append a migration here, never edit one. */
-        private val MIGRATIONS: Array<Migration> = emptyArray()
+        /** Preserves every v1 row and makes old usage explicitly untrusted. */
+        val MIGRATION_1_2: Migration = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE daily_stats ADD COLUMN score INTEGER")
+                db.execSQL("ALTER TABLE daily_stats ADD COLUMN pickups INTEGER")
+                db.execSQL("ALTER TABLE daily_stats ADD COLUMN unlocks INTEGER")
+                db.execSQL("ALTER TABLE daily_stats ADD COLUMN usageIsBounded INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE daily_stats ADD COLUMN gardenApplied INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE plants ADD COLUMN growthPoints INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE plants ADD COLUMN condition TEXT NOT NULL DEFAULT 'GROWING'")
+                db.execSQL(
+                    "UPDATE plants SET growthPoints = CASE " +
+                        "WHEN stage >= 3 THEN 45 WHEN stage = 2 THEN 25 WHEN stage = 1 THEN 10 ELSE 0 END, " +
+                        "condition = CASE WHEN health < 60 THEN 'WILTING' ELSE 'GROWING' END"
+                )
+            }
+        }
+
+        /** Append migrations here; never rewrite an already shipped migration. */
+        private val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2)
 
         /** Builds the on-disk database. The DI container calls this lazily (D1). */
         fun build(context: Context): ScreenGardenDatabase =
             Room.databaseBuilder(context, ScreenGardenDatabase::class.java, NAME)
-                .apply {
-                    if (MIGRATIONS.isNotEmpty()) {
-                        addMigrations(*MIGRATIONS)
-                    }
-                }
+                .addMigrations(*MIGRATIONS)
                 .build()
     }
 }

@@ -9,7 +9,6 @@
     <string name="tab_settings">Settings</string>
 
     <!-- Placeholder copy for the skeleton screens -->
-    <string name="garden_placeholder">Your garden grows here. Focus sessions will plant and nurture it.</string>
     <string name="focus_placeholder">Start a calm focus session here. Session tools are not built yet.</string>
     <string name="insights_placeholder">Weekly screen time and focus trends will appear here.</string>
     <string name="settings_placeholder">App limits, themes and privacy options will be configured here.</string>

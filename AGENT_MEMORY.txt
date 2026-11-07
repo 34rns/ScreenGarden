@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-07 (Session 13 / P09 - lifecycle engine complete)
+Last updated: 2026-11-07 (Session 15 / P10 verified; commit and CI pending)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         132 JVM unit tests (green); migration suite last verified in P00b
+  Tests         168 JVM tests (green); v1->v2 migration verified on API 35 in P10
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -214,7 +214,8 @@ SECTION 4 - FOLDER LAYOUT
       |-- proguard-rules.pro            R8 rules (currently none needed)
       |-- schemas/                      exported Room schemas - COMMITTED (D22)
       |   `-- com.screengarden.app.data.local.ScreenGardenDatabase/
-      |       `-- 1.json
+      |       |-- 1.json (immutable history)
+      |       `-- 2.json (P10: bounded usage and persistent garden)
       `-- src/
           |-- main/
           |   |-- AndroidManifest.xml   PACKAGE_USAGE_STATS only, allowBackup=false
@@ -235,7 +236,8 @@ SECTION 4 - FOLDER LAYOUT
           |       |                                Plant + GardenEngine (P09)
           |       |-- domain/model/                ThemePreference, OnboardingChoices (P07)
           |       `-- ui/  theme/, navigation/, components/, screens/,
-          |                 onboarding/ (OnboardingScreen + GoalSetup, P07)
+          |                 onboarding/ (OnboardingScreen + GoalSetup, P07),
+          |                 screens/garden/ (ViewModel/state, Canvas, renderer, details)
           |-- debug/                            DEBUG-ONLY source set (P05b)
           |   |-- res/values/strings.xml        self-check strings, never shipped
           |   `-- java/com/screengarden/app/
@@ -794,6 +796,39 @@ SECTION 6 - DECISIONS
       a real device or real usage. Prior captures are historical evidence, not
       verification of future screens. P09 changes no screen and needs no capture.
 
+  D63 ROOM v2 IS THE MINIMUM P10 STORAGE CHANGE.
+      DailyStat adds nullable score/pickups/unlocks, usageIsBounded and
+      gardenApplied; Plant adds growthPoints and condition. MIGRATION_1_2 maps
+      old stages to 0/10/25/45 growth and retains every row. Old usage is untrusted
+      until re-measured. Usage-only writes are transactional and preserve focus
+      and applied rewards. Snapshot re-reads are transactional; score updates
+      reject changed measurements, and the day marker and plants commit together.
+
+  D64 ONLY COMPLETED, BOUNDED DAYS ADVANCE THE PERSISTED GARDEN.
+      Today's changing score is displayed but not rewarded until its day ends.
+      GardenViewModel applies available days oldest first; refresh/recomposition
+      cannot duplicate rewards. Missing features (focus before P12, limits before
+      P15, bedtime before P17) contribute unknown values, not fabricated zeros.
+      Saved plants remain visible after permission revocation or read failures.
+      The current query covers today plus 31 days; P18 owns full streak history.
+
+  D65 SCREEN-OFF MEASUREMENT BOUND AND ITS LIMITS (P10).
+      Replay yesterday's state, clip at LocalDay, stop time at screen-off/shutdown,
+      restart only on wake, close stopped activities, distinguish replacement
+      activity names, and discard unmatched intervals before runtime startup.
+      Android docs confirm screen events API 28 and stopped/startup/shutdown API
+      29: https://developer.android.com/reference/android/app/usage/UsageEvents.Event
+      usageIsBounded requires screen-event capability AND actual screen evidence.
+      API 26-27/empty streams do not claim a score. A process kill with no closing
+      or screen event cannot be observed exactly; do not claim such accuracy.
+
+  D66 P10 ART AND DEMO DATA ARE LOCAL AND FREE.
+      Compose vector flower/bonsai/cactus/fern share the existing semantic theme
+      palette. LocalPlantRenderer can be replaced by validated pack art later.
+      DebugCatalog has fake garden/empty/permission destinations only in debug;
+      they read/write no usage or database. Public captures use emulator-5558's
+      project-local AVD, fixed demo clock/battery, and a rendered-content guard.
+
 
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
@@ -814,8 +849,8 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
                   interfaces, time helper, 32 tests [1.1]
   P04     done    DataStore settings repository + theme wiring, 16 new
                   tests [1.2]
-  P04b    todo    Implement the six repository interfaces over their DAOs
-                  (2 of 6 done in P06: DailyStat, AppUsage) [1.2 part]
+  P04b    partial Three of six implementations: DailyStat/AppUsage (P06),
+                  Garden (P10); AppLimit/FocusSession/Badge follow their prompts
   P05     done    Usage stats repository: screen time, per-app usage,
                   pickups, unlocks, access check [2.1 part]
   P05b    done    Debug-only usage self-check; granted usage access on the
@@ -834,7 +869,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
                   rule, 22 tests, and the formula written into 16.1 [new]
   P09     done    Pure plant lifecycle, growth/health rules, recoverable wilting,
                   five-plant cap, event outcomes and 38 tests [1.5 part]
-  P10     NEXT    Garden screen [1.4]; bound K41 before stored usage drives it
+  P10     done    Garden screen, bounded usage and Room v2; 168 tests and migration
   P11     todo    Animations [new]
   P12     todo    Focus logic + foreground service [1.3]
   P13     todo    Focus UI [1.3]
@@ -864,13 +899,9 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P09 is complete; P10 is next, then P11.
-  P04b is still open for the remaining four repositories (the two the sync
-  needed are implemented). The score now exists but nothing computes it from
-  stored rows yet: K41 must be bounded before a caller feeds daily_stats into it
-  (K44/K49). Keep one prompt's feature scope per commit (H11); the owner has
-  authorized batches, with a saved checkpoint when a session needs to end.
-
+  Sequencing note: P00-P10 are complete. P11 is next; P04b has AppLimit,
+  FocusSession and Badge implementations left, each owned by its feature prompt.
+  Keep one prompt per logical commit; continue the owner-authorized full batch.
 
 --------------------------------------------------------------------------------
 SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
@@ -1052,11 +1083,8 @@ SECTION 10 - KNOWN ISSUES
   K1  The AMOLED scheme is a persisted setting now (P04), but nothing writes it
       yet: the picker is P22's work, so on device it is still reachable only
       through the debug intent extra (D35). Close in P22.
-  K2  All four tabs are placeholders by design (no feature screens yet).
-  K3  No UI reads the database yet. DailyUsageSync reads and writes Room through
-      the two P06 repository implementations (DailyStat and AppUsage); four
-      implementations remain for P04b. The Activity reads DataStore settings
-      for the theme and onboarding, including saved goals.
+  K2  Garden is implemented in P10. Focus, Insights and Settings remain placeholders until their prompts.
+  K3  P10 GardenViewModel reads Room through GardenStore. DailyStat/AppUsage/Garden are implemented; AppLimit/FocusSession/Badge remain for their feature prompts.
   K4  kotlinOptions { jvmTarget } is deprecated in Kotlin 2.1 (still compiles).
       Migrate to the compilerOptions DSL before AGP 9 / Kotlin 2.2.
   K5  Gradle 8.13 prints "Deprecated Gradle features ... incompatible with
@@ -1099,12 +1127,7 @@ SECTION 10 - KNOWN ISSUES
   K18 Repository interfaces expose Room entities (D25). When domain models
       arrive the mapping moves into the implementations and the signatures
       change once.
-  K19 CLOSED in P00b. The migration suite RAN on the emulator:
-      `:app:connectedDebugAndroidTest` -> BUILD SUCCESSFUL in 41s,
-      ScreenGardenDatabaseMigrationTest tests=2 failures=0 (one of them the
-      @Ignore'd 1->2 template, reported SKIPPED). The schema-creation and
-      validation path is now proven on a real Android SQLite, not just
-      compiled. The 1->2 case still needs schema v2 (K24).
+  K19  CLOSED in P10. Both migration tests passed on API 35: 2 tests, 0 failures/errors/skips, preserving all six tables and existing stages through v1->v2.
   K20 FocusSession.plantId is a plain indexed column, not a ForeignKey, on
       purpose: a session may outlive its plant. Revisit with ON DELETE SET NULL
       if the garden starts deleting plants.
@@ -1113,12 +1136,7 @@ SECTION 10 - KNOWN ISSUES
       Nothing recovers it yet; P12 owns that.
   K23 app/schemas/ is guarded only by H15 and the PR checklist; nothing stops
       someone deleting 1.json while adding 2.json.
-  K24 SCHEMA v1 IS MISSING FIELDS THE DESIGN NEEDS (recorded in P00, not
-      changed). Missing: DailyStat.score, .pickups, .unlocks, .isCompassionDay
-      (16.1/16.4); Plant.growthPoints, .position (16.2/16.4);
-      FocusSession.tag, .status (16.3/16.4). When a prompt needs one, do it
-      properly: bump DATABASE_VERSION, add a Migration, add a migration case,
-      commit the exported 2.json (H14/H15). Never edit or regenerate 1.json.
+  K24  Room v2 contains score/pickups/unlocks/gardenApplied/usageIsBounded and plant growthPoints/condition. Still missing compassion day (P18), focus tag/status (P12). Grid position is derived, not persisted (D63). Every future schema needs a new Migration/test/export; never modify old JSON.
   K25 CLOSED in P08: SECTION 16.1 now specifies the implemented score formula.
   K26 COSMETIC: the status bar in every screenshot still shows the emulator's
       "no internet" wifi/mobile icons. The demo-mode `command network -e wifi
@@ -1157,9 +1175,7 @@ SECTION 10 - KNOWN ISSUES
       API 28)". On API 35 the counter agreed with the system exactly (1 unlock
       = 1 KEYGUARD_HIDDEN event), after enabling the AVD's disabled lock screen
       with `locksettings set-disabled false` and swiping up.
-  K34 No PRODUCT screen calls UsageRepository yet: P10/P19 own the real UI and
-      the daily sync that persists it is P06. The only caller is the debug
-      self-check (D49), which is not shipped.
+  K34  CLOSED in P10. The product garden reads persisted bounded usage through GardenStore; its debug demo reads only fake UI state.
   K35 CLOSED in P05b. The Android adapter produced real, measured numbers on two
       emulators. API 35: Settings/DeskClock/Calendar/Chrome each 14-16s for
       scripted 15s sessions, matching the system's own totalTimeUsed (00:14,
@@ -1186,13 +1202,7 @@ SECTION 10 - KNOWN ISSUES
       only MOVE_TO_* events; the headless power-key presses were likely
       swallowed). Pickup counting is therefore proven on API 35 (6 = 6)
       and unproven for 26-27, where it uses the same constant.
-  K41 OPEN: a screen-off period does not pause the foreground activity, and a
-      force-stop may leave no ACTIVITY_PAUSED, so event pairing alone can count
-      time when the phone was asleep or the app was killed while foreground.
-      The self-check's own app row (3h32m after ~13h of emulator uptime) is the
-      visible symptom. P06/P19 must combine screen time with SCREEN_INTERACTIVE
-      coverage (or ignore intervals longer than a threshold) before any of these
-      numbers reach the UI; the fix is deliberately NOT invented here.
+  K41  Screen-off/shutdown intervals are bounded in P10 with regression coverage (D65). Missing events, OEM omissions and silent force-stop remain measurement limits; API 26-27 and streams lacking screen evidence show incomplete usage, not a score.
   K42 WorkManager runs the periodic job once when it is first enqueued, so the
       very first launch produced two concurrent syncs (one-time + periodic),
       each backfilling seven days. Harmless - both reported SUCCESS and the
@@ -1204,13 +1214,7 @@ SECTION 10 - KNOWN ISSUES
       emulator was not rebooted to watch the periodic job come back. Verify
       with `adb reboot`, then `adb shell dumpsys jobscheduler | grep
       androidx.work.systemjobscheduler` before opening the app.
-  K44 THE SYNC NOW PERSISTS K41. The stored daily rows contain whatever the
-      repository measured, including foreground time across screen-off
-      periods: on the emulator that wrote 296 screenMinutes for 2026-11-02 and
-      892 for 2026-11-03. That is a data-quality problem, not a sync bug, and
-      it becomes user-visible the moment P08/P19 read these rows - so the K41
-      bound must land before then. Do not "fix" it by clamping numbers in the
-      sync; the measurement is where the bug is.
+  K44  Old unbounded rows migrate as usageIsBounded=false and cannot feed the garden. Sync re-measures available recent days; history whose OS events expired remains incomplete. Never clamp inflated legacy values to invent accuracy.
   K45 Usage history older than roughly a week is gone (D51): the backfill can
       read at most about seven days of system events, so a fresh install on an
       old device cannot show the month before it. Accepted and documented in the
@@ -1226,23 +1230,12 @@ SECTION 10 - KNOWN ISSUES
   K48 Onboarding cannot be re-run once it is done: there is no "show the intro
       again" action, and clearing app data is the only way back. A reset belongs to
       the Settings screen (P22), not to a debug hook.
-  K49 THE SCORE HAS NO CALLER YET. HealthScoreCalculator is tested but nothing
-      builds its inputs: no daily_stats row is read, nothing is persisted, no
-      screen shows it, and the focus minutes come from the focus feature that is
-      still P12. That is deliberate for P08 (the curve had to be pinned first),
-      but it means the weights have never been checked against real data - and
-      the only stored numbers available today are K41-inflated (K44). Build the
-      caller only after the K41 bound lands.
+  K49  CLOSED in P10. GardenViewModel scores bounded daily records using HealthScoreCalculator. Focus, limits and bedtime inputs stay unknown until their prompts. Weights are still untuned against real-device daily use.
   K50 The focus target (60 minutes) is a HealthScoreTuning constant, not a
       setting: 16.7 has no focus goal and D40 forbids inventing a key that only
       one class reads. If a prompt adds a focus goal to SettingsRepository, move
       it into HealthScoreWeights at the same time or the two will disagree.
-  K51 P09 HAS NO PERSISTED CALLER. The engine's domain growthPoints/condition
-      do not exist in schema v1. Applying the same day twice rewards it twice:
-      the function has no processed-day state. P10 must plan storage/mapping and
-      atomic day-once application, with a schema Migration and a running migration
-      test for new fields. Do not call the engine on every usage sync. The three
-      recovered P09 draft files and the failing recovery test are now complete.
+  K51  CLOSED in P10. Room v2 stores growthPoints/condition; completed-day scoring and marker/plant writes protect once-only rewards. Repository and ViewModel tests cover repeated reads, stale measurements and preserved usage/focus fields.
   K52 RELEASE PROTOCOL GAP: SECTION 17 contains the completed first-push record,
       not a release milestone schedule. The owner supplied docs/PROMPTS.md during
       takeover, but no additional release milestone protocol. Do not invent a
@@ -1259,286 +1252,38 @@ SECTION 10 - KNOWN ISSUES
 
   Current lint state: 0 errors, 3 accepted warnings (K11, K12, K46). No baseline.
   Current ktlint state: clean (0 violations).
-  Current test state: 132 JVM tests green (38 lifecycle tests); migration suite
-  last green in P00b, not re-run this session because the schema did not change.
-  Current CI state: P09 feature commit 347fa59 is pushed and CI run 42372949327
-  completed SUCCESS (job 2m42s); all four checks passed. The final memory-only
-  checkpoint is checked separately before ending the session.
-  The unsigned release workflow was not dispatched in this session.
-
+  Current test state: 168 JVM tests, no failures/errors/skips. Both v1->v2
+  migration tests passed on API 35. Current four local gates passed.
+  Current CI state: P09 main e2e5131 green; P10 commit/push/CI pending.
+  No signed release has been published.
 
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  TAKEOVER CHECKPOINT (2026-11-07): read this before the historical evidence below.
-    - git fetch succeeded after enabling command-runner network access. HEAD and
-      origin/main both equal e09f823; no published history was changed.
-    - P08 CI run 41772362278 is confirmed success. No GitHub Releases exist.
-    - Initial gates: ktlintCheck --no-build-cache PASS; 121 unit tests with one
-      P09 failure; lintDebug PASS (0 errors, 3 warnings); assembleDebug PASS.
-    - P09 was active, not merely NEXT as the older notes claimed. The three
-      untracked draft files are now finished: 38 lifecycle tests and 132 total
-      tests pass. All four final local gates passed. P04b still has four
-      implementations left; P10 is next after bounding K41 in the usage layer.
-    - AGENTS.md was missing and is now created; docs/PROMPTS.md was absent from
-      all Git history and is restored from the owner's supplied prompt pack.
-    - No new dependency or permission. No UI change or new screenshot. K41 must
-      be fixed before stored usage drives the garden; no schema change yet.
-    - Final feature commit 347fa59 and entry-point commit 1d5dc1d are pushed.
-      P09 CI 42372949327 completed success (2m42s):
-      https://github.com/34rns/ScreenGarden/actions/runs/42372949327
-      Working tree is clean; final memory checkpoint follows without code changes.
-
-  P00-P09 plus P00b/P05b are COMPLETE (P04b is partial). The project is
-  published, CI is green, settings persist and theme the app, screen time is read
-  from the system and verified against dumpsys on API 35 and API 26, a WorkManager
-  sync stores that usage in Room - idempotently, on a schedule and on every app
-  open, with a one-week backfill - a first-run flow explains the garden and
-  records the user's goals before the tabs appear, and a pure Kotlin calculator
-  can now turn a day of those numbers into an explainable 0-100 score. The pure
-  plant engine turns a supplied score, focus completions and streak into growth,
-  health and recoverable conditions with a five-plant cap. No running screen
-  scores stored usage or persists this domain garden yet (K41/K49/K51).
-
-  What exists and works
-    - Public repository https://github.com/34rns/ScreenGarden with a clean,
-      linear history, topics set, Issues enabled.
-    - GitHub Actions CI (ktlint, debug build, lint, unit tests) green on main;
-      a separate release workflow builds the unsigned R8 APK on demand and
-      weekly.
-    - Gradle 8.13 wrapper, AGP 8.9.2, Kotlin 2.1.0, KSP, version catalog,
-      compileSdk/targetSdk 35, minSdk 26, Java 17.
-    - Single ComponentActivity with edge-to-edge Compose and a four-tab
-      navigation shell (Garden, Focus, Insights, Settings).
-    - Calm green light / dark / true-black AMOLED themes, verified by pixel
-      probe, plus an RTL-correct and 1.3x-font-tolerant placeholder shell.
-    - Manifest: PACKAGE_USAGE_STATS, POST_NOTIFICATIONS, WAKE_LOCK and
-      RECEIVE_BOOT_COMPLETED (SECTION 9) plus the androidx receiver permission;
-      launcher <queries>; allowBackup="false"; no INTERNET permission.
-    - Room 2.6.1 data layer: six entities, six DAOs, ScreenGardenDatabase v1
-      with schema export and no destructive fallback, core/time/LocalDay,
-      six repository interfaces, 26 in-memory DAO tests + 6 time tests.
-    - Migration suite passes on a real Android SQLite (emulator).
-    - 14 screenshots in docs/screenshots (README gallery) and 8 mirrored into
-      the F-Droid fastlane layout.
-    - Licensing: GPL-3.0-or-later code + CC BY-SA 4.0 art, SPDX headers in
-      every Kotlin file, LICENSE is the verbatim official text.
-    - Settings (P04): one Preferences DataStore behind SettingsRepository with
-      ten 16.7 keys as always-emitting flows, documented defaults, validated
-      writes, unknown-value fallbacks and a corruption handler; the stored theme
-      is resolved by ScreenGardenTheme at the Activity root.
-    - Usage stats (P05): a pure UsageRepository/aggregator over a UsageSource,
-      an AndroidUsageSource for UsageStatsManager/UsageEvents, and UsageAccess
-      for the app-op check plus the settings intent; 11 JVM tests with a fake.
-      The manifest now declares PACKAGE_USAGE_STATS and a launcher <queries>
-      block. Unlocks are an explicit supported/unsupported state (D48).
-    - Usage verification (P05b): a debug-only self-check destination (D49) that
-      reports access, check method, API level, screen time, pickups, unlocks,
-      top apps and launchable package count; usage access granted over adb on
-      both emulators; numbers compared with `dumpsys usagestats`; one real bug
-      found and fixed (K38); the debug screen is absent from the release dex.
-    - Daily sync (P06): DailyUsageSync turns a day of DayUsage into
-      app_usage_daily rows plus a daily_stats aggregate, keeps fields it does not
-      own, and only ever writes today + yesterday unless the week still needs
-      backfilling (7 days max, D51). UsageSyncWorker runs it from WorkManager on
-      a 6-hour battery-friendly period and on every app open (D52); the sync
-      itself is a plain class tested with fakes (7 tests, D50).
-    - First-run flow (P07): three intro pages (garden, privacy, why Usage
-      access), a usage step whose button opens system Settings and whose state is
-      re-checked on resume plus a skip that states the consequence, an optional
-      Android 13+ notification prompt, and four discrete goal sliders (screen time,
-      pickups, bedtime start/end); everything is stored through
-      OnboardingCompletion with onboardingDone written last, and the four tabs
-      appear only after it. 5 new tests, including a Compose UI happy path on the
-      JVM (D53-D55).
-    - Daily health score (P08): domain/garden/HealthScoreCalculator scores a day
-      from five weighted parts (screen time 35, pickups 20, bedtime 15, app limits
-      15, focus 15) using one continuous exponential curve instead of cliffs,
-      renormalises around missing data, returns null when nothing can be judged,
-      and reports the per-part breakdown. 22 tests pin the curves, the boundaries
-      and the absurd inputs; the formula is written out in 16.1.
-    - Plant lifecycle (P09): PlantStage separates size from PlantCondition,
-      GardenRules validates tuning, GardenEngine returns immutable plants and
-      planted/bloomed/wilted/recovered outcomes; 38 pure JVM tests cover recovery
-      of the same plant after 400 poor days, limits, missing data, focus timestamps
-      and overflow. No new dependency, permission, UI or schema.
-    - Decisions D1-D62 recorded; no product questions (SECTION 14); standing
-      orders for every future turn in SECTION 18.
-
-  Evidence from P00b
-    - `git init -b main`, repo-local user 34rns / 34rns@users.noreply.github.com,
-      three logical commits, then `gh repo create ScreenGarden --public
-      --source . --push` -> https://github.com/34rns/ScreenGarden.
-    - CI run 41448113969: success, 3m37s (after D37).
-    - CI run 41450818192: success, 1m49s (screenshots commit).
-    - CI run 41451543083: success, 1m20s (memory commit).
-    - Release workflow run 41451442151: success, 2m56s (manual dispatch; unsigned
-      R8 APK and mapping file uploaded as artifacts).
-    - `:app:connectedDebugAndroidTest`: BUILD SUCCESSFUL in 41s, tests=2
-      failures=0.
-    - `ktlintCheck --no-build-cache`, `testDebugUnitTest`, `lintDebug`,
-      `assembleDebug`: all green after the RTL fix.
-
-  Evidence from P04 (2026-11-03)
-    - `ktlintFormat`, then `ktlintCheck --no-build-cache`: 0 violations.
-    - `:app:testDebugUnitTest`: 48/48, 0 skipped, 0 failures (16 new tests).
-    - `:app:lintDebug`: 0 errors, 2 accepted warnings (unchanged).
-    - `:app:assembleDebug`: BUILD SUCCESSFUL.
-    - Emulator: launched on screengarden_api35 with no crash, and a hand-written
-      preferences file containing theme=dark made the UI render (16,20,16), so
-      the persisted preference demonstrably drives the colour scheme.
-    - CI: run 41570541137 success for the P04 commit.
-
-  Evidence from P05 (2026-11-03)
-    - `ktlintFormat`, then `ktlintCheck --no-build-cache`: 0 violations.
-    - `:app:testDebugUnitTest`: 58/58, 0 skipped, 0 failures (10 new).
-    - `:app:lintDebug`: 0 errors, 2 accepted warnings (K11, K12).
-    - `:app:assembleDebug`: BUILD SUCCESSFUL with the new manifest.
-    - `javap -constants` on the API 35 android.jar: ACTIVITY_RESUMED = 1,
-      MOVE_TO_FOREGROUND = 1, ACTIVITY_PAUSED = 2, MOVE_TO_BACKGROUND = 2,
-      SCREEN_INTERACTIVE = 15, KEYGUARD_HIDDEN = 18 (K32).
-
-  Evidence from P05b (2026-11-03)
-    - Gate: ktlintFormat then ktlintCheck --no-build-cache 0 violations;
-      :app:testDebugUnitTest 60/60, 0 skipped, 0 failures; :app:lintDebug
-      0 errors, 2 accepted warnings; :app:assembleDebug and
-      :app:assembleRelease BUILD SUCCESSFUL.
-    - Usage access without the user: `adb shell appops set
-      com.screengarden.app.debug GET_USAGE_STATS allow` (step 3a) worked;
-      `appops get` and `cmd appops get` both reported allow. Steps 3b-3d were
-      therefore not needed; the Settings UI path was not exercised.
-    - API 35 emulator, scripted activity: Settings 15s, Contacts, DeskClock,
-      Calendar and Chrome 15s each; five power cycles; then one real unlock.
-      Self-check reported screen time 3h33m49s, pickups 6, unlocks 1, 6 apps
-      with usage, 19 launchable packages, check method APP_OPS_UNSAFE.
-    - Ground truth from `dumpsys usagestats` on the same device: 6
-      SCREEN_INTERACTIVE events, 1 KEYGUARD_HIDDEN event, and per-package
-      totalTimeUsed 00:14 (DeskClock), 00:14 (Calendar), 00:14 (Chrome),
-      00:17 (Settings) against our 0m14s/0m14s/0m14s/0m16s, with raw event
-      pairs 12:37:08->12:37:22 = 14s etc.
-    - Differences: 1s on Settings (an earlier 1s launch that day) and the
-      unlock/pickup totals matched exactly. Our own app's row is large
-      (3h32m) because the Activity was left foreground through long idle
-      periods (K41), not a counting error.
-    - API 26 emulator (android-26 google_apis x86_64, booted on port 5556):
-      check method APP_OPS_LEGACY, unlocks "unsupported", 24 launchable
-      packages, and 17s for a 15s Settings session; its event log contains
-      only MOVE_TO_FOREGROUND/BACKGROUND (6 each), proving the constant-value
-      match on pre-29 (K32) and the new state model (K33).
-    - Debug screen absent from release: 0 matches for UsageSelfCheck and
-      usage_self_check in the release dex, 13 in the debug dex; a normal
-      launch opens Garden, only `--es screen usage_self_check` opens the tool.
-    - Screenshot: docs/screenshots/15_usage_self_check_debug.png (emulator,
-      no personal data).
-
-  Evidence from P06 (2026-11-04)
-    - Gate: ktlintFormat then ktlintCheck --no-build-cache 0 violations;
-      :app:testDebugUnitTest 67/67, 0 skipped, 0 failures (7 new);
-      :app:lintDebug 0 errors, 2 accepted warnings (K11, K12);
-      :app:assembleDebug and :app:assembleRelease BUILD SUCCESSFUL.
-    - Merged debug manifest permissions: PACKAGE_USAGE_STATS, WAKE_LOCK,
-      RECEIVE_BOOT_COMPLETED (plus the androidx DYNAMIC_RECEIVER entry).
-      ACCESS_NETWORK_STATE and FOREGROUND_SERVICE are gone (D52).
-    - Release dex still contains the name UsageSyncWorker (2 matches), so R8
-      keeps the worker instantiable; DailyUsageSync is obfuscated (0 matches),
-      which is correct for directly-called code.
-    - API 35 emulator with Usage access granted by appops: the first launch ran
-      the worker twice ("Synced usage for 7 day(s)" each, K42); after a
-      force-stop and relaunch it logged "Synced usage for 2 day(s)", proving the
-      backfill happens once (D51).
-    - Database read back with `adb exec-out run-as ... cat databases/
-      screengarden.db` plus its -wal file: 7 daily_stats rows
-      (2026-10-29..2026-11-04) and 11 app_usage_daily rows across 3 days, 0
-      duplicate composite keys. After the second launch the counts were still
-      7/11, the six past days were identical, and only today's row could grow.
-    - JobScheduler lists the app's periodic job as TIME=+5h59m with the
-      BATNOTLOW constraint satisfied, so the 6-hour period really registered.
-    - The 296/892 screen minutes stored for 2026-11-02/03 are K41 inflation
-      captured faithfully, not a sync defect (K44).
-    - Not on a device-run list: reboot rescheduling (K43) and the 6-hour period
-      actually firing twice (only its registration was observed).
-
-  Evidence from P07 (2026-11-04)
-    - Gate: ktlintFormat then ktlintCheck --no-build-cache 0 violations;
-      :app:testDebugUnitTest 72/72, 0 skipped, 0 failures (5 new);
-      :app:lintDebug 0 errors, 3 accepted warnings (K11, K12, K46);
-      :app:assembleDebug BUILD SUCCESSFUL.
-    - The three Compose UI tests run through Robolectric and walk the real
-      composable: Garden -> Privacy -> Usage -> Notifications -> Goals with the
-      grant flipping the usage step to "Continue", "Not now" recorded as false,
-      Finish reporting the default choices; the skip path keeps the explanation
-      on screen and still reaches Goals; the progress row exposes "Step 1 of 5".
-    - The completion path is covered by a fake repository that asserts the write
-      order dailyGoal -> pickupGoal -> bedtimeStart -> bedtimeEnd -> onboardingDone.
-    - Merged debug manifest now carries POST_NOTIFICATIONS alongside
-      PACKAGE_USAGE_STATS, WAKE_LOCK and RECEIVE_BOOT_COMPLETED; still no INTERNET.
-    - Lint caught one real defect before shipping: mapping the onboardingDone Flow
-      inside composition recreated it on every recomposition, which restarts the
-      collector and would have re-read DataStore constantly. The map is now inside
-      remember (FlowOperatorInvokedInComposition).
-    - Not verified on a device: no emulator run this session, so the system
-      Settings round-trip, the real Android 13 permission dialog and the
-      "show only on first launch" behaviour in a shipped build are unproven (K47).
-    - Not verified at all: what the flow looks like at 1.3x font, in RTL, or on
-      API 26 (no notification step there).
-
-  Evidence from P08 (2026-11-04)
-    - Gate: ktlintFormat then ktlintCheck --no-build-cache 0 violations;
-      :app:testDebugUnitTest 94/94, 0 skipped, 0 failures (22 new);
-      :app:lintDebug 0 errors, 3 accepted warnings (K11, K12, K46, unchanged);
-      :app:assembleDebug BUILD SUCCESSFUL.
-    - The tests pin behaviour, not just one total: a day inside every goal is
-      100; zero usage without focus is 85 (only the achievement part is empty);
-      twice the screen goal keeps 37% of that part; 50x the goal with everything
-      else perfect still scores 60+; a 22x bedtime overshoot scores worse than
-      one grace-length over; focus ramps to exactly its weight and no further.
-    - Smoothness is asserted directly: stepping screen time from 0 to 1200
-      minutes one minute at a time never moves the score by more than one point,
-      so there is no cliff at the goal.
-    - Missing data is asserted three ways: a null part is dropped and the rest
-      renormalised (still 100 when the known parts are perfect), a zero goal is
-      not judged, and a day with nothing judgeable returns null.
-    - Absurd inputs (Int.MAX_VALUE minutes, pickups and limits) stay inside
-      0..100; negative inputs are clamped rather than rewarded.
-    - Weights are validated: negative parts, an all-zero set and non-positive
-      curve settings throw, and the shipped weights sum to exactly 100.
-    - Not verified: nothing calls the calculator (K49), so no real day has ever
-      been scored; the weights are untuned against device data; no device run.
-
+  P00-P10 implemented and verified locally. P10 commit/push/CI pending.
+  Existing AGENTS.md is committed; owner prompt pack is docs/PROMPTS.md.
+  Fetch confirms HEAD/origin main=e2e5131 before the P10 commit; no history rewrite.
+  P10: bounded event measurement, transactional usage writes, Room v2 migration,
+  persisted garden with once-only completed-day rewards, GardenViewModel/single
+  UiState, vector flower/bonsai/cactus/fern, details sheet, all empty/error states.
+  Four local gates pass: style, 168 JVM tests, lint (0 errors/3 accepted warnings),
+  debug APK. Both migration tests pass on emulator-5558 (API 35).
+  Fake debug-only emulator captures cover light/dark/AMOLED, 1.3x font, forced
+  Compose RTL, no-data and no-permission. Demo clock is reapplied after config.
+  Remaining P11-P33, including optional P29/P30, are not implemented.
+  No signed release or GitHub Pages publication. No secrets requested or printed.
+  Continuous completion/release is authorized by the owner; do not stop at
+  milestones. Normal one-time approvals may be requested for blocked tools.
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  NEXT: P10 - Garden UI, as defined in docs/PROMPTS.md. P09 is finished.
-
-  Begin with the required data-quality prerequisite: fix K41 at measurement,
-  using tested screen-interactive/event coverage after checking actual platform
-  behavior. Never mask inflated data by clamping it in the sync or UI. Stored
-  rows cannot feed a health score/garden until that bound is proven (K44/K49).
-
-  Then implement GardenViewModel and one UiState, a calm Canvas scene with
-  replaceable plant drawing, score/streak/focus action, plant detail sheet,
-  no-permission/no-data states, previews and a Compose UI test. Preserve the
-  existing theme, accessibility, RTL and font scaling. P04b needs its Garden
-  repository implementation as part of wiring; four implementations remain now.
-
-  Plan the domain-to-Room mapping first (K24/K51). Persist growth and the
-  processed-day marker safely so resyncs/recomposition cannot reward a day
-  twice. Any schema bump MUST include a Migration, a migration test executed on
-  the emulator, and a newly exported version file; keep 1.json unchanged.
-  No destructive fallback. Do not store fake debug screenshot data in release.
-
-  Verify the new screen on the dedicated emulator with debug-only fake demo
-  data, including light/dark/AMOLED, 1.3x font and RTL; refresh affected docs and
-  fastlane images. Use local/free drawing and tools; no network in the app.
-
-  Then P11 animations. Do not start P12/focus service as part of Garden UI.
-  Signing/public release remains P33; SECTION 17 has no supplied milestone
-  protocol (K52). Save a checkpoint after every prompt before changing scope.
-
-  Every turn also follows the standing orders in SECTION 18: local gate, commit,
-  push, watch CI, refresh screenshots if a screen changed, update this file.
-
+  Finish P10 secret sweep, commit/push, inspect GitHub CI to success, and record
+  its URL. Then P11 animations as in docs/PROMPTS.md. Continue P12-P33 in order
+  through professional GitHub publication with emulator-only fake screenshots.
+  One prompt per logical commit; all four gates and CI per SECTION 18. Any new
+  Room schema requires Migration, running emulator test and immutable schema export.
+  Signed APK publication is P33. Do not publish an unsigned APK as a release.
 
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
@@ -2019,6 +1764,42 @@ SECTION 13 - SESSION LOG
               The next development milestone is the garden MVP through P11,
               identified by docs/PROMPTS.md; no signed release exists yet.
 
+  SESSION 14 - 2026-11-07 - resumed P10, intermediate checkpoint
+    Did       Integrated existing UI/storage drafts; checked complete memory and
+              fetched GitHub. Ran tests and fixed screen-off duration pairing,
+              missing navigation arguments, detail-sheet height and lost errors.
+              Added GardenViewModel/caller tests and debug-only fake demo views.
+    Decided   Use existing Compose/Room/Flow; seven fields only in v2 migration.
+              Apply scored completed days once, never today's changing score.
+              API 26-27 and streams without screen evidence remain incomplete;
+              no invented zero score. Fake demo is pure UI and touches no data.
+    Verified  Focused Garden UI suite passes after explicit in-memory drawing;
+              screen-off regression cases passed in the 165-test draft run.
+              Fresh fetch main=e2e5131; local AVD emulator-5558 boot completed=1.
+              Java/Python one-time approvals succeeded; local design search
+              recommends accessible content descriptions, used in plant controls.
+    Not ver.  P10 final gates running; migration not run; screenshots not captured;
+              CI not run for these uncommitted drafts. No release. Video remains
+              not available (Session 12), no new attempt or inferred ideas.
+              Two background Start-Process calls returned exit 1 without output;
+              direct emulator execution succeeded. No diagnosed reviewer refusal.
+    Next      Finish P10 gates/migration/screenshots/memory/commit/push/CI, then
+              continue remaining prompts through final release as authorized.
+
+  SESSION 15 - 2026-11-07 - P10 final verification and capture correction
+    Did       Resumed existing drafts without replacing their work. Re-read the
+              whole memory, fetched GitHub, corrected stale status/known issues.
+              Added debug-only forced Compose RTL for honest screenshot coverage
+              and reapplied the demo clock after every configuration change.
+    Decided   Keep native Compose/Room and existing palette. Forced RTL preview
+              is debug-only; does not change release locale or settings.
+    Verified  Four gates passed; 168 JVM tests, 0 failures/errors/skips; lint
+              0 errors/3 accepted warnings. Both migration tests passed on API35.
+              Schema 1.json unchanged. Fresh fetch HEAD/origin=e2e5131.
+    Not ver.  P10 CI pending. Real-device behavior, older-device rendering and
+              service/reboot tests for later features remain unverified. No
+              signed release or Pages site. Video not available (Session 12).
+    Next      Commit/push P10 and check CI; then P11-P33 in order to release.
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
@@ -2041,7 +1822,7 @@ SECTION 14 - OPEN QUESTIONS
 
 
 --------------------------------------------------------------------------------
-SECTION 15 - DATA MODEL (Room schema, version 1)
+SECTION 15 - DATA MODEL (Room schema, version 2)
 --------------------------------------------------------------------------------
   Source of truth: app/src/main/java/com/screengarden/app/data/local/.
   Every timestamp is epoch millis UTC (D20). Every `dayStartUtcMillis` value is
@@ -2054,7 +1835,12 @@ SECTION 15 - DATA MODEL (Room schema, version 1)
     sessionsCompleted      Int    sessions that ran to completion
     plantsGrown            Int    plants that advanced a stage
     updatedAtUtcMillis     Long   when the aggregate was last recomputed
-    (MISSING vs the design: score, pickups, unlocks, isCompassionDay - K24)
+    score                  Int?   frozen when a completed day is applied
+    pickups                Int?   null when screen coverage is unavailable
+    unlocks                Int?   null on unsupported platforms
+    usageIsBounded         Boolean screen-state evidence, old rows default false
+    gardenApplied          Boolean once-only completed-day reward marker
+    (Still missing: isCompassionDay, added by P18 with its own migration)
 
   app_usage_daily  (AppUsageDaily)                PK: dayStartUtcMillis + packageName
     (index on packageName)
@@ -2073,7 +1859,9 @@ SECTION 15 - DATA MODEL (Room schema, version 1)
     health                 Int     0..100
     plantedAtUtcMillis     Long
     lastFocusAtUtcMillis   Long?   null until the first session touches it
-    (MISSING vs the design: growthPoints, position - K24)
+    growthPoints           Int    authoritative size; v1 stages mapped 0/10/25/45
+    condition              String GROWING/WILTING/RECOVERING
+    Position is a deterministic grid index in P10, not a stored customization.
 
   focus_sessions  (FocusSession)                 PK: sessionId (client UUID)
     (indexes on dayStartUtcMillis, plantId)
@@ -2097,7 +1885,8 @@ SECTION 15 - DATA MODEL (Room schema, version 1)
     4. Commit the newly exported app/schemas/<class>/<n>.json; never delete an
        older one (H15).
     5. Never add fallbackToDestructiveMigration (H14/D23).
-  The first such change is already known: the v2 fields listed as K24.
+  P10 ships MIGRATION_1_2 and exported 2.json; 1.json is unchanged. Both migration
+  tests passed on the API 35 emulator, preserving all six tables and four stages.
 
 
 --------------------------------------------------------------------------------
@@ -2159,10 +1948,9 @@ SECTION 16 - CORE DESIGN
     the judged weights x 100), clamped to 0..100, returned together with the
     per-part breakdown so a screen can say where the points went.
 
-    NOT DECIDED HERE: the streak threshold stays 60 (16.4); the score is not
-    persisted (DailyStat.score is the v2 column, K24) and no caller builds its
-    inputs yet, because K41 must be bounded first (K44/K49). Do not build UI on
-    a specific curve other than through this calculator.
+    P10 persists completed-day scores in DailyStat.score; today is computed for
+    display. Only bounded usage is scored. Streak threshold remains 60 (16.4).
+    Callers must use this calculator; missing feature inputs remain unknown.
 
   16.2 PLANT LIFECYCLE
     P09 implementation: domain/garden/Plant.kt and GardenEngine.kt (D58-D60).
@@ -2200,8 +1988,9 @@ SECTION 16 - CORE DESIGN
     Tests: 38 JVM cases, including 400 poor days followed by recovery of the
     SAME plant, stage retention, focus rescue, missing inputs, planting/caps,
     events, timestamps, custom rules and large-number bounds.
-    Still stored as schema v1 stage + health; growthPoints/position and the
-    persistence/mapping required by P10 need a real schema Migration (K24/K51).
+    P10 stores growthPoints/condition in schema v2 and maps domain plants through
+    GardenRepositoryImpl. The grid position is derived. Completed bounded days
+    commit plants and the gardenApplied marker atomically (D63/D64).
 
   16.3 FOCUS SESSIONS
     A session has a planned duration and a tag (Study / Work / Reading / Other).

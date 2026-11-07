@@ -10,6 +10,7 @@ import com.screengarden.app.data.repo.AppUsageRepository
 import com.screengarden.app.data.repo.AppUsageRepositoryImpl
 import com.screengarden.app.data.repo.DailyStatRepository
 import com.screengarden.app.data.repo.DailyStatRepositoryImpl
+import com.screengarden.app.data.repo.GardenRepositoryImpl
 import com.screengarden.app.data.settings.DataStoreSettingsRepository
 import com.screengarden.app.data.settings.SettingsRepository
 import com.screengarden.app.data.settings.settingsDataStore
@@ -18,6 +19,7 @@ import com.screengarden.app.data.usage.AndroidUsageSource
 import com.screengarden.app.data.usage.DefaultUsageRepository
 import com.screengarden.app.data.usage.UsageRepository
 import com.screengarden.app.data.work.UsageSyncScheduler
+import com.screengarden.app.ui.screens.garden.GardenViewModel
 
 /**
  * Manual dependency injection root, created once by [com.screengarden.app.ScreenGardenApplication].
@@ -69,6 +71,20 @@ class AppContainer(context: Context) {
     val dailyStatRepository: DailyStatRepository by lazy {
         DailyStatRepositoryImpl(database.dailyStatDao())
     }
+
+    val gardenRepository: GardenRepositoryImpl by lazy { GardenRepositoryImpl(database) }
+
+    fun gardenViewModel(): GardenViewModel = GardenViewModel(
+        store = gardenRepository,
+        dailyGoalMs = settingsRepository.dailyGoalMs,
+        pickupGoal = settingsRepository.pickupGoal,
+        streakThreshold = settingsRepository.streakThreshold,
+        hasUsageAccess = { usageRepository.isUsageAccessGranted() },
+        syncUsage = {
+            dailyUsageSync.run()
+            Unit
+        }
+    )
 
     /** Per-app screen time; written by the daily sync (P06). */
     val appUsageRepository: AppUsageRepository by lazy {

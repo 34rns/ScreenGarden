@@ -14,8 +14,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.screengarden.app.data.settings.SettingsDefaults
 import com.screengarden.app.data.usage.UsageAccess
 import com.screengarden.app.debug.DebugCatalog
@@ -23,6 +27,8 @@ import com.screengarden.app.domain.model.OnboardingChoices
 import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.ui.navigation.ScreenGardenApp
 import com.screengarden.app.ui.onboarding.OnboardingScreen
+import com.screengarden.app.ui.screens.garden.GardenScreen
+import com.screengarden.app.ui.screens.garden.GardenViewModel
 import com.screengarden.app.ui.theme.ScreenGardenTheme
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -77,10 +83,30 @@ class MainActivity : ComponentActivity() {
                     settingsRepository.onboardingDone.map<Boolean, Boolean?> { done -> done }
                 }
                 val onboardingDone by onboardingDoneFlow.collectAsStateWithLifecycle(initialValue = null)
+                val gardenContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { startFocus ->
+                    val factory = remember(container) {
+                        viewModelFactory { initializer { container.gardenViewModel() } }
+                    }
+                    val garden: GardenViewModel = viewModel(factory = factory)
+                    val state by garden.uiState.collectAsStateWithLifecycle()
+                    LifecycleResumeEffect(garden) {
+                        garden.refresh()
+                        onPauseOrDispose { }
+                    }
+                    GardenScreen(
+                        state = state,
+                        onStartFocus = startFocus,
+                        onGrantUsage = { startActivity(UsageAccess.settingsIntent()) },
+                        onRetry = garden::refresh
+                    )
+                }
                 when {
                     // A debug build launched with a screen extra wins, so the diagnostic
                     // screens stay reachable even before onboarding was completed.
-                    debugDestination != null -> ScreenGardenApp(debugDestination = debugDestination)
+                    debugDestination != null -> ScreenGardenApp(
+                        debugDestination = debugDestination,
+                        gardenContent = gardenContent
+                    )
                     onboardingDone == null -> Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -114,7 +140,7 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
-                    else -> ScreenGardenApp()
+                    else -> ScreenGardenApp(gardenContent = gardenContent)
                 }
             }
         }

@@ -8,7 +8,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.screengarden.app.ui.screens.focus.FocusScreen
-import com.screengarden.app.ui.screens.garden.GardenScreen
 import com.screengarden.app.ui.screens.insights.InsightsScreen
 import com.screengarden.app.ui.screens.settings.SettingsScreen
 
@@ -20,7 +19,8 @@ import com.screengarden.app.ui.screens.settings.SettingsScreen
 fun ScreenGardenNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    debugDestination: DebugDestination? = null
+    debugDestination: DebugDestination? = null,
+    gardenContent: @Composable (() -> Unit) -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -28,7 +28,7 @@ fun ScreenGardenNavHost(
         modifier = modifier
     ) {
         composable(ScreenGardenDestination.Garden.route) {
-            GardenScreen()
+            gardenContent { navController.navigate(ScreenGardenDestination.Focus.route) { launchSingleTop = true } }
         }
         composable(ScreenGardenDestination.Focus.route) {
             FocusScreen()

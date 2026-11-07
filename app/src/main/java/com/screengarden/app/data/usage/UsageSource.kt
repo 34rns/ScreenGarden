@@ -15,6 +15,9 @@ package com.screengarden.app.data.usage
  */
 interface UsageSource {
 
+    /** Screen interactive/non-interactive events exist from Android API 28. */
+    val supportsScreenState: Boolean
+
     /**
      * False when this platform cannot report unlocks at all.
      *
@@ -55,7 +58,12 @@ interface UsageSource {
 data class AppTotal(val packageName: String, val lastTimeUsedMillis: Long, val totalTimeInForegroundMillis: Long)
 
 /** A single foreground-related event, with the platform's int constants hidden. */
-data class UsageEvent(val type: UsageEventType, val timestampMillis: Long, val packageName: String?)
+data class UsageEvent(
+    val type: UsageEventType,
+    val timestampMillis: Long,
+    val packageName: String?,
+    val activityName: String? = null
+)
 
 /**
  * The event kinds this app cares about.
@@ -71,8 +79,20 @@ enum class UsageEventType {
     /** The foreground activity left again (the end of a usage interval). */
     ACTIVITY_PAUSED,
 
+    /** Activity became invisible (API 29+). */
+    ACTIVITY_STOPPED,
+
     /** The screen became interactive - one "pickup". */
     SCREEN_INTERACTIVE,
+
+    /** Screen turned off or entered ambient display (API 28+). */
+    SCREEN_NON_INTERACTIVE,
+
+    /** Runtime shutdown closes all activity intervals (API 29+). */
+    DEVICE_SHUTDOWN,
+
+    /** Runtime startup invalidates any unfinished interval (API 29+). */
+    DEVICE_STARTUP,
 
     /** The keyguard was dismissed - one "unlock" (API 28+ only, see D48). */
     KEYGUARD_HIDDEN

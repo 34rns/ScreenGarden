@@ -2,15 +2,15 @@
 
 package com.screengarden.app.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
  * One plant in the garden.
  *
- * [stage] is stored as an Int rather than an enum so a new growth stage can be
- * added later without a TypeConverter or a schema change that rewrites every
- * row. The domain layer maps it to a sealed/enum type.
+ * [growthPoints] is the source of size; [stage] mirrors its domain stage for
+ * compatibility with existing rows. [condition] keeps recovery independent of size.
  *
  * [plantId] is a client-generated UUID string: the garden is created on device
  * with no server, so there is no authority to hand out integer ids.
@@ -22,5 +22,7 @@ data class Plant(
     val stage: Int = 0,
     val health: Int = 100,
     val plantedAtUtcMillis: Long,
-    val lastFocusAtUtcMillis: Long? = null
+    val lastFocusAtUtcMillis: Long? = null,
+    @ColumnInfo(defaultValue = "0") val growthPoints: Int = 0,
+    @ColumnInfo(defaultValue = "'GROWING'") val condition: String = "GROWING"
 )

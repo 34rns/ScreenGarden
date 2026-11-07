@@ -3,9 +3,9 @@
 A calm, offline garden that grows while you focus and keep your screen time in
 check.
 
-> **Status: work in progress.** The app is a skeleton. The four tabs exist and
-> navigate, and the local database layer is in place; none of the garden, focus
-> or insights features are built yet.
+> **Status: work in progress.** Onboarding, local settings, usage collection and
+> the Garden screen are implemented. Focus, Insights and Settings controls are
+> still being built. There is no installable signed release yet.
 
 [![CI](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml)
 ![Status](https://img.shields.io/badge/status-work%20in%20progress-yellow)
@@ -15,13 +15,14 @@ check.
 Screen time apps usually shout: red numbers, streaks, guilt. ScreenGarden does
 the opposite. You plant something, you sit with your work, and the garden
 responds quietly — a session that goes well lets it grow, a distracted day lets
-it rest. Nothing is scored, nothing is shared, nothing is sold.
+it rest. A daily health score explains progress, plants can always recover, and
+nothing is uploaded or sold.
 
 ## Screenshots
 
-Captured on an Android 15 emulator (1080 × 2400) with demo mode enabled. Every
-image comes from the emulator with no personal data — nothing here was taken from
-a real phone.
+Captured on an Android 15 emulator (1080 × 2400) with demo mode enabled.
+Garden images use fake debug-only demo plants and scores. The other tabs still
+show their earlier placeholder screens. No image contains personal phone data.
 
 | | Light | Dark | AMOLED |
 | --- | --- | --- | --- |
@@ -32,9 +33,9 @@ a real phone.
 
 Accessibility and layout:
 
-| Large text (1.3×) | Right-to-left (Arabic locale) |
+| Large text (1.3×) | Forced right-to-left layout |
 | --- | --- |
-| <img src="docs/screenshots/garden_large_font.png" width="240" alt="Garden tab at 1.3x font scale"> | <img src="docs/screenshots/garden_rtl.png" width="240" alt="Garden tab in a right-to-left locale"> |
+| <img src="docs/screenshots/garden_large_font.png" width="240" alt="Garden tab at 1.3x font scale"> | <img src="docs/screenshots/garden_rtl.png" width="240" alt="Garden tab with a forced Compose right-to-left layout"> |
 
 The same images live in `fastlane/metadata/android/en-US/images/phoneScreenshots/`
 for the F-Droid listing.
@@ -59,7 +60,16 @@ by intention. A pull request that adds network access or telemetry is rejected.
 - Calm green palette with light, dark and true-black (AMOLED) schemes.
 - A local Room database (six tables for daily stats, app usage, limits, plants,
   focus sessions and badges), covered by unit tests.
-- Everything else is a placeholder.
+- First-run privacy and permission explanations, goal setup and optional
+  notifications permission.
+- Preferences DataStore for goals and light/dark/AMOLED theme selection.
+- Offline usage collection with screen-off intervals excluded on supported
+  Android versions, plus a battery-friendly daily sync.
+- A Canvas garden with tappable plant details, today's score, streak and a Focus
+  tab action. Completed days grow plants once; refreshing never duplicates rewards.
+- Usage without reliable screen events (including Android 8.0–8.1) is shown as
+  incomplete rather than given a fabricated score. Focus and Insights remain
+  placeholders until their roadmap steps are finished.
 
 ## Requirements
 
@@ -96,10 +106,9 @@ architectural decision live in [`AGENT_MEMORY.txt`](AGENT_MEMORY.txt).
 
 Free to build, free to install:
 
-- **GitHub Releases** — signed APKs attached to a release tag.
-- **F-Droid** — the main catalog listing; no Google Play account, so no
-  developer fee.
-- **IzzyOnDroid** — optional extra catalog for the same builds.
+- **GitHub Releases** — planned signed APKs attached to a release tag.
+- **F-Droid** — planned submission after the release quality pass.
+- **IzzyOnDroid** — optional future catalog for the same builds.
 
 There is no Google Play release and no plan to add one: it charges a one-off
 registration fee, and nothing here needs it.

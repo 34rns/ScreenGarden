@@ -21,8 +21,11 @@ interface PlantDao {
     suspend fun getById(plantId: String): Plant?
 
     /** Oldest planting first, which is the order the garden renders in. */
-    @Query("SELECT * FROM plants ORDER BY plantedAtUtcMillis ASC")
+    @Query("SELECT * FROM plants ORDER BY plantedAtUtcMillis ASC, plantId ASC")
     fun observeAll(): Flow<List<Plant>>
+
+    @Query("SELECT * FROM plants ORDER BY plantedAtUtcMillis ASC, plantId ASC")
+    suspend fun getAll(): List<Plant>
 
     @Query("SELECT COUNT(*) FROM plants")
     suspend fun count(): Int

@@ -40,6 +40,8 @@ class AndroidUsageSource(context: Context) : UsageSource {
 
     override val supportsUnlocks: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
 
+    override val supportsScreenState: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+
     override fun hasUsageAccess(): Boolean = UsageAccess.isGranted(appContext)
 
     override fun launchablePackages(): Set<String> {
@@ -76,7 +78,8 @@ class AndroidUsageSource(context: Context) : UsageSource {
             mapped += UsageEvent(
                 type = type,
                 timestampMillis = event.timeStamp,
-                packageName = event.packageName
+                packageName = event.packageName,
+                activityName = event.className
             )
         }
         return mapped
@@ -85,7 +88,11 @@ class AndroidUsageSource(context: Context) : UsageSource {
     private fun mapEventType(rawType: Int): UsageEventType? = when (rawType) {
         UsageEvents.Event.ACTIVITY_RESUMED -> UsageEventType.ACTIVITY_RESUMED
         UsageEvents.Event.ACTIVITY_PAUSED -> UsageEventType.ACTIVITY_PAUSED
+        UsageEvents.Event.ACTIVITY_STOPPED -> UsageEventType.ACTIVITY_STOPPED
         UsageEvents.Event.SCREEN_INTERACTIVE -> UsageEventType.SCREEN_INTERACTIVE
+        UsageEvents.Event.SCREEN_NON_INTERACTIVE -> UsageEventType.SCREEN_NON_INTERACTIVE
+        UsageEvents.Event.DEVICE_SHUTDOWN -> UsageEventType.DEVICE_SHUTDOWN
+        UsageEvents.Event.DEVICE_STARTUP -> UsageEventType.DEVICE_STARTUP
         UsageEvents.Event.KEYGUARD_HIDDEN -> UsageEventType.KEYGUARD_HIDDEN
         else -> null
     }

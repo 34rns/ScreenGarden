@@ -63,6 +63,17 @@ class PlantDaoTest {
     }
 
     @Test
+    fun equalPlantingTimesHaveStableIdOrderInBothReads() = runTest {
+        dao.upsert(plant(PLANT_TWO, plantedAtUtcMillis = DAY_ONE).copy(growthPoints = 45, condition = "WILTING"))
+        dao.upsert(plant(PLANT_ONE, plantedAtUtcMillis = DAY_ONE))
+
+        assertEquals(listOf(PLANT_ONE, PLANT_TWO), dao.getAll().map { it.plantId })
+        assertEquals(listOf(PLANT_ONE, PLANT_TWO), dao.observeAll().first().map { it.plantId })
+        assertEquals(45, dao.getById(PLANT_TWO)?.growthPoints)
+        assertEquals("WILTING", dao.getById(PLANT_TWO)?.condition)
+    }
+
+    @Test
     fun updateGrowsStageAndRecordsFocus() = runTest {
         dao.upsert(plant(PLANT_ONE, plantedAtUtcMillis = DAY_ONE))
         val stored = requireNotNull(dao.getById(PLANT_ONE))

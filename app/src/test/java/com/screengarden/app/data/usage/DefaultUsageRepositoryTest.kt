@@ -26,6 +26,169 @@ import org.junit.Test
 class DefaultUsageRepositoryTest {
 
     @Test
+    fun stoppingThePreviousActivityDoesNotCloseItsReplacement() {
+        val source = FakeUsageSource(
+            events = listOf(
+                resumed(APP_A, 10).copy(activityName = "First"),
+                resumed(APP_A, 20).copy(activityName = "Second"),
+                UsageEvent(UsageEventType.ACTIVITY_STOPPED, DAY_START + 21 * MINUTE, APP_A, "First"),
+                paused(APP_A, 30).copy(activityName = "Second")
+            )
+        )
+        assertEquals(
+            20 * MINUTE,
+            runBlocking {
+                repository(source).readDay(DAY_START, ZONE)
+            }.requireUsage().totalScreenTimeMillis
+        )
+    }
+
+    @Test
+    fun unmatchedActivityBeforeRuntimeStartupHasNoInventedEnd() {
+        val source = FakeUsageSource(events = listOf(resumed(APP_A, 10), event(UsageEventType.DEVICE_STARTUP, 30)))
+        assertEquals(
+            0L,
+            runBlocking {
+                repository(source).readDay(DAY_START, ZONE)
+            }.requireUsage().totalScreenTimeMillis
+        )
+    }
+
+    @Test
+    fun futureDayDoesNotQueryAnInvertedWindow() {
+        val source = FakeUsageSource()
+        val usage = runBlocking { repository(source, now = DAY_START - MINUTE).readDay(DAY_START, ZONE) }.requireUsage()
+        assertEquals(0L, usage.totalScreenTimeMillis)
+        assertEquals(0, source.dataQueries)
+    }
+
+    @Test
+    fun screenOffDoesNotCountUntilTheLaterActivityPause() {
+        val source =
+            FakeUsageSource(
+                events = listOf(resumed(APP_A, 10), event(UsageEventType.SCREEN_NON_INTERACTIVE, 20), paused(APP_A, 40))
+            )
+        assertEquals(
+            10 * MINUTE,
+            runBlocking {
+                repository(source).readDay(DAY_START, ZONE)
+            }.requireUsage().totalScreenTimeMillis
+        )
+    }
+
+    @Test
+    fun wakingTheSameForegroundActivityCountsOnlyInteractiveSlices() {
+        val source =
+            FakeUsageSource(
+                events = listOf(
+                    resumed(APP_A, 10),
+                    event(UsageEventType.SCREEN_NON_INTERACTIVE, 20),
+                    event(UsageEventType.SCREEN_INTERACTIVE, 50),
+                    paused(APP_A, 60)
+                )
+            )
+        val usage = runBlocking { repository(source).readDay(DAY_START, ZONE) }.requireUsage()
+        assertEquals(20 * MINUTE, usage.totalScreenTimeMillis)
+        assertEquals(1, usage.app(APP_A)?.launchCount)
+    }
+
+    @Test
+    fun anActivityResumingWhileScreenOffCountsOnlyAfterWake() {
+        val source =
+            FakeUsageSource(
+                events = listOf(
+                    event(UsageEventType.SCREEN_NON_INTERACTIVE, 5),
+                    resumed(APP_A, 10),
+                    event(UsageEventType.SCREEN_INTERACTIVE, 30),
+                    paused(APP_A, 40)
+                )
+            )
+        assertEquals(
+            10 * MINUTE,
+            runBlocking {
+                repository(source).readDay(DAY_START, ZONE)
+            }.requireUsage().totalScreenTimeMillis
+        )
+    }
+
+    @Test
+    fun anActivityStoppedWithoutPauseDoesNotRunToMidnight() {
+        val source = FakeUsageSource(
+            events = listOf(
+                resumed(APP_A, 10),
+                UsageEvent(
+                    UsageEventType.ACTIVITY_STOPPED,
+                    DAY_START + 20 * MINUTE,
+                    APP_A
+                )
+            )
+        )
+        assertEquals(
+            10 * MINUTE,
+            runBlocking {
+                repository(source).readDay(DAY_START, ZONE)
+            }.requireUsage().totalScreenTimeMillis
+        )
+    }
+
+    @Test
+    fun shutdownAndStartupDoNotCarryAnActivityIntoTheNewRuntime() {
+        val source =
+            FakeUsageSource(
+                events = listOf(
+                    resumed(APP_A, 10),
+                    event(UsageEventType.DEVICE_SHUTDOWN, 20),
+                    event(UsageEventType.DEVICE_STARTUP, 40),
+                    paused(APP_A, 60)
+                )
+            )
+        assertEquals(
+            10 * MINUTE,
+            runBlocking {
+                repository(source).readDay(DAY_START, ZONE)
+            }.requireUsage().totalScreenTimeMillis
+        )
+    }
+
+    @Test
+    fun previousDayActivityIsClippedAtThisLocalMidnight() {
+        val source = FakeUsageSource(events = listOf(resumed(APP_A, -10), paused(APP_A, 10)))
+        val usage = runBlocking { repository(source).readDay(DAY_START, ZONE) }.requireUsage()
+        assertEquals(10 * MINUTE, usage.totalScreenTimeMillis)
+        assertEquals(0, usage.app(APP_A)?.launchCount)
+    }
+
+    @Test
+    fun screenStateEvidenceMarksTheMeasurementBounded() {
+        val source =
+            FakeUsageSource(
+                events = listOf(
+                    event(UsageEventType.SCREEN_INTERACTIVE, 5),
+                    resumed(APP_A, 10),
+                    paused(APP_A, 20),
+                    event(UsageEventType.SCREEN_NON_INTERACTIVE, 30)
+                )
+            )
+        assertTrue(runBlocking { repository(source).readDay(DAY_START, ZONE) }.requireUsage().usageIsBounded)
+    }
+
+    @Test
+    fun legacyDevicesAndEmptyEventStreamsDoNotClaimBoundedUsage() {
+        val legacy =
+            FakeUsageSource(supportsScreenState = false, events = listOf(resumed(APP_A, 10), paused(APP_A, 20)))
+        assertEquals(false, runBlocking { repository(legacy).readDay(DAY_START, ZONE) }.requireUsage().usageIsBounded)
+        assertEquals(
+            false,
+            runBlocking {
+                repository(FakeUsageSource()).readDay(DAY_START, ZONE)
+            }.requireUsage().usageIsBounded
+        )
+    }
+
+    private fun event(type: UsageEventType, atMinutes: Int): UsageEvent =
+        UsageEvent(type, DAY_START + atMinutes * MINUTE, null)
+
+    @Test
     fun missingPermissionIsAStateAndNoStatsAreQueried() {
         val source = FakeUsageSource(granted = false)
 
@@ -251,6 +414,7 @@ class DefaultUsageRepositoryTest {
     }
 
     private class FakeUsageSource(
+        override var supportsScreenState: Boolean = true,
         override var supportsUnlocks: Boolean = true,
         var granted: Boolean = true,
         var launchable: Set<String> = setOf(APP_A, APP_B, APP_C),

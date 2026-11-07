@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="garden_title">Your garden</string>
+    <string name="garden_subtitle">A little space for the time you give yourself.</string>
+    <string name="garden_plant_hint">Tap a plant to see how it is growing.</string>
+    <string name="garden_start_focus">Start focus</string>
+    <string name="garden_today_score">Today’s health score</string>
+    <string name="garden_score_number">%1$d</string>
+    <string name="garden_score_scale">/ 100</string>
+    <string name="garden_score_description">Today’s health score: %1$d/100</string>
+    <string name="garden_score_unknown">—</string>
+    <string name="garden_score_unavailable">Score not available yet</string>
+    <plurals name="garden_streak_days">
+        <item quantity="one">%1$d day streak</item>
+        <item quantity="other">%1$d day streak</item>
+    </plurals>
+    <string name="garden_streak_empty">Each day is a fresh start</string>
+    <string name="garden_loading">Getting your garden ready…</string>
+    <string name="garden_permission_title">Make room for your garden</string>
+    <string name="garden_permission_body">Allow usage access to see your daily score and grow plants from your screen time. You can still use focus without it.</string>
+    <string name="garden_grant_usage">Allow usage access</string>
+    <string name="garden_empty_title">Your garden starts here</string>
+    <string name="garden_empty_body">There is no daily history yet. Your first plant can appear after a day with a health score of 60 or more.</string>
+    <string name="garden_empty_ready_body">Your plot is ready. Plants grow from completed days, so today’s progress has time to settle.</string>
+    <string name="garden_incomplete_title">Some of today is still unknown</string>
+    <string name="garden_incomplete_body">Screen activity is incomplete, so the score is not available. Your saved plants are safe. You can continue to focus.</string>
+    <string name="garden_error_title">Your garden could not refresh</string>
+    <string name="garden_error_body">Try again to load the latest progress. Any plants already shown are saved.</string>
+    <string name="garden_retry">Try again</string>
+    <string name="garden_refresh">Refresh garden</string>
+    <string name="garden_detail_title">Plant details</string>
+    <string name="garden_detail_close">Close details</string>
+    <string name="garden_detail_stage">Stage</string>
+    <string name="garden_detail_condition">Condition</string>
+    <string name="garden_detail_health">Health</string>
+    <string name="garden_detail_health_value">%1$d/100</string>
+    <string name="garden_detail_planted">Planted</string>
+    <string name="garden_date_unknown">Date not recorded</string>
+    <string name="garden_detail_reassurance">Plants can recover. Their growth stays with you.</string>
+    <string name="garden_plant_flower">Flower</string>
+    <string name="garden_plant_bonsai">Bonsai</string>
+    <string name="garden_plant_cactus">Cactus</string>
+    <string name="garden_plant_fern">Fern</string>
+    <string name="garden_plant_unknown">Plant</string>
+    <string name="garden_stage_seed">Seed</string>
+    <string name="garden_stage_sprout">Sprout</string>
+    <string name="garden_stage_bud">Bud</string>
+    <string name="garden_stage_bloom">Bloom</string>
+    <string name="garden_condition_growing">Growing</string>
+    <string name="garden_condition_wilting">Needs a little care</string>
+    <string name="garden_condition_recovering">Recovering</string>
+    <string name="garden_plant_description">%1$s, %2$s. Open plant details.</string>
+</resources>

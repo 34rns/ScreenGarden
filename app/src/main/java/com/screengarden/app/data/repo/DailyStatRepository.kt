@@ -22,5 +22,8 @@ interface DailyStatRepository {
 
     suspend fun save(stat: DailyStat)
 
+    /** Updates usage without overwriting fields maintained by focus or the garden. */
+    suspend fun saveUsage(stat: DailyStat)
+
     suspend fun deleteDay(dayStartUtcMillis: Long)
 }

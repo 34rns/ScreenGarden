@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -83,6 +84,50 @@ class DailyStatDaoTest {
         assertEquals(1, dao.deleteByDay(DAY_ONE))
         assertNull(dao.getByDay(DAY_ONE))
         assertEquals(1, dao.observeRange(DAY_ONE, DAY_TWO).first().size)
+    }
+
+    @Test
+    fun scoreWriteRequiresTheMeasuredVersionAndPreservesOtherFields() = runTest {
+        dao.upsert(stat(DAY_ONE, focusMinutes = 25).copy(screenMinutes = 90, pickups = 4, usageIsBounded = true))
+
+        assertEquals(1, dao.updateScore(DAY_ONE, 80, DAY_ONE))
+        assertEquals(0, dao.updateScore(DAY_ONE, 10, DAY_TWO))
+
+        val stored = requireNotNull(dao.getByDay(DAY_ONE))
+        assertEquals(80, stored.score)
+        assertEquals(25, stored.focusMinutes)
+        assertEquals(90, stored.screenMinutes)
+        assertEquals(4, stored.pickups)
+        assertEquals(DAY_ONE, stored.updatedAtUtcMillis)
+    }
+
+    @Test
+    fun usageWriteInvalidatesUnappliedScoreAndKeepsFocusFields() = runTest {
+        dao.upsert(stat(DAY_ONE, focusMinutes = 25).copy(score = 80, sessionsCompleted = 1))
+
+        dao.saveUsage(stat(DAY_ONE).copy(screenMinutes = 120, pickups = 8, usageIsBounded = true))
+
+        val stored = requireNotNull(dao.getByDay(DAY_ONE))
+        assertNull(stored.score)
+        assertEquals(25, stored.focusMinutes)
+        assertEquals(1, stored.sessionsCompleted)
+        assertEquals(120, stored.screenMinutes)
+        assertEquals(8, stored.pickups)
+        assertFalse(stored.gardenApplied)
+    }
+
+    @Test
+    fun usageWritePreservesAppliedGardenAndScoreCannotRewriteIt() = runTest {
+        dao.upsert(stat(DAY_ONE).copy(score = 80, plantsGrown = 2, gardenApplied = true))
+
+        dao.saveUsage(stat(DAY_ONE).copy(screenMinutes = 120, updatedAtUtcMillis = DAY_TWO))
+
+        val stored = requireNotNull(dao.getByDay(DAY_ONE))
+        assertEquals(80, stored.score)
+        assertEquals(2, stored.plantsGrown)
+        assertEquals(true, stored.gardenApplied)
+        assertEquals(120, stored.screenMinutes)
+        assertEquals(0, dao.updateScore(DAY_ONE, 10, DAY_TWO))
     }
 
     private fun stat(dayStartUtcMillis: Long, focusMinutes: Int = 0): DailyStat = DailyStat(

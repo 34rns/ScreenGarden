@@ -42,7 +42,9 @@ data class DayUsage(
     val totalScreenTimeMillis: Long,
     val pickups: Int,
     val unlocks: UnlockCount,
-    val apps: List<AppUsage>
+    val apps: List<AppUsage>,
+    /** False when the event stream cannot bound activity time with screen state. */
+    val usageIsBounded: Boolean = false
 ) {
 
     /** The entry for one package, or null when it was not used that day. */

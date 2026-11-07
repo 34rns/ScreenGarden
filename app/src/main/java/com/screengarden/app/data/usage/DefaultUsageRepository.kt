@@ -42,42 +42,100 @@ class DefaultUsageRepository(
         // Reading today (or a future day) must never invent time that has not
         // happened yet: the window stops at the earlier of the day boundary and now.
         val endMillis = minOf(dayEndMillis, nowMillis())
+        if (endMillis <= dayStartUtcMillis) {
+            return DayUsageResult.Available(
+                DayUsage(
+                    dayStartUtcMillis,
+                    0L,
+                    0,
+                    if (source.supportsUnlocks) UnlockCount.Supported(0) else UnlockCount.Unsupported,
+                    emptyList()
+                )
+            )
+        }
         val launchablePackages = source.launchablePackages()
         val lastUsedByPackage = source.appTotals(dayStartUtcMillis, endMillis)
             .associate { it.packageName to it.lastTimeUsedMillis }
 
         val windows = LinkedHashMap<String, MutableWindow>()
         var openPackage: String? = null
+        var openActivity: String? = null
         var openSinceMillis = dayStartUtcMillis
         var pickups = 0
         var unlocks = 0
 
-        for (event in source.events(dayStartUtcMillis, endMillis).sortedBy { it.timestampMillis }) {
+        var interactive = true
+        var hasScreenEvidence = false
+        // Replay yesterday to carry screen/activity state across local midnight.
+        val queryStart = LocalDay.previousDayStart(dayStartUtcMillis, zoneId)
+        for (event in source.events(queryStart, endMillis).sortedBy { it.timestampMillis }) {
             val timestamp = event.timestampMillis
-            if (timestamp < dayStartUtcMillis || timestamp >= endMillis) continue
+            if (timestamp < queryStart || timestamp >= endMillis) continue
+            val inDay = timestamp >= dayStartUtcMillis
 
             when (event.type) {
-                UsageEventType.SCREEN_INTERACTIVE -> pickups++
-                UsageEventType.KEYGUARD_HIDDEN -> unlocks++
+                UsageEventType.SCREEN_INTERACTIVE -> {
+                    hasScreenEvidence = true
+                    if (inDay) pickups++
+                    if (!interactive) openSinceMillis = timestamp
+                    interactive = true
+                }
+                UsageEventType.SCREEN_NON_INTERACTIVE -> {
+                    hasScreenEvidence = true
+                    if (interactive) {
+                        closeWindow(openPackage, openSinceMillis, timestamp, windows, dayStartUtcMillis)
+                    }
+                    interactive = false
+                }
+                UsageEventType.DEVICE_SHUTDOWN -> {
+                    if (interactive) {
+                        closeWindow(openPackage, openSinceMillis, timestamp, windows, dayStartUtcMillis)
+                    }
+                    openPackage = null
+                    openActivity = null
+                    interactive = false
+                }
+                UsageEventType.DEVICE_STARTUP -> {
+                    // An unmatched interval's end before a restart is unknown.
+                    openPackage = null
+                    openActivity = null
+                    interactive = false
+                }
+                UsageEventType.KEYGUARD_HIDDEN -> if (inDay) unlocks++
                 UsageEventType.ACTIVITY_RESUMED -> {
                     val packageName = event.packageName ?: continue
-                    if (packageName == openPackage) continue
-                    closeWindow(openPackage, openSinceMillis, timestamp, windows, dayStartUtcMillis)
-                    openPackage = packageName
-                    openSinceMillis = timestamp
-                    val window = windows.getOrPut(packageName) { MutableWindow() }
-                    window.launchCount++
-                    window.lastResumedMillis = timestamp
-                }
-                UsageEventType.ACTIVITY_PAUSED -> {
-                    if (openPackage != null && openPackage == event.packageName) {
+                    if (packageName == openPackage) {
+                        if (event.activityName != null) openActivity = event.activityName
+                        continue
+                    }
+                    if (interactive) {
                         closeWindow(openPackage, openSinceMillis, timestamp, windows, dayStartUtcMillis)
+                    }
+                    openPackage = packageName
+                    openActivity = event.activityName
+                    openSinceMillis = timestamp
+                    if (inDay) {
+                        val window = windows.getOrPut(packageName) { MutableWindow() }
+                        window.launchCount++
+                        window.lastResumedMillis = timestamp
+                    }
+                }
+                UsageEventType.ACTIVITY_PAUSED,
+                UsageEventType.ACTIVITY_STOPPED -> {
+                    if (openPackage != null &&
+                        openPackage == event.packageName &&
+                        (event.activityName == null || openActivity == null || event.activityName == openActivity)
+                    ) {
+                        if (interactive) {
+                            closeWindow(openPackage, openSinceMillis, timestamp, windows, dayStartUtcMillis)
+                        }
                         openPackage = null
+                        openActivity = null
                     }
                 }
             }
         }
-        closeWindow(openPackage, openSinceMillis, endMillis, windows, dayStartUtcMillis)
+        if (interactive) closeWindow(openPackage, openSinceMillis, endMillis, windows, dayStartUtcMillis)
 
         val apps = windows
             .filterKeys { it in launchablePackages }
@@ -105,7 +163,8 @@ class DefaultUsageRepository(
                 } else {
                     UnlockCount.Unsupported
                 },
-                apps = apps
+                apps = apps,
+                usageIsBounded = source.supportsScreenState && hasScreenEvidence
             )
         )
     }

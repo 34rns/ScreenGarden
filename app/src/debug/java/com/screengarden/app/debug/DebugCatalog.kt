@@ -3,10 +3,18 @@
 package com.screengarden.app.debug
 
 import android.content.Context
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import com.screengarden.app.ScreenGardenApplication
 import com.screengarden.app.data.usage.AndroidUsageSource
+import com.screengarden.app.domain.garden.Plant
+import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.ui.debug.UsageSelfCheckScreen
 import com.screengarden.app.ui.navigation.DebugDestination
+import com.screengarden.app.ui.screens.garden.GardenAvailability
+import com.screengarden.app.ui.screens.garden.GardenScreen
+import com.screengarden.app.ui.screens.garden.GardenUiState
 
 /**
  * The debug-build catalogue of diagnostic screens (P05b).
@@ -25,6 +33,37 @@ object DebugCatalog {
 
     /** The requested debug destination, or null when [requested] names none. */
     fun destination(requested: String?, context: Context): DebugDestination? {
+        if (requested in setOf("garden_demo", "garden_rtl_demo", "garden_empty_demo", "garden_permission_demo")) {
+            val state = when (requested) {
+                "garden_permission_demo" -> GardenUiState(false, GardenAvailability.NO_PERMISSION)
+                "garden_empty_demo" -> GardenUiState(false, GardenAvailability.NO_DATA)
+                else -> GardenUiState(
+                    loading = false,
+                    availability = GardenAvailability.READY,
+                    plants = listOf(
+                        Plant("demo-flower", "flower", 45, 90, plantedAtUtcMillis = 1793318400000L),
+                        Plant("demo-bonsai", "bonsai", 27, 70, plantedAtUtcMillis = 1793491200000L),
+                        Plant("demo-cactus", "cactus", 45, 82, plantedAtUtcMillis = 1793664000000L),
+                        Plant("demo-fern", "fern", 15, 44, PlantCondition.RECOVERING, 1793664000000L),
+                        Plant("demo-seed", "fern", plantedAtUtcMillis = 1793750400000L)
+                    ),
+                    score = 84,
+                    streakDays = 4
+                )
+            }
+            // Pure fake presentation: never reads or writes anybody's usage or garden.
+            return DebugDestination(requireNotNull(requested)) {
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides if (requested == "garden_rtl_demo") {
+                        LayoutDirection.Rtl
+                    } else {
+                        LocalLayoutDirection.current
+                    }
+                ) {
+                    GardenScreen(state, { }, { }, { })
+                }
+            }
+        }
         if (requested != USAGE_SELF_CHECK) return null
         val appContext = context.applicationContext
         val container = (appContext as ScreenGardenApplication).container

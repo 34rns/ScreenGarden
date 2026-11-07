@@ -11,12 +11,11 @@ import kotlinx.coroutines.flow.Flow
  *
  * This is the first of the six repositories to get an implementation (P06), because
  * the daily sync has to persist a day's screen time somewhere. It stays a thin
- * adapter: no mapping, no arithmetic, no decisions - the aggregate is computed by
+ * adapter: the aggregate is computed by
  * [com.screengarden.app.data.sync.DailyUsageSync] and this class only stores it.
  *
- * [save] is an upsert (REPLACE on the day key), which is what makes a repeated sync
- * of the same day harmless: the row is overwritten with the same values instead of
- * accumulating duplicates.
+ * [save] replaces a complete row. Usage sync uses [saveUsage], which writes only
+ * usage fields in one transaction and preserves focus and applied garden results.
  */
 class DailyStatRepositoryImpl(private val dao: DailyStatDao) : DailyStatRepository {
 
@@ -28,6 +27,8 @@ class DailyStatRepositoryImpl(private val dao: DailyStatDao) : DailyStatReposito
     override suspend fun getDay(dayStartUtcMillis: Long): DailyStat? = dao.getByDay(dayStartUtcMillis)
 
     override suspend fun save(stat: DailyStat) = dao.upsert(stat)
+
+    override suspend fun saveUsage(stat: DailyStat) = dao.saveUsage(stat)
 
     override suspend fun deleteDay(dayStartUtcMillis: Long) {
         // The row count is irrelevant to callers; the interface reports nothing.

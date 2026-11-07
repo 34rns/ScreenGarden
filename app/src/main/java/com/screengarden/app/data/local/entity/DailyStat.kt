@@ -2,6 +2,7 @@
 
 package com.screengarden.app.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -19,5 +20,11 @@ data class DailyStat(
     val screenMinutes: Int = 0,
     val sessionsCompleted: Int = 0,
     val plantsGrown: Int = 0,
-    val updatedAtUtcMillis: Long
+    val updatedAtUtcMillis: Long,
+    val score: Int? = null,
+    val pickups: Int? = null,
+    val unlocks: Int? = null,
+    /** False for migrated rows until the bounded measurement replaces their usage. */
+    @ColumnInfo(defaultValue = "0") val usageIsBounded: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val gardenApplied: Boolean = false
 )

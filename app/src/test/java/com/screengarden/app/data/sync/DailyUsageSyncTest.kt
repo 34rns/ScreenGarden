@@ -189,6 +189,17 @@ class DailyUsageSyncTest {
             stats[stat.dayStartUtcMillis] = stat
         }
 
+        override suspend fun saveUsage(stat: DailyStat) {
+            val previous = stats[stat.dayStartUtcMillis]
+            stats[stat.dayStartUtcMillis] = previous?.copy(
+                screenMinutes = stat.screenMinutes,
+                pickups = stat.pickups,
+                unlocks = stat.unlocks,
+                usageIsBounded = stat.usageIsBounded,
+                updatedAtUtcMillis = stat.updatedAtUtcMillis
+            ) ?: stat
+        }
+
         override suspend fun deleteDay(dayStartUtcMillis: Long) {
             stats.remove(dayStartUtcMillis)
         }
