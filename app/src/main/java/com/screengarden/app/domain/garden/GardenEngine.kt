@@ -2,6 +2,7 @@
 
 package com.screengarden.app.domain.garden
 
+import com.screengarden.app.domain.focus.FocusStatus
 import java.util.UUID
 import kotlin.math.roundToInt
 
@@ -115,7 +116,9 @@ data class GardenDay(
     val streakDays: Int = 0,
     val dayStartUtcMillis: Long = 0L,
     /** Actual latest completed-session timestamp; null when it is not known. */
-    val lastFocusAtUtcMillis: Long? = null
+    val lastFocusAtUtcMillis: Long? = null,
+    /** P14 terminal transactions already delivered these focus points and healing. */
+    val focusRewardsAlreadyApplied: Boolean = false
 )
 
 /**
@@ -161,6 +164,58 @@ data class GardenOutcome(
  * plant's id comes from an injectable factory so tests are deterministic.
  */
 object GardenEngine {
+
+    /** Delivered atomically with a terminal session: first two completions heal; soft fails cost at most one point. */
+    fun applyFocus(
+        status: FocusStatus,
+        plants: List<Plant>,
+        endedAtUtcMillis: Long,
+        completedEarlierToday: Int = 0,
+        rules: GardenRules = GardenRules(),
+        newPlantId: () -> String = { UUID.randomUUID().toString() }
+    ): GardenOutcome {
+        if (status != FocusStatus.COMPLETED && status != FocusStatus.FAILED_SOFT) return GardenOutcome(plants)
+        if (status == FocusStatus.COMPLETED && completedEarlierToday >= rules.maxCountedFocus) {
+            return GardenOutcome(
+                plants.map { plant ->
+                    plant.copy(
+                        lastFocusAtUtcMillis = maxOf(plant.lastFocusAtUtcMillis ?: endedAtUtcMillis, endedAtUtcMillis)
+                    )
+                }
+            )
+        }
+        val focusDay = GardenDay(null, focusSessionsCompleted = 1, lastFocusAtUtcMillis = endedAtUtcMillis)
+        val planted = if (plants.isEmpty() && status == FocusStatus.COMPLETED) {
+            val id = newPlantId()
+            require(id.isNotBlank()) { "A new plant needs a nonblank id" }
+            newSeed(focusDay, rules, id).copy(plantedAtUtcMillis = endedAtUtcMillis)
+        } else {
+            null
+        }
+        val previous = if (planted == null) plants else listOf(planted)
+        val updated = previous.map { plant ->
+            if (status == FocusStatus.COMPLETED) {
+                grow(plant, focusDay, rules)
+            } else {
+                // A distraction cannot erase a stage, reduce health or permanently remove a plant.
+                plant.copy(
+                    growthPoints = (plant.growthPoints.coerceAtLeast(0) - 1)
+                        .coerceAtLeast(plant.stage.minimumGrowthPoints)
+                )
+            }
+        }
+        return GardenOutcome(
+            plants = updated,
+            planted = planted?.let { seed -> updated.first { it.id == seed.id } },
+            bloomed = updated.filter { plant ->
+                previous.first { it.id == plant.id }.stage != PlantStage.BLOOM && plant.stage == PlantStage.BLOOM
+            }.map { it.id },
+            recovered = updated.filter { plant ->
+                previous.first { it.id == plant.id }.condition == PlantCondition.WILTING &&
+                    plant.condition != PlantCondition.WILTING
+            }.map { it.id }
+        )
+    }
 
     /**
      * Applies [day] to [plants] and returns the new garden.
@@ -234,9 +289,15 @@ object GardenEngine {
             ?.coerceIn(0, 100)
             ?.let { (it.toDouble() * rules.growthPerFullScore / 100.0).roundToInt() }
             ?: 0
-        val focusGrowth = day.focusSessionsCompleted.coerceIn(0, rules.maxCountedFocus).toLong() * rules.growthPerFocus
+        val appliedFocusGrowth = day.focusSessionsCompleted.coerceIn(0, rules.maxCountedFocus).toLong() *
+            rules.growthPerFocus
+        val focusGrowth = if (day.focusRewardsAlreadyApplied) 0 else appliedFocusGrowth
         val streakGrowth = if (day.score == null) 0 else streakBonus(day.streakDays, rules)
-        return (scoreGrowth.toLong() + focusGrowth + streakGrowth).coerceIn(0L, rules.maxGrowthPerDay.toLong()).toInt()
+        val remainingCap = (
+            rules.maxGrowthPerDay.toLong() -
+                if (day.focusRewardsAlreadyApplied) appliedFocusGrowth else 0
+            ).coerceAtLeast(0)
+        return (scoreGrowth.toLong() + focusGrowth + streakGrowth).coerceIn(0L, remainingCap).toInt()
     }
 
     private fun streakBonus(streakDays: Int, rules: GardenRules): Int {
@@ -255,7 +316,7 @@ object GardenEngine {
                 }
             }
             ?: 0
-        val focusHealth = focusCount.toLong() * rules.healthPerFocus
+        val focusHealth = if (day.focusRewardsAlreadyApplied) 0 else focusCount.toLong() * rules.healthPerFocus
         return (health.toLong() + scoreHealth + focusHealth)
             .coerceIn(rules.minHealth.toLong(), rules.maxHealth.toLong()).toInt()
     }

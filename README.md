@@ -75,6 +75,10 @@ by intention. A pull request that adds network access or telemetry is rejected.
 - Focus duration presets and custom times, tags, a growing seed/countdown,
   gentle results, saved session totals and optional keep-screen-on behavior.
   A visible foreground timer keeps running when you leave the app.
+- Brief phone checks have a 30-second grace. Measured distractions end focus
+  gently, preserving every plant's stage and health. The first two completed
+  sessions each day grow and heal the garden, with a new seed for an empty plot.
+  Detection needs Usage access and reliable screen events (Android 9+).
 - Usage without reliable screen events (including Android 8.0–8.1) is shown as
   incomplete rather than given a fabricated score. Insights and Settings remain
   placeholders until their roadmap steps are finished.

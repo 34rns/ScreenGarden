@@ -23,6 +23,7 @@ import com.screengarden.app.domain.focus.FocusSessionMachine
 import com.screengarden.app.domain.focus.FocusSessionState
 import com.screengarden.app.domain.focus.FocusStatus
 import com.screengarden.app.domain.focus.FocusTag
+import com.screengarden.app.domain.focus.FocusUsePolicy
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -44,6 +45,7 @@ class FocusTimerService : Service() {
     private var runtimeStartElapsedMs = 0L
     private var runtimeActualMs = 0L
     private val repository get() = (application as ScreenGardenApplication).container.focusSessionRepository
+    private val useReader get() = (application as ScreenGardenApplication).container.focusUseReader
     private val manager get() = getSystemService(NotificationManager::class.java)
 
     override fun onCreate() {
@@ -125,11 +127,31 @@ class FocusTimerService : Service() {
         val running = session
         timer = scope.launch {
             var lastShownMinute = -1L
+            var lastUsageCheckElapsedMs = runtimeStartElapsedMs
             try {
                 while (true) {
                     delay(1000)
                     val keepRunning = commands.withLock {
-                        val progressed = FocusSessionMachine.tick(running, actualNow(), System.currentTimeMillis())
+                        val now = System.currentTimeMillis()
+                        val elapsed = SystemClock.elapsedRealtime()
+                        val actual = actualNow()
+                        var progressed = FocusSessionMachine.tick(running, actual, now)
+                        if (elapsed - lastUsageCheckElapsedMs >= FocusUsePolicy.CHECK_INTERVAL_MS ||
+                            progressed.status == FocusStatus.COMPLETED
+                        ) {
+                            lastUsageCheckElapsedMs = elapsed
+                            // Permission/OEM query failure is unknown; never punish missing evidence.
+                            val used = try {
+                                FocusUsePolicy.windowEndUtcMillis(running, now, actual)?.let { windowEnd ->
+                                    useReader.otherAppUsageMillis(running.startedAtUtcMillis, windowEnd)
+                                }
+                            } catch (_: RuntimeException) {
+                                null
+                            }
+                            if (FocusUsePolicy.shouldSoftFail(used)) {
+                                progressed = FocusSessionMachine.end(running, FocusStatus.FAILED_SOFT, actual, now)
+                            }
+                        }
                         if (!repository.checkpoint(progressed)) {
                             stopSelf()
                             return@withLock false

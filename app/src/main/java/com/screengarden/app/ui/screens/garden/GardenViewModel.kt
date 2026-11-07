@@ -128,7 +128,8 @@ class GardenViewModel(
                     score = calculated,
                     focusSessionsCompleted = day.sessionsCompleted,
                     streakDays = streak(scoredDays, day.dayStartUtcMillis, goals.threshold),
-                    dayStartUtcMillis = day.dayStartUtcMillis
+                    dayStartUtcMillis = day.dayStartUtcMillis,
+                    focusRewardsAlreadyApplied = true
                 )
             )
         }
@@ -140,8 +141,7 @@ class GardenViewModel(
             dailyGoalMinutes = goals.dailyMinutes,
             pickups = day.pickups,
             pickupGoal = goals.pickups,
-            // Focus has no observed sessions until P12; an absent feature is unknown.
-            focusMinutes = day.focusMinutes.takeIf { day.sessionsCompleted > 0 }
+            focusMinutes = day.focusMinutes
         )
     )?.value
 

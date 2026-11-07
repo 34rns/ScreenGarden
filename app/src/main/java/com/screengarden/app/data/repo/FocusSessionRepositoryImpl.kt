@@ -11,6 +11,7 @@ import com.screengarden.app.domain.focus.FocusSessionState
 import com.screengarden.app.domain.focus.FocusStatus
 import com.screengarden.app.domain.focus.FocusStore
 import com.screengarden.app.domain.focus.FocusTag
+import com.screengarden.app.domain.garden.GardenEngine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -52,6 +53,18 @@ class FocusSessionRepositoryImpl(private val database: ScreenGardenDatabase) :
             return@withTransaction false
         }
         dao.update(session.toEntity())
+        val ended = session.endedAtUtcMillis
+        if ((session.status == FocusStatus.COMPLETED || session.status == FocusStatus.FAILED_SOFT) && ended != null) {
+            val completedEarlier = database.dailyStatDao().getByDay(LocalDay.startOfDay(ended))?.sessionsCompleted ?: 0
+            val plants = database.plantDao()
+            val outcome = GardenEngine.applyFocus(
+                session.status,
+                plants.getAll().map { it.toDomain() },
+                ended,
+                completedEarlier
+            )
+            outcome.plants.forEach { plants.upsert(it.toEntity()) }
+        }
         if (session.status == FocusStatus.COMPLETED) {
             // Credit completion to its local day, including sessions that cross midnight.
             val day = LocalDay.startOfDay(requireNotNull(session.endedAtUtcMillis))

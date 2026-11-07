@@ -5,11 +5,13 @@ package com.screengarden.app.data.focus
 import android.app.NotificationManager
 import android.content.Intent
 import android.os.Build
+import android.provider.Settings
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.screengarden.app.MainActivity
 import com.screengarden.app.ScreenGardenApplication
+import com.screengarden.app.data.usage.UsageAccess
 import com.screengarden.app.domain.focus.FocusStatus
 import com.screengarden.app.domain.focus.FocusTag
 import kotlinx.coroutines.delay
@@ -22,6 +24,69 @@ import org.junit.runner.RunWith
 /** Runs on the dedicated emulator; all session inputs are fake. */
 @RunWith(AndroidJUnit4::class)
 class FocusTimerServiceTest {
+    @Test
+    fun completedTimerPlantsAndRewardsOnlyOnce() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val container = (context.applicationContext as ScreenGardenApplication).container
+        container.database.focusSessionDao().deleteAll()
+        container.database.dailyStatDao().deleteAll()
+        container.database.plantDao().getAll().forEach { container.database.plantDao().deleteById(it.plantId) }
+        // Fake presentation prevents the real Garden screen from backfilling old-day plant rewards.
+        ActivityScenario.launch<MainActivity>(
+            Intent(context, MainActivity::class.java).putExtra("screen", "focus_demo")
+        ).use { activity ->
+            activity.onActivity { container.focusController.start(1, FocusTag.READING) }
+            awaitCondition { container.focusSessionRepository.activeSession() != null }
+            val id = requireNotNull(container.focusSessionRepository.activeSession()).id
+            // Remain in our own UI; screen-on alone is not a distraction.
+            delay(62_000)
+            awaitCondition { container.focusSessionRepository.activeSession() == null }
+            val completed = requireNotNull(container.focusSessionRepository.getSession(id))
+            assertEquals(FocusStatus.COMPLETED, completed.status)
+            assertEquals(60_000L, completed.actualDurationMs)
+            assertEquals(2, container.database.plantDao().getAll().single().growthPoints)
+            assertTrue(!container.focusSessionRepository.checkpoint(completed))
+            assertEquals(2, container.database.plantDao().getAll().single().growthPoints)
+        }
+    }
+
+    @Test
+    fun otherAppUsageAfterGraceEndsSoftlyWithoutLosingThePlant() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val container = (context.applicationContext as ScreenGardenApplication).container
+        assertTrue("Grant usage access on the dedicated emulator before this test", UsageAccess.isGranted(context))
+        container.database.focusSessionDao().deleteAll()
+        container.database.dailyStatDao().deleteAll()
+        container.database.plantDao().getAll().forEach { container.database.plantDao().deleteById(it.plantId) }
+        container.gardenRepository.savePlant(
+            com.screengarden.app.domain.garden.Plant(
+                "fake",
+                "fern",
+                12,
+                60,
+                com.screengarden.app.domain.garden.PlantCondition.GROWING,
+                System.currentTimeMillis()
+            )
+        )
+        ActivityScenario.launch<MainActivity>(
+            Intent(context, MainActivity::class.java).putExtra("screen", "focus_demo")
+        ).use { activity ->
+            activity.onActivity { container.focusController.start(1, FocusTag.STUDY) }
+            awaitCondition { container.focusSessionRepository.activeSession() != null }
+            val id = requireNotNull(container.focusSessionRepository.activeSession()).id
+            context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            delay(20_000)
+            assertEquals(FocusStatus.RUNNING, container.focusSessionRepository.getSession(id)?.status)
+            delay(25_000)
+            awaitCondition { container.focusSessionRepository.activeSession() == null }
+            assertEquals(FocusStatus.FAILED_SOFT, container.focusSessionRepository.getSession(id)?.status)
+            val plant = container.database.plantDao().getAll().single()
+            assertEquals("fake", plant.plantId)
+            assertEquals(11, plant.growthPoints)
+            assertEquals(60, plant.health)
+        }
+    }
+
     @Test
     fun timerSurvivesLeavingActivityAndNotificationStopPersistsCancellation() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext

@@ -104,4 +104,27 @@ class FocusSessionRepositoryImplTest {
         assertFalse(repository.checkpoint(FocusSessionMachine.tick(session(), 10_000, start + 10_000)))
         assertEquals(20_000L, repository.getSession("focus")?.actualDurationMs)
     }
+
+    @Test
+    fun immediateGrowthAndHealingAreOnceOnlyWithTheTerminalWrite() = runTest {
+        val garden = GardenRepositoryImpl(database)
+        garden.savePlant(
+            com.screengarden.app.domain.garden.Plant(
+                "seed",
+                "fern",
+                44,
+                10,
+                com.screengarden.app.domain.garden.PlantCondition.WILTING,
+                start
+            )
+        )
+        repository.start(session())
+        val complete = FocusSessionMachine.tick(session(), 60_000, start + 60_000)
+        assertTrue(repository.checkpoint(complete))
+        assertFalse(repository.checkpoint(complete))
+        val grown = requireNotNull(garden.getPlant("seed"))
+        assertEquals(46, grown.growthPoints)
+        assertEquals(14, grown.health)
+        assertEquals(start + 60_000, grown.lastFocusAtUtcMillis)
+    }
 }

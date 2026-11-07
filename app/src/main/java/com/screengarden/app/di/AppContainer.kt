@@ -3,8 +3,11 @@
 package com.screengarden.app.di
 
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.work.WorkManager
 import com.screengarden.app.data.focus.FocusController
+import com.screengarden.app.data.focus.FocusUseReader
 import com.screengarden.app.data.local.ScreenGardenDatabase
 import com.screengarden.app.data.onboarding.OnboardingCompletion
 import com.screengarden.app.data.repo.AppUsageRepository
@@ -19,7 +22,6 @@ import com.screengarden.app.data.settings.settingsDataStore
 import com.screengarden.app.data.sync.DailyUsageSync
 import com.screengarden.app.data.usage.AndroidUsageSource
 import com.screengarden.app.data.usage.DefaultUsageRepository
-import com.screengarden.app.data.usage.UsageRepository
 import com.screengarden.app.data.work.UsageSyncScheduler
 import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenViewModel
@@ -66,7 +68,7 @@ class AppContainer(context: Context) {
      * Screen time read straight from the OS (P05). Read-only; the daily sync (P06)
      * is what persists it into `app_usage_daily`.
      */
-    val usageRepository: UsageRepository by lazy {
+    val usageRepository: DefaultUsageRepository by lazy {
         DefaultUsageRepository(AndroidUsageSource(appContext))
     }
 
@@ -79,6 +81,14 @@ class AppContainer(context: Context) {
 
     val focusSessionRepository: FocusSessionRepositoryImpl by lazy { FocusSessionRepositoryImpl(database) }
     val focusController: FocusController by lazy { FocusController(appContext) }
+    val focusUseReader: FocusUseReader by lazy {
+        // Settings exposes FallbackHome on some devices; only the active default launcher is exempt.
+        val home = appContext.packageManager.resolveActivity(
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
+            PackageManager.MATCH_DEFAULT_ONLY
+        )?.activityInfo?.packageName
+        FocusUseReader(usageRepository, setOfNotNull(home, appContext.packageName))
+    }
 
     fun focusViewModel(): FocusViewModel = FocusViewModel(
         store = focusSessionRepository,

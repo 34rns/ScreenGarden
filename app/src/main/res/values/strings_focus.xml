@@ -26,10 +26,11 @@
     <string name="focus_complete_title">A little time, well spent</string>
     <string name="focus_rest_title">There is always another moment</string>
     <string name="focus_complete_copy">Your focus session is complete. Take a breath.</string>
-    <string name="focus_soft_copy">Something needed your attention. Your garden can recover.</string>
+    <string name="focus_soft_copy">Something needed your attention. At most one growth point is set back; your plant keeps its stage and health.</string>
     <string name="focus_cancel_copy">You stopped this session. Your plants are still here.</string>
     <string name="focus_actual_minutes">Focused for %1$d min</string>
-    <string name="focus_reward_summary">Your completed minutes are saved for your garden.</string>
+    <string name="focus_reward_summary">Your first two completed sessions each day add growth and restore plant health. Every completed minute is saved.</string>
+    <string name="focus_grace_copy">Brief checks are okay. With Usage access, more than 30 seconds in another app gently ends focus. Detection may vary by Android version.</string>
     <string name="focus_another">Choose another moment</string>
     <string name="focus_week_minutes">%1$d min this week</string>
     <string name="focus_action_error">Focus could not be updated. Try again.</string>

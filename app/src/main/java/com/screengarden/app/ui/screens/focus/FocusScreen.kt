@@ -245,6 +245,11 @@ fun FocusScreen(
                     Checkbox(checked = state.keepScreenOn, onCheckedChange = null)
                     FocusText(stringResource(R.string.focus_keep_screen_on))
                 }
+                FocusText(
+                    stringResource(R.string.focus_grace_copy),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center
+                )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     FocusText(
                         pluralStringResource(R.plurals.focus_sessions_today, state.sessionsToday, state.sessionsToday),

@@ -53,6 +53,32 @@ class DefaultUsageRepository(
                 )
             )
         }
+        val window = measureWindow(dayStartUtcMillis, endMillis, LocalDay.previousDayStart(dayStartUtcMillis, zoneId))
+        return DayUsageResult.Available(
+            DayUsage(
+                dayStartUtcMillis,
+                window.apps.sumOf { it.usageMillis },
+                window.pickups,
+                window.unlocks,
+                window.apps,
+                window.usageIsBounded
+            )
+        )
+    }
+
+    /** A focus window uses the same pairing rules; starting from the visible UI proves its initial screen state. */
+    fun readWindow(startMillis: Long, endMillis: Long, screenOnAtStart: Boolean): UsageWindow? {
+        val untilMillis = minOf(endMillis, nowMillis())
+        if (!source.hasUsageAccess() || untilMillis <= startMillis) return null
+        return measureWindow(startMillis, untilMillis, startMillis, screenOnAtStart)
+    }
+
+    private fun measureWindow(
+        dayStartUtcMillis: Long,
+        endMillis: Long,
+        queryStart: Long,
+        screenOnAtStart: Boolean = false
+    ): UsageWindow {
         val launchablePackages = source.launchablePackages()
         val lastUsedByPackage = source.appTotals(dayStartUtcMillis, endMillis)
             .associate { it.packageName to it.lastTimeUsedMillis }
@@ -65,9 +91,8 @@ class DefaultUsageRepository(
         var unlocks = 0
 
         var interactive = true
-        var hasScreenEvidence = false
-        // Replay yesterday to carry screen/activity state across local midnight.
-        val queryStart = LocalDay.previousDayStart(dayStartUtcMillis, zoneId)
+        var hasScreenEvidence = screenOnAtStart
+        // Daily reads replay yesterday; focus reads start at the user-initiated session.
         for (event in source.events(queryStart, endMillis).sortedBy { it.timestampMillis }) {
             val timestamp = event.timestampMillis
             if (timestamp < queryStart || timestamp >= endMillis) continue
@@ -151,21 +176,11 @@ class DefaultUsageRepository(
             }
             .sortedWith(compareByDescending<AppUsage> { it.usageMillis }.thenBy { it.packageName })
 
-        return DayUsageResult.Available(
-            DayUsage(
-                dayStartUtcMillis = dayStartUtcMillis,
-                totalScreenTimeMillis = apps.sumOf { it.usageMillis },
-                pickups = pickups,
-                // A platform without KEYGUARD_HIDDEN cannot count unlocks, so it says
-                // so instead of reporting zero (D48).
-                unlocks = if (source.supportsUnlocks) {
-                    UnlockCount.Supported(unlocks)
-                } else {
-                    UnlockCount.Unsupported
-                },
-                apps = apps,
-                usageIsBounded = source.supportsScreenState && hasScreenEvidence
-            )
+        return UsageWindow(
+            apps = apps,
+            pickups = pickups,
+            unlocks = if (source.supportsUnlocks) UnlockCount.Supported(unlocks) else UnlockCount.Unsupported,
+            usageIsBounded = source.supportsScreenState && hasScreenEvidence
         )
     }
 
@@ -189,3 +204,11 @@ class DefaultUsageRepository(
         var lastResumedMillis: Long = 0L
     }
 }
+
+/** Measured transient interval; no invented day key and nothing is persisted by this read. */
+data class UsageWindow(
+    val apps: List<AppUsage>,
+    val pickups: Int,
+    val unlocks: UnlockCount,
+    val usageIsBounded: Boolean
+)

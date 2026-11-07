@@ -79,7 +79,7 @@ class GardenRepositoryImpl(private val database: ScreenGardenDatabase) :
     }
 }
 
-private fun PlantEntity.toDomain(): Plant = Plant(
+internal fun PlantEntity.toDomain(): Plant = Plant(
     id = plantId,
     species = species,
     growthPoints = growthPoints.coerceAtLeast(0),
@@ -90,7 +90,7 @@ private fun PlantEntity.toDomain(): Plant = Plant(
     lastFocusAtUtcMillis = lastFocusAtUtcMillis
 )
 
-private fun Plant.toEntity(): PlantEntity = PlantEntity(
+internal fun Plant.toEntity(): PlantEntity = PlantEntity(
     plantId = id,
     species = species,
     stage = stage.ordinal,

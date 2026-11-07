@@ -48,7 +48,7 @@ class GardenViewModelTest {
         val model = model(store)
         advanceUntilIdle()
         assertEquals(listOf(yesterday), store.applied.toList())
-        assertEquals(100, model.uiState.value.score)
+        assertEquals(79, model.uiState.value.score) // no completed focus is now a measured zero, not unknown
         model.refresh()
         advanceUntilIdle()
         assertEquals(1, store.applied.size)
