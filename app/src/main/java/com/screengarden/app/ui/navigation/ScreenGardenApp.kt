@@ -21,11 +21,14 @@ import androidx.navigation.compose.rememberNavController
 fun ScreenGardenApp(
     modifier: Modifier = Modifier,
     debugDestination: DebugDestination? = null,
-    gardenContent: @Composable (() -> Unit) -> Unit
+    gardenContent: @Composable (() -> Unit) -> Unit,
+    focusContent: @Composable () -> Unit
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = ScreenGardenDestination.fromRoute(backStackEntry?.destination?.route)
+    val route = backStackEntry?.destination?.route
+    val currentDestination = debugDestination?.takeIf { it.route == route }?.selectedTab
+        ?: ScreenGardenDestination.fromRoute(route)
 
     Scaffold(
         modifier = modifier,
@@ -50,7 +53,8 @@ fun ScreenGardenApp(
             navController = navController,
             modifier = Modifier.padding(innerPadding),
             debugDestination = debugDestination,
-            gardenContent = gardenContent
+            gardenContent = gardenContent,
+            focusContent = focusContent
         )
     }
 }

@@ -67,6 +67,7 @@ class DataStoreSettingsRepositoryTest {
             assertTrue(settings.repository.gentleMode.first())
             assertFalse(settings.repository.notificationsOn.first())
             assertFalse(settings.repository.onboardingDone.first())
+            assertFalse(settings.repository.keepScreenOn.first())
         }
     }
 
@@ -84,6 +85,7 @@ class DataStoreSettingsRepositoryTest {
             settings.repository.setGentleMode(false)
             settings.repository.setNotificationsOn(true)
             settings.repository.setOnboardingDone(true)
+            settings.repository.setKeepScreenOn(true)
 
             assertEquals(90L * 60L * 1000L, settings.repository.dailyGoalMs.first())
             assertEquals(40, settings.repository.pickupGoal.first())
@@ -94,6 +96,7 @@ class DataStoreSettingsRepositoryTest {
             assertFalse(settings.repository.gentleMode.first())
             assertTrue(settings.repository.notificationsOn.first())
             assertTrue(settings.repository.onboardingDone.first())
+            assertTrue(settings.repository.keepScreenOn.first())
         }
     }
 

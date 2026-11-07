@@ -46,4 +46,6 @@ object SettingsDefaults {
 
     /** Onboarding has not run yet; P07 flips this. */
     const val ONBOARDING_DONE: Boolean = false
+
+    const val KEEP_SCREEN_ON: Boolean = false
 }

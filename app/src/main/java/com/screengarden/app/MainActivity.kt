@@ -27,6 +27,8 @@ import com.screengarden.app.domain.model.OnboardingChoices
 import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.ui.navigation.ScreenGardenApp
 import com.screengarden.app.ui.onboarding.OnboardingScreen
+import com.screengarden.app.ui.screens.focus.FocusScreen
+import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenScreen
 import com.screengarden.app.ui.screens.garden.GardenViewModel
 import com.screengarden.app.ui.theme.ScreenGardenTheme
@@ -100,12 +102,32 @@ class MainActivity : ComponentActivity() {
                         onRetry = garden::refresh
                     )
                 }
+                val focusContent: @androidx.compose.runtime.Composable () -> Unit = {
+                    val factory = remember(container) {
+                        viewModelFactory { initializer { container.focusViewModel() } }
+                    }
+                    val focus: FocusViewModel = viewModel(factory = factory)
+                    val state by focus.uiState.collectAsStateWithLifecycle()
+                    LifecycleResumeEffect(focus) {
+                        focus.refresh()
+                        onPauseOrDispose { }
+                    }
+                    FocusScreen(
+                        state,
+                        focus::start,
+                        focus::stop,
+                        focus::setKeepScreenOn,
+                        focus::dismissResult,
+                        focus::refresh
+                    )
+                }
                 when {
                     // A debug build launched with a screen extra wins, so the diagnostic
                     // screens stay reachable even before onboarding was completed.
                     debugDestination != null -> ScreenGardenApp(
                         debugDestination = debugDestination,
-                        gardenContent = gardenContent
+                        gardenContent = gardenContent,
+                        focusContent = focusContent
                     )
                     onboardingDone == null -> Box(
                         modifier = Modifier
@@ -140,7 +162,7 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
-                    else -> ScreenGardenApp(gardenContent = gardenContent)
+                    else -> ScreenGardenApp(gardenContent = gardenContent, focusContent = focusContent)
                 }
             }
         }

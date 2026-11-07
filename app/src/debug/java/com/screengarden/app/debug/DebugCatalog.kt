@@ -8,10 +8,16 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.screengarden.app.ScreenGardenApplication
 import com.screengarden.app.data.usage.AndroidUsageSource
+import com.screengarden.app.domain.focus.FocusSessionState
+import com.screengarden.app.domain.focus.FocusStatus
+import com.screengarden.app.domain.focus.FocusTag
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.ui.debug.UsageSelfCheckScreen
 import com.screengarden.app.ui.navigation.DebugDestination
+import com.screengarden.app.ui.navigation.ScreenGardenDestination
+import com.screengarden.app.ui.screens.focus.FocusScreen
+import com.screengarden.app.ui.screens.focus.FocusUiState
 import com.screengarden.app.ui.screens.garden.GardenAvailability
 import com.screengarden.app.ui.screens.garden.GardenScreen
 import com.screengarden.app.ui.screens.garden.GardenUiState
@@ -33,6 +39,45 @@ object DebugCatalog {
 
     /** The requested debug destination, or null when [requested] names none. */
     fun destination(requested: String?, context: Context): DebugDestination? {
+        if (requested in
+            setOf("focus_demo", "focus_running_demo", "focus_result_demo", "focus_soft_demo", "focus_rtl_demo")
+        ) {
+            val fake = FocusSessionState(
+                "demo-focus",
+                1794000000000L,
+                1794000000000L,
+                25,
+                FocusTag.READING,
+                actualDurationMs = 720_000
+            )
+            val result = fake.copy(
+                status = if (requested == "focus_soft_demo") {
+                    FocusStatus.FAILED_SOFT
+                } else {
+                    FocusStatus.COMPLETED
+                },
+                endedAtUtcMillis = 1794001500000L,
+                actualDurationMs = 1_500_000
+            )
+            val state = FocusUiState(
+                loading = false,
+                sessionsToday = 2,
+                minutesThisWeek = 115,
+                active = fake.takeIf { requested == "focus_running_demo" },
+                result = result.takeIf { requested in setOf("focus_result_demo", "focus_soft_demo") }
+            )
+            return DebugDestination(requireNotNull(requested), ScreenGardenDestination.Focus) {
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides if (requested == "focus_rtl_demo") {
+                        LayoutDirection.Rtl
+                    } else {
+                        LocalLayoutDirection.current
+                    }
+                ) {
+                    FocusScreen(state, { _, _ -> }, { }, { }, { }, { })
+                }
+            }
+        }
         if (requested in setOf("garden_demo", "garden_rtl_demo", "garden_empty_demo", "garden_permission_demo")) {
             val state = when (requested) {
                 "garden_permission_demo" -> GardenUiState(false, GardenAvailability.NO_PERMISSION)

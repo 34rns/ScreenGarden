@@ -48,6 +48,12 @@ interface FocusSessionDao {
     )
     suspend fun activeSession(): FocusSession?
 
+    @Query(
+        "SELECT * FROM focus_sessions WHERE dayStartUtcMillis BETWEEN :fromDayUtcMillis AND :toDayUtcMillis " +
+            "ORDER BY startedAtUtcMillis DESC"
+    )
+    fun observeSessions(fromDayUtcMillis: Long, toDayUtcMillis: Long): Flow<List<FocusSession>>
+
     @Update
     suspend fun update(session: FocusSession): Int
 

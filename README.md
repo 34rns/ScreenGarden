@@ -4,7 +4,7 @@ A calm, offline garden that grows while you focus and keep your screen time in
 check.
 
 > **Status: work in progress.** Onboarding, local settings, usage collection and
-> the Garden screen are implemented. Focus, Insights and Settings controls are
+> the Garden and Focus screens are implemented. Insights and Settings controls are
 > still being built. There is no installable signed release yet.
 
 [![CI](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml)
@@ -21,8 +21,8 @@ nothing is uploaded or sold.
 ## Screenshots
 
 Captured on an Android 15 emulator (1080 × 2400) with demo mode enabled.
-Garden images use fake debug-only demo plants and scores. The other tabs still
-show their earlier placeholder screens. No image contains personal phone data.
+Garden and Focus images use fake debug-only demo data. Insights and Settings
+still show their earlier placeholder screens. No image contains personal phone data.
 
 | | Light | Dark | AMOLED |
 | --- | --- | --- | --- |
@@ -38,6 +38,10 @@ Accessibility and layout:
 | <img src="docs/screenshots/garden_large_font.png" width="240" alt="Garden tab at 1.3x font scale"> | <img src="docs/screenshots/garden_rtl.png" width="240" alt="Garden tab with a forced Compose right-to-left layout"> |
 
 All current public screenshots are stored in `docs/screenshots/`.
+
+| Focusing | Completed session | Large text | Right-to-left layout |
+| --- | --- | --- | --- |
+| <img src="docs/screenshots/focus_running.png" width="200" alt="Focus countdown and growing plant"> | <img src="docs/screenshots/focus_result.png" width="200" alt="Completed focus session"> | <img src="docs/screenshots/focus_large_font.png" width="200" alt="Focus setup at 1.3x font scale"> | <img src="docs/screenshots/focus_rtl.png" width="200" alt="Focus setup with a right-to-left layout"> |
 
 ## Privacy promise
 
@@ -68,8 +72,11 @@ by intention. A pull request that adds network access or telemetry is rejected.
   tab action. Completed days grow plants once; refreshing never duplicates rewards.
 - Gentle growth, bloom, wilt and recovery transitions. The garden's idle motion
   stops when it is hidden or system animations are disabled.
+- Focus duration presets and custom times, tags, a growing seed/countdown,
+  gentle results, saved session totals and optional keep-screen-on behavior.
+  A visible foreground timer keeps running when you leave the app.
 - Usage without reliable screen events (including Android 8.0–8.1) is shown as
-  incomplete rather than given a fabricated score. Focus and Insights remain
+  incomplete rather than given a fabricated score. Insights and Settings remain
   placeholders until their roadmap steps are finished.
 
 ## Requirements

@@ -6,4 +6,36 @@
     <string name="focus_preparing">Preparing your focus session…</string>
     <string name="focus_remaining_minutes">%1$d min remaining</string>
     <string name="focus_stop">Stop focus</string>
+    <string name="focus_duration">Choose your time</string>
+    <string name="focus_duration_minutes">%1$d min</string>
+    <string name="focus_custom">Custom</string>
+    <string name="focus_custom_label">Minutes</string>
+    <string name="focus_duration_range">Choose 1–240 minutes.</string>
+    <string name="focus_tag">Make room for</string>
+    <string name="focus_tag_study">Study</string>
+    <string name="focus_tag_work">Work</string>
+    <string name="focus_tag_reading">Reading</string>
+    <string name="focus_tag_other">Other</string>
+    <string name="focus_setup_title">A small space to grow</string>
+    <string name="focus_setup_copy">Set your phone aside. Give one thing your attention.</string>
+    <string name="focus_plant_seed">Plant a seed</string>
+    <string name="focus_countdown">%1$02d:%2$02d</string>
+    <string name="focus_running_copy">You can leave the app. Your time keeps growing.</string>
+    <string name="focus_keep_screen_on">Keep the screen on during focus</string>
+    <string name="focus_seed_description">A seed grows as your focus time passes</string>
+    <string name="focus_complete_title">A little time, well spent</string>
+    <string name="focus_rest_title">There is always another moment</string>
+    <string name="focus_complete_copy">Your focus session is complete. Take a breath.</string>
+    <string name="focus_soft_copy">Something needed your attention. Your garden can recover.</string>
+    <string name="focus_cancel_copy">You stopped this session. Your plants are still here.</string>
+    <string name="focus_actual_minutes">Focused for %1$d min</string>
+    <string name="focus_reward_summary">Your completed minutes are saved for your garden.</string>
+    <string name="focus_another">Choose another moment</string>
+    <string name="focus_week_minutes">%1$d min this week</string>
+    <string name="focus_action_error">Focus could not be updated. Try again.</string>
+    <string name="focus_retry">Try again</string>
+    <plurals name="focus_sessions_today">
+        <item quantity="one">%1$d session today</item>
+        <item quantity="other">%1$d sessions today</item>
+    </plurals>
 </resources>

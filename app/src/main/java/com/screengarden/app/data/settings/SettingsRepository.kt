@@ -49,6 +49,8 @@ interface SettingsRepository {
     /** Whether the first-run flow has been completed. */
     val onboardingDone: Flow<Boolean>
 
+    val keepScreenOn: Flow<Boolean>
+
     /** @throws IllegalArgumentException when [goalMs] is not positive. */
     suspend fun setDailyGoalMs(goalMs: Long)
 
@@ -73,4 +75,6 @@ interface SettingsRepository {
     suspend fun setNotificationsOn(enabled: Boolean)
 
     suspend fun setOnboardingDone(done: Boolean)
+
+    suspend fun setKeepScreenOn(enabled: Boolean)
 }

@@ -21,6 +21,7 @@ import com.screengarden.app.data.usage.AndroidUsageSource
 import com.screengarden.app.data.usage.DefaultUsageRepository
 import com.screengarden.app.data.usage.UsageRepository
 import com.screengarden.app.data.work.UsageSyncScheduler
+import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenViewModel
 
 /**
@@ -78,6 +79,14 @@ class AppContainer(context: Context) {
 
     val focusSessionRepository: FocusSessionRepositoryImpl by lazy { FocusSessionRepositoryImpl(database) }
     val focusController: FocusController by lazy { FocusController(appContext) }
+
+    fun focusViewModel(): FocusViewModel = FocusViewModel(
+        store = focusSessionRepository,
+        keepScreenOn = settingsRepository.keepScreenOn,
+        startTimer = { minutes, tag -> focusController.start(minutes, tag) },
+        stopTimer = focusController::stop,
+        saveKeepScreenOn = settingsRepository::setKeepScreenOn
+    )
 
     fun gardenViewModel(): GardenViewModel = GardenViewModel(
         store = gardenRepository,

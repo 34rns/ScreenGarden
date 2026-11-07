@@ -37,6 +37,7 @@ internal object SettingsKeys {
     val GENTLE_MODE = booleanPreferencesKey("gentle_mode")
     val NOTIFICATIONS_ON = booleanPreferencesKey("notifications_on")
     val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
+    val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
 }
 
 /**
@@ -84,6 +85,9 @@ class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>)
     override val onboardingDone: Flow<Boolean> =
         preferences { it[SettingsKeys.ONBOARDING_DONE] ?: SettingsDefaults.ONBOARDING_DONE }
 
+    override val keepScreenOn: Flow<Boolean> =
+        preferences { it[SettingsKeys.KEEP_SCREEN_ON] ?: SettingsDefaults.KEEP_SCREEN_ON }
+
     override suspend fun setDailyGoalMs(goalMs: Long) {
         require(goalMs > 0L) { "dailyGoalMs must be positive, was $goalMs" }
         dataStore.edit { it[SettingsKeys.DAILY_GOAL_MS] = goalMs }
@@ -129,6 +133,10 @@ class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>)
 
     override suspend fun setOnboardingDone(done: Boolean) {
         dataStore.edit { it[SettingsKeys.ONBOARDING_DONE] = done }
+    }
+
+    override suspend fun setKeepScreenOn(enabled: Boolean) {
+        dataStore.edit { it[SettingsKeys.KEEP_SCREEN_ON] = enabled }
     }
 
     /**

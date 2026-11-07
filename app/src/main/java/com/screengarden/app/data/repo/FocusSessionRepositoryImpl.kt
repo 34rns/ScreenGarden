@@ -9,13 +9,19 @@ import com.screengarden.app.data.local.entity.DailyStat
 import com.screengarden.app.data.local.entity.FocusSession
 import com.screengarden.app.domain.focus.FocusSessionState
 import com.screengarden.app.domain.focus.FocusStatus
+import com.screengarden.app.domain.focus.FocusStore
 import com.screengarden.app.domain.focus.FocusTag
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /** One running timer, durable checkpoints, and once-only completed-session totals. */
-class FocusSessionRepositoryImpl(private val database: ScreenGardenDatabase) : FocusSessionRepository {
+class FocusSessionRepositoryImpl(private val database: ScreenGardenDatabase) :
+    FocusSessionRepository,
+    FocusStore {
     private val dao = database.focusSessionDao()
+
+    override fun observeSessions(fromDayUtcMillis: Long, toDayUtcMillis: Long): Flow<List<FocusSessionState>> =
+        dao.observeSessions(fromDayUtcMillis, toDayUtcMillis).map { rows -> rows.map { it.toDomain() } }
 
     override fun observeDay(dayStartUtcMillis: Long): Flow<List<FocusSessionState>> =
         dao.observeDay(dayStartUtcMillis).map { rows -> rows.map { it.toDomain() } }

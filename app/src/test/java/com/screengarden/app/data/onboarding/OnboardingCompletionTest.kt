@@ -84,6 +84,9 @@ class OnboardingCompletionTest {
         override val gentleMode: Flow<Boolean> = flowOf(true)
         override val notificationsOn: Flow<Boolean> = flowOf(false)
         override val onboardingDone: Flow<Boolean> = flowOf(false)
+        override val keepScreenOn: Flow<Boolean> = flowOf(false)
+
+        override suspend fun setKeepScreenOn(enabled: Boolean) = Unit
 
         override suspend fun setDailyGoalMs(goalMs: Long) {
             writes += "dailyGoalMs"

@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-07 (Session 17 / P12 published, CI passed; GitHub-only plan)
+Last updated: 2026-11-07 (Session 18 / P13 verified locally; GitHub-only plan)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -88,7 +88,7 @@ SECTION 2 - HARD RULES (never violate, even if a task asks nicely)
       No paid tools, services, APIs, fonts, art, subscriptions, device farms or
       developer accounts. Allowed: open-source tooling, GitHub free tier (public
       repo, free Actions minutes), Android Studio and its free emulator, free
-      F-Droid and GitHub Releases distribution. If a task seems to need
+      GitHub Releases and Pages distribution. If a task seems to need
       something paid, STOP and propose a free alternative instead of adding it.
   H17 SCREENSHOTS COME FROM THE EMULATOR ONLY (D36).
       Never capture from a physical phone: real screen-time data would leak into
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         184 JVM tests; 3 migration + 1 service test green on API 35 (P12)
+  Tests         191 JVM tests; 3 migration + 1 service test green on API 35 (P12)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -242,6 +242,7 @@ SECTION 4 - FOLDER LAYOUT
           |                 onboarding/ (OnboardingScreen + GoalSetup, P07),
           |                 screens/garden/ (ViewModel/state, Canvas, renderer, details)
           |                 screens/garden/GardenMotion.kt (P11 lifecycle/motion policy)
+          |                 screens/focus/ (FocusScreen + FocusViewModel, P13)
           |-- debug/                            DEBUG-ONLY source set (P05b)
           |   |-- res/values/strings.xml        self-check strings, never shipped
           |   `-- java/com/screengarden/app/
@@ -861,6 +862,11 @@ SECTION 6 - DECISIONS
       rewritten as free GitHub signed release automation plus the requested Pages
       site with emulator-only fake debug screenshots. Supersedes D32 and old
       F-Droid task/standing-order clauses; historical notes stay as history.
+  D70 P13 FOCUS UI OBSERVES PERSISTED SESSIONS.
+      Single FocusUiState covers setup, countdown, gentle result and action errors.
+      Completion day determines today/week totals, with local Monday as week start.
+      Optional keepScreenOn defaults false and clears on leaving/ending focus.
+      Presets and custom 1-240 minutes use the existing timer, no new dependency.
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
@@ -903,7 +909,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P10     done    Garden screen, bounded usage and Room v2; 168 tests and migration
   P11     done    Growth/bloom/wilt/recovery, idle motion, system/lifecycle policy
   P12     done    Focus state machine, Room v3, durable foreground timer + tests [1.3]
-  P13     todo    Focus UI [1.3]
+  P13     done    Focus setup/countdown/results, totals, screen-on setting and tests
   P14     todo    Soft-fail + rewards [new]
   P15     todo    Per-app limits [3.2]
   P16     todo    Gentle notifications [new]
@@ -930,7 +936,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P12 are complete locally. P13 is next; P04b has AppLimit and
+  Sequencing note: P00-P13 are complete locally. P14 is next; P04b has AppLimit and
   Badge implementations left, each owned by its feature prompt.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
@@ -1121,7 +1127,7 @@ SECTION 10 - KNOWN ISSUES
   K1  The AMOLED scheme is a persisted setting now (P04), but nothing writes it
       yet: the picker is P22's work, so on device it is still reachable only
       through the debug intent extra (D35). Close in P22.
-  K2  Garden is implemented in P10. Focus, Insights and Settings remain placeholders until their prompts.
+  K2  Garden and Focus are implemented. Insights and Settings remain placeholders until their prompts.
   K3  P10 GardenViewModel reads Room through GardenStore. DailyStat/AppUsage/Garden/FocusSession are implemented; AppLimit/Badge remain for their feature prompts.
   K4  kotlinOptions { jvmTarget } is deprecated in Kotlin 2.1 (still compiles).
       Migrate to the compilerOptions DSL before AGP 9 / Kotlin 2.2.
@@ -1297,7 +1303,7 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 184 JVM tests pass, no failures/errors/skips. P12 gates
+  Current test state: 191 JVM tests pass, no failures/errors/skips. P13 gates
   pass; 3 migration tests and 1 foreground service test pass on API 35. The
   service test proves background progress, repeated starts and notification stop.
   Current CI state: P12 84e3f2f pushed; CI 42382207136 SUCCESS (2m36s).
@@ -1313,7 +1319,11 @@ SECTION 11 - CURRENT STATUS
   Four gates pass; 184 JVM tests; lint 0 errors/3 accepted warnings. All four
   API 35 emulator tests pass: schema create, v1->v2, v2->v3 preservation and
   timer progress after leaving the Activity plus notification cancellation.
-  P12 84e3f2f published; CI 42382207136 SUCCESS (2m36s). P13-P33 remain.
+  P12 84e3f2f published; CI 42382207136 SUCCESS (2m36s).
+  Plan f71fca6 CI 42382448719 SUCCESS. P13 Focus UI is verified locally:
+  FocusStore/summary, ViewModel, setup/countdown/results, settings and wiring.
+  Four gates PASS: 191 JVM tests, 0 failures/errors/skips; lint 0 errors/3 warnings.
+  Eight fake debug emulator screenshots reviewed; commit/push/CI pending.
   No signed APK release or Pages site. Continuous full completion is authorized.
   Screenshots remain fake debug-only emulator captures; P12 changes no app screen.
   Video not available (Session 12). No secret was requested, read or printed.
@@ -1321,11 +1331,8 @@ SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Implement P13 Focus UI only:
-  duration presets/custom 1-240 min, tags, running seed/countdown, gentle result,
-  today/week totals and optional keep-screen-on setting. Use the existing timer
-  and repository through a domain boundary; add UI tests and fake demo captures.
-  Then P14-P33 in order with per-prompt gates, memory, commit/push/CI. All Room
+  Publish P13 and verify its CI, then P14 soft fail and once-only garden rewards.
+  Continue P14-P33 in order with per-prompt gates, memory, commit/push/CI. All Room
   changes require preserving migrations, immutable schemas and emulator tests.
   Final goal remains professional GitHub release and Pages with fake screenshots.
 
@@ -1887,6 +1894,27 @@ SECTION 13 - SESSION LOG
     Scope     Owner removed F-Droid; D69/P33 now GitHub Release and Pages only.
     CI        P12 84e3f2f pushed; 42382207136 SUCCESS (2m36s), all four checks.
     Next      P13-P33 through GitHub-only signed release and Pages.
+  SESSION 18 - 2026-11-07 - P13 resume and final checks
+    Did       Finished the saved Focus UI drafts: 15/25/45/60 and custom 1-240 min,
+              tags, persisted countdown/result, today/week totals, optional screen-on
+              setting and domain FocusStore. Reviewed all eight fake emulator images.
+              GitHub-only P33 was already restored; removed active F-Droid allowance.
+    Decided   Reuse timer/Room and semantic Compose controls. No new dependency,
+              permission or Room schema. Completed totals use completion day and
+              local Monday. Result copy promises saved minutes, not applied rewards.
+    Verified  Fetch HEAD/origin=f71fca6; plan CI SUCCESS. All four local gates PASS:
+              191 JVM tests, 0 failures/errors/skips; lint 0 errors/3 accepted warnings.
+              Focus UI tests verify choices/custom validation, screen-on cleanup,
+              accessible countdown and stop. ViewModel tests cover start/stop,
+              result dismissal and missing-service errors. Eight captures reviewed.
+              Real emulator UI starts the service, restores its countdown after Home,
+              stops the session and displays the cancellation result. No photo taken.
+    Not ver.  Real-device behavior, signed release and Pages; P13 CI pending.
+              Emulator interaction check initially got a null UI root during launch;
+              bounded retry added; helper also corrected to tap the tab, not header.
+              Final emulator interaction check PASS. No screenshot
+              of real data was captured. Video remains not available (Session 12).
+    Next      Publish/CI P13, then P14-P33 to the final GitHub release and Pages.
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
@@ -2129,6 +2157,7 @@ SECTION 16 - CORE DESIGN
     onboardingDone    Boolean default false
     hemisphere        enum    drives season visuals (P21)
     lowPowerVisuals   Boolean reduces animation/particles
+    keepScreenOn     Boolean optional focus-screen display setting, false (P13)
     IMPLEMENTED in P04: the first ten keys, with the SettingsDefaults values
     (dailyGoalMs 3h, pickupGoal 80, bedtime 22:30-07:00, theme SYSTEM,
     accentColor CALM_GREEN, streakThreshold 60, gentleMode true,

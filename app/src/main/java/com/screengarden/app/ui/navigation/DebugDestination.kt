@@ -15,4 +15,8 @@ import androidx.compose.runtime.Composable
  * [content] is a plain composable lambda so main code needs no reference to the
  * debug screen itself - which is also what keeps that class out of a release APK.
  */
-class DebugDestination(val route: String, val content: @Composable () -> Unit)
+class DebugDestination(
+    val route: String,
+    val selectedTab: ScreenGardenDestination = ScreenGardenDestination.START,
+    val content: @Composable () -> Unit
+)
