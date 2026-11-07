@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-07 (Session 17 / P12 complete locally; publishing CI)
+Last updated: 2026-11-07 (Session 17 / P12 published, CI passed; GitHub-only plan)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -119,7 +119,7 @@ SECTION 3 - TECH STACK
                   ci.yml       PR + push to main: ktlint, debug build, lint, tests
                   release.yml  manual + weekly: unsigned R8 release build
   License       GPL-3.0-or-later (code), CC BY-SA 4.0 (art)
-  Distribution  GitHub Releases + F-Droid (+ optional IzzyOnDroid). No Play.
+  Distribution  GitHub Releases + GitHub Pages only (D69). No store submission.
   Testing       JVM unit tests (JUnit 4 + Robolectric + Room in-memory), plus
                 Compose UI tests that also run on the JVM through Robolectric
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
@@ -208,7 +208,7 @@ SECTION 4 - FOLDER LAYOUT
   |   `-- screenshots/                  15 emulator captures (D36), README gallery
   |       `-- 15_usage_self_check_debug.png   debug self-check (P05b)
   |-- fastlane/metadata/android/en-US/images/phoneScreenshots/
-  |   `-- 01..08_*.png                  F-Droid listing images (max 8)
+  |   `-- 01..08_*.png                  historical mirrors; no longer maintained (D69)
   `-- app/
       |-- build.gradle.kts              module config, KSP, Room, ktlint, tests
       |-- proguard-rules.pro            R8 rules (currently none needed)
@@ -525,7 +525,7 @@ SECTION 6 - DECISIONS
       history is yours" is the promise. No automatic pruning; a user-controlled
       "Delete all data" action is planned instead, so deletion is a choice.
 
-  D32 DISTRIBUTION = GitHub Releases + F-Droid, plus optional IzzyOnDroid.
+  D32 SUPERSEDED by D69. Originally GitHub Releases + F-Droid/IzzyOnDroid.
       Google Play is out of scope: it charges a registration fee (H16) and adds
       nothing. F-Droid requires GPL-compatible source and a build from source,
       which D27 and the no-proprietary-dependency rule already satisfy.
@@ -855,6 +855,12 @@ SECTION 6 - DECISIONS
       process gaps resume; reboot, clock reversal or overdue unknown gaps cancel.
       Notification permission controls drawer visibility, not timer availability.
       No new dependency; data/focus is an isolated Android-adapter exception.
+
+  D69 DISTRIBUTION IS GITHUB ONLY (owner instruction, 2026-11-07).
+      No F-Droid release, submission, metadata or fastlane maintenance. P33 is
+      rewritten as free GitHub signed release automation plus the requested Pages
+      site with emulator-only fake debug screenshots. Supersedes D32 and old
+      F-Droid task/standing-order clauses; historical notes stay as history.
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
@@ -874,7 +880,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
                   interfaces, time helper, 32 tests [1.1]
   P04     done    DataStore settings repository + theme wiring, 16 new
                   tests [1.2]
-  P04b    partial Three of six implementations: DailyStat/AppUsage (P06),
+  P04b    partial Four of six implementations: DailyStat/AppUsage (P06),
                   Garden (P10), FocusSession (P12); AppLimit/Badge follow their prompts
   P05     done    Usage stats repository: screen time, per-app usage,
                   pickups, unlocks, access check [2.1 part]
@@ -918,7 +924,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P31     todo    Quality pass: accessibility, perf, more screen sizes
                   [0.4 DONE in P00b; 3.3 remains]
   P32     todo    Docs + release assets [3.4 part]
-  P33     todo    F-Droid + release automation + signing (D34) [3.4 part]
+  P33     todo    GitHub signed release automation + Pages/screenshots (D34/D69)
 
   The old 0.4 (visual verification) is COMPLETE as of P00b for the current UI:
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
@@ -1294,7 +1300,7 @@ SECTION 10 - KNOWN ISSUES
   Current test state: 184 JVM tests pass, no failures/errors/skips. P12 gates
   pass; 3 migration tests and 1 foreground service test pass on API 35. The
   service test proves background progress, repeated starts and notification stop.
-  Current CI state: P11 210e077 pushed; CI 42380110358 SUCCESS (3m9s).
+  Current CI state: P12 84e3f2f pushed; CI 42382207136 SUCCESS (2m36s).
   No signed release has been published.
 
 --------------------------------------------------------------------------------
@@ -1307,7 +1313,7 @@ SECTION 11 - CURRENT STATUS
   Four gates pass; 184 JVM tests; lint 0 errors/3 accepted warnings. All four
   API 35 emulator tests pass: schema create, v1->v2, v2->v3 preservation and
   timer progress after leaving the Activity plus notification cancellation.
-  P12 commit/push/CI is the immediate publication step. P13-P33 remain.
+  P12 84e3f2f published; CI 42382207136 SUCCESS (2m36s). P13-P33 remain.
   No signed APK release or Pages site. Continuous full completion is authorized.
   Screenshots remain fake debug-only emulator captures; P12 changes no app screen.
   Video not available (Session 12). No secret was requested, read or printed.
@@ -1315,7 +1321,7 @@ SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Publish the verified P12 commit and check CI, then implement P13 Focus UI only:
+  Implement P13 Focus UI only:
   duration presets/custom 1-240 min, tags, running seed/countdown, gentle result,
   today/week totals and optional keep-screen-on setting. Use the existing timer
   and repository through a domain boundary; add UI tests and fake demo captures.
@@ -1878,7 +1884,9 @@ SECTION 13 - SESSION LOG
               permission was denied; fixed test setup then all 4 passed.
               Break-time retry was rejected by the user before execution; resume
               rerun succeeded. No auto-review safety rejection was reported.
-    Next      Publish P12 and verify CI; then P13-P33 through GitHub release.
+    Scope     Owner removed F-Droid; D69/P33 now GitHub Release and Pages only.
+    CI        P12 84e3f2f pushed; 42382207136 SUCCESS (2m36s), all four checks.
+    Next      P13-P33 through GitHub-only signed release and Pages.
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
@@ -2176,7 +2184,7 @@ SECTION 18 - STANDING ORDERS (run at the end of EVERY prompt)
      If it fails, read `gh run view <id> --log-failed`, fix, push again.
   5. SCREENSHOTS: if any screen changed, re-capture the affected images on the
      emulator (D36), review them, and update docs/screenshots/ plus the
-     fastlane mirror. Nothing from a real phone (H17).
+     the GitHub gallery. Do not maintain F-Droid mirrors (D69). No real phone (H17).
   6. MEMORY: update this file in the same commit - checklist/roadmap, CURRENT
      STATUS, NEXT STEP, new decisions, known issues, and a Session Log entry
      with Did / Decided / Verified / Not verified / Next.

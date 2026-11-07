@@ -457,7 +457,7 @@ TASK 9.1: Optional blocking.
 - Compare options (Accessibility service vs overlay vs usage-event polling), recommend
   the least invasive one, and implement it with a user-editable block list and allow list.
 - Never collect or store what the accessibility service sees. State this in code and README.
-- Note the Google Play policy risk for accessibility use; the app targets GitHub/F-Droid.
+- Note the Google Play policy risk for accessibility use; the app is distributed through GitHub only.
 ```
 
 ## Prompt 30 – Live wallpaper
@@ -500,16 +500,18 @@ TASK 10.2: Docs.
   unchosen, ask).
 ```
 
-## Prompt 33 – F-Droid and release automation
+## Prompt 33 – GitHub release automation
 
 ```
 TASK 10.3: Release.
 
-- F-Droid metadata (fastlane structure: title, short/full description, changelogs, screenshots).
 - Verify the build is reproducible-friendly: no proprietary blobs, pinned versions.
 - GitHub Actions workflow that builds a signed release APK on tag, using secrets the
   human sets up, and attaches it to a GitHub Release.
-- Step-by-step checklist for me to submit to F-Droid.
+- Publish the verified signed APK and clear release notes on GitHub Releases.
+- Publish a professional GitHub Pages site with emulator-only fake debug screenshots,
+  privacy information, installation instructions and a link to the release.
+- Do not prepare or submit an F-Droid release. GitHub free hosting is the only target.
 ```
 
 ---

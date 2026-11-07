@@ -37,8 +37,7 @@ Accessibility and layout:
 | --- | --- |
 | <img src="docs/screenshots/garden_large_font.png" width="240" alt="Garden tab at 1.3x font scale"> | <img src="docs/screenshots/garden_rtl.png" width="240" alt="Garden tab with a forced Compose right-to-left layout"> |
 
-The same images live in `fastlane/metadata/android/en-US/images/phoneScreenshots/`
-for the F-Droid listing.
+All current public screenshots are stored in `docs/screenshots/`.
 
 ## Privacy promise
 
@@ -109,8 +108,7 @@ architectural decision live in [`AGENT_MEMORY.txt`](AGENT_MEMORY.txt).
 Free to build, free to install:
 
 - **GitHub Releases** — planned signed APKs attached to a release tag.
-- **F-Droid** — planned submission after the release quality pass.
-- **IzzyOnDroid** — optional future catalog for the same builds.
+- **GitHub Pages** — a project site with screenshots and installation guidance.
 
 There is no Google Play release and no plan to add one: it charges a one-off
 registration fee, and nothing here needs it.
@@ -119,7 +117,7 @@ registration fee, and nothing here needs it.
 
 ScreenGarden is built with free tooling only: Android Studio and its emulator,
 Gradle, the Android SDK, GitHub's free tier for hosting and CI, and free
-distribution through GitHub Releases and F-Droid. No paid dependency, service,
+distribution through GitHub Releases. No paid dependency, service,
 font, asset pack or developer account is used, and a dependency that requires
 payment will not be accepted.
 
@@ -132,7 +130,7 @@ Android lint must stay at zero errors.
 
 - **Code:** [GPL-3.0-or-later](LICENSE). Strong copyleft, so a fork stays open:
   nobody can turn ScreenGarden into a closed, tracker-laden build. This is
-  compatible with F-Droid and with every runtime dependency we ship (all
+  compatible with every runtime dependency we ship (all
   Apache-2.0).
 - **Original artwork and plant packs:**
   [CC BY-SA 4.0](ART_LICENSE.md). A contributor may license their own plant pack

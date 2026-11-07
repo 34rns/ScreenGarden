@@ -23,7 +23,7 @@ These come from the project's privacy promise and are enforced in review:
   and approval in an issue first.
 - **One Activity.** All UI is Compose; XML is only for resources.
 - **Nothing paid.** No paid dependency, service, API, font, asset, device farm or
-  developer account. Open-source tooling, GitHub's free tier and F-Droid only. If
+  developer account. Open-source tooling and GitHub's free tier only. If
   a change would need something paid, open an issue proposing a free alternative
   instead of adding it.
 
