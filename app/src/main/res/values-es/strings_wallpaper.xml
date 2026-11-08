@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallpaper_name">Jardín animado de ScreenGarden</string>
+    <string name="wallpaper_copy">Lleva el jardín a tu pantalla de inicio. Usa el tema, hemisferio y ahorro visual elegidos arriba. Las escenas permanecen quietas, se actualizan aproximadamente cada minuto y se pausan cuando están ocultas, la pantalla está apagada o queda poca batería.</string>
+    <string name="wallpaper_preview">Ver fondo de pantalla</string>
+    <string name="wallpaper_unavailable">No se pudo abrir la vista previa. También puedes elegir ScreenGarden desde los ajustes de fondo de pantalla de Android.</string>
+</resources>

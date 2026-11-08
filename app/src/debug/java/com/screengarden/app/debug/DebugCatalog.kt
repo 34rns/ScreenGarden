@@ -87,6 +87,17 @@ import java.time.ZoneId
  */
 object DebugCatalog {
 
+    /** Fake-only system preview; release always returns null and the applied wallpaper reads saved plants. */
+    fun wallpaperPreviewState(): GardenUiState = GardenUiState(
+        loading = false,
+        plants = listOf(
+            Plant("demo-flower", "flower", 45, 90, plantedAtUtcMillis = 1793318400000L),
+            Plant("demo-bonsai", "bonsai", 27, 70, plantedAtUtcMillis = 1793491200000L),
+            Plant("demo-cactus", "cactus", 45, 82, plantedAtUtcMillis = 1793664000000L)
+        ),
+        score = 84
+    )
+
     /** Route and intent-extra value for the usage self-check screen. */
     const val USAGE_SELF_CHECK: String = "usage_self_check"
 
@@ -342,6 +353,11 @@ object DebugCatalog {
                             versionName = "0.1.0",
                             backupContent = { BackupControls(BackupUiState(), {}, {}, {}, {}) },
                             blockingContent = { back -> FocusBlockingDemoScreen(back) },
+                            wallpaperContent = {
+                                com.screengarden.app.ui.screens.settings.WallpaperControls(
+                                    onPreview = { com.screengarden.app.openWallpaperPreview(context) }
+                                )
+                            },
                             actions = SettingsActions(
                                 saveGoals = { state = state.copy(goals = it, saved = true) },
                                 setTheme = { state = state.copy(theme = it) },

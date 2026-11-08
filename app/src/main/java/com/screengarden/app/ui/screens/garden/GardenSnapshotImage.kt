@@ -34,9 +34,13 @@ internal fun renderGardenSnapshot(
     state: GardenUiState,
     colors: ColorScheme,
     caption: String? = null,
-    renderer: PlantRenderer = VectorPlantRenderer
+    renderer: PlantRenderer = VectorPlantRenderer,
+    width: Int = 1024,
+    height: Int = 768,
+    framed: Boolean = true
 ): ImageBitmap {
-    val image = ImageBitmap(1024, 768)
+    require(width in 96..2048 && height in 96..2048)
+    val image = ImageBitmap(width, height)
     val canvas = Canvas(image)
     val captionHeight = if (caption == null) 0f else 144f
     val environment = if (state.isBedtime) {
@@ -54,11 +58,12 @@ internal fun renderGardenSnapshot(
         plantColors.onTertiary,
         plantColors.onSecondaryContainer
     )
-    CanvasDrawScope().draw(Density(2f), LayoutDirection.Ltr, canvas, Size(1024f, 768f)) {
+    val margin = if (framed) 24f else 0f
+    CanvasDrawScope().draw(Density(2f), LayoutDirection.Ltr, canvas, Size(width.toFloat(), height.toFloat())) {
         drawRect(colors.background)
-        inset(24f, 24f, 24f, 24f + captionHeight) {
+        inset(margin, margin, margin, margin + captionHeight) {
             val boundary = Path().apply {
-                addRoundRect(RoundRect(Rect(0f, 0f, size.width, size.height), CornerRadius(40f)))
+                addRoundRect(RoundRect(Rect(0f, 0f, size.width, size.height), CornerRadius(if (framed) 40f else 0f)))
             }
             clipPath(boundary) {
                 drawGardenBackdrop(
@@ -71,7 +76,9 @@ internal fun renderGardenSnapshot(
                 val columns = state.plants.size.coerceIn(1, 3)
                 val rows = ((state.plants.size + columns - 1) / columns).coerceAtLeast(1)
                 val width = size.width / columns
-                val height = size.height * 0.65f / rows
+                // Leave the wallpaper's lower area clear for Android preview controls and the Home dock.
+                val plotFraction = if (!framed && size.height > size.width) 0.4f else 0.65f
+                val height = size.height * plotFraction / rows
                 state.plants.forEachIndexed { index, plant ->
                     val x = index % columns * width
                     val y = size.height * 0.3f + index / columns * height
@@ -100,13 +107,13 @@ internal fun renderGardenSnapshot(
             color = colors.onBackground.toArgb()
             textSize = 30f
         }
-        val text = StaticLayout.Builder.obtain(caption, 0, caption.length, paint, 976)
+        val text = StaticLayout.Builder.obtain(caption, 0, caption.length, paint, width - 48)
             .setAlignment(Layout.Alignment.ALIGN_NORMAL)
             .setMaxLines(3)
             .setEllipsize(TextUtils.TruncateAt.END)
             .build()
         canvas.nativeCanvas.save()
-        canvas.nativeCanvas.translate(24f, 768f - captionHeight)
+        canvas.nativeCanvas.translate(24f, height - captionHeight)
         text.draw(canvas.nativeCanvas)
         canvas.nativeCanvas.restore()
     }

@@ -63,7 +63,8 @@ fun SettingsScreen(
     backupContent: (@Composable () -> Unit)? = null,
     manufacturer: String = Build.MANUFACTURER,
     onAppSettings: () -> Unit = { },
-    blockingContent: (@Composable (() -> Unit) -> Unit)? = null
+    blockingContent: (@Composable (() -> Unit) -> Unit)? = null,
+    wallpaperContent: (@Composable () -> Unit)? = null
 ) {
     var blockingOpen by rememberSaveable { mutableStateOf(false) }
     if (blockingOpen && blockingContent != null) {
@@ -153,6 +154,7 @@ fun SettingsScreen(
                     saving = state.loading || state.saving
                 )
             }
+            wallpaperContent?.invoke()
             HorizontalDivider()
             SettingsHeading(R.string.tab_focus)
             SettingsToggle(

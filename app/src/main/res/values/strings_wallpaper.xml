@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wallpaper_name">ScreenGarden live garden</string>
+    <string name="wallpaper_copy">Bring your garden to your Home screen. It uses the theme, hemisphere and low power choices above. Scenes stay still, refresh about once a minute, and pause when hidden, the screen is off or battery is low.</string>
+    <string name="wallpaper_preview">Preview live wallpaper</string>
+    <string name="wallpaper_unavailable">This device could not open the wallpaper preview. You can also choose ScreenGarden from Android’s wallpaper settings.</string>
+</resources>

@@ -15,6 +15,8 @@ import com.screengarden.app.ui.navigation.DebugDestination
  */
 object DebugCatalog {
 
+    fun wallpaperPreviewState(): com.screengarden.app.ui.screens.garden.GardenUiState? = null
+
     /**
      * Always null: release builds have no diagnostic screens.
      *

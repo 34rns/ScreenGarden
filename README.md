@@ -314,3 +314,10 @@ Android lint must stay at zero errors.
 
 The GPL text in [LICENSE](LICENSE) is version 3; the "or later" part comes from
 the SPDX headers in the source and from this notice.
+
+Live wallpaper reuses your saved plants and scene choices, with still frames and
+battery-aware refresh. Android owns preview and applying. See [wallpaper help](docs/WALLPAPER.md).
+
+| Wallpaper preview | Wallpaper settings |
+| --- | --- |
+| <img src="docs/screenshots/wallpaper_preview.png" width="240" alt="Android preview of a fake garden wallpaper"> | <img src="docs/screenshots/settings_wallpaper_light.png" width="240" alt="Appearance controls and optional wallpaper preview"> |

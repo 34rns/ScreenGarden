@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 45 / P29; continuous batch)
+Last updated: 2026-11-08 (Session 47 / P30 completion)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         360 JVM tests; 11 migration cases green on API 35 (P26)
+  Tests         362 JVM tests; 11 migration cases green on API 35 (P26)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -1171,6 +1171,15 @@ SECTION 6 - DECISIONS
     debug FocusBlockingDemoScreen, four JVM test files and native service test.
     docs/FOCUS_BLOCKING.md and seven fake-only emulator screenshots.
 
+  D88 P30 LIVE WALLPAPER (implemented and emulator verified).
+      Reuse shared plant packs, vector shapes, environment and theme resolver.
+      Still scenes refresh at most once/minute; low-power visuals use five minutes.
+      Hidden/off/low battery (<=15%) or battery saver cancels recurring work.
+      One cold low-battery still frame is permitted. Android owns preview/apply.
+      Existing theme/accent/hemisphere/low-power choices are the scene controls.
+      No new dependency, key or Room schema. Fake data exists only in debug preview.
+      P29 4a91d14 CI 42464826243 SUCCESS; seven fake-only captures reviewed.
+
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
   From P00 on, work is identified by PROMPT NUMBER. The old dotted IDs are kept
@@ -1233,7 +1242,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P27     done    Local manufacturer-first battery help and app-settings action [new]
   P28     done    Spanish, app-locale formatting, wrapping labels and translation guide [new]
   P29     done   Opt-in focus blocking [new]
-  P30     todo    Live wallpaper [new]
+  P30     done    Live wallpaper [new]
   P31     todo    Quality pass: accessibility, perf, more screen sizes
                   [0.4 DONE in P00b; 3.3 remains]
   P32     todo    Docs + release assets [3.4 part]
@@ -1243,7 +1252,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P26 are published; P26 1951ab3 CI 42458504391 SUCCESS. P27 7007e10 CI 42459850865 SUCCESS; P28 7d327d6 CI 42462470291 SUCCESS. P29 started.
+  Sequencing note: P00-P30 complete; P30 publication/CI in progress.
   P04b repositories are complete, including BadgeRepository in P18.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
@@ -1374,6 +1383,11 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
 --------------------------------------------------------------------------------
 SECTION 9 - PERMISSIONS
 --------------------------------------------------------------------------------
+  P30 BIND_WALLPAPER protects the exported system wallpaper service. No new
+  uses-permission, preference, dependency or Room schema. WallpaperService and
+  its visibility/surface lifecycle and system preview constants checked in the
+  installed API35 SDK and official Android reference. No usage polling/rewards.
+
   P29 BIND_ACCESSIBILITY_SERVICE protects the optional exported service so only
   Android can bind; it is not a uses-permission or automatic user grant.
   Request only typeWindowStateChanged with canRetrieveWindowContent=false.
@@ -1676,15 +1690,12 @@ SECTION 10 - KNOWN ISSUES
 
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P29 implemented. P29 final publication and CI verification pending.
-  Optional blocking is off by default, package-only, and protected by an
-  explicit Android grant. GitHub-only release and Pages remain P33.
+  P00-P30 complete locally; P30 publication/CI in progress. Four gates PASS, 362 JVM tests, no failures/errors/skips; lint zero errors/six warnings. Fake-only wallpaper preview and cancel PASS; four fresh captures reviewed. P31-P33 remain; no signed release or Pages yet.
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Publish P29 and check CI, then P30-P33 continuously until explicitly stopped.
-  GitHub Releases and Pages only. Keep signing material private and outside Git.
+  Verify P30 CI, then P31 quality pass, P32 docs, P33 signed GitHub Release and Pages continuously until stopped.
 
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
@@ -2859,9 +2870,29 @@ SECTION 13 - SESSION LOG
     Not ver.  Physical-device/OEM blocking behavior, actual process death and
               long-term battery use. Signed GitHub APK and Pages remain P33. Video
               not available (Session 12).
-    Next      Publish P29 and check CI, then P30-P33 continuously until explicitly
+    Next      Finish P30 gates, native preview, screenshots, publication and CI; then P31-P33 until
               stopped. GitHub Releases and Pages only. Keep signing material
               private and outside Git.
+
+  SESSION 46 - 2026-11-08 - P30 implementation checkpoint
+    Did       Added system wallpaper service/metadata, shared full-bleed bounded
+              renderer and theme resolution, static minute/five-minute refresh,
+              visibility/screen/battery gates and Settings preview. Debug-only
+              fake preview state; release stub remains null. No schema/key/library.
+    Verified  P29 4a91d14 CI 42464826243 SUCCESS. P30 APIs checked in installed
+              API35 SDK and Android reference. First style check PASS; 362 JVM
+              tests, one failure: an arbitrarily sampled pixel was ground in both
+              pictures. Compare full scenes instead; corrected assertion now pending.
+    Not ver.  P30 final gates, native preview, screenshots and CI. Signed APK and
+              Pages remain P33. Physical devices and low-end performance unverified.
+    Next      Finish P30, then P31-P33 continuously until explicitly stopped.
+
+  SESSION 47 - 2026-11-08 - P30 completion
+    Did       Finished shared static wallpaper, system preview, battery/visibility policy and unobstructed Home dock area. Refreshed four fake-only emulator images; updated README/WALLPAPER docs.
+    Decided   D88 validated; still images, no animation loop or usage polling; no new key/schema/dependency.
+    Verified  Four gates PASS; 362 JVM tests green. Current footer regression and fresh native preview/cancel PASS. Manifest offline/backup disabled, schemas unchanged, secret sweep and whitespace PASS.
+    Not ver.  Physical-device battery/launcher behavior, API26 wallpaper and signed release/Pages. Overlapping retry hit a Windows locked output file from the preceding active test run; that sequential 362-test run passed. Capture foreground guard retried after transient recreation; final complete set verified.
+    Next      Verify P30 CI, then P31 quality pass, P32 docs, P33 signed GitHub Release and Pages continuously until stopped.
 
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------

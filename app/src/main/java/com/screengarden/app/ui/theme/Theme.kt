@@ -141,15 +141,26 @@ fun ScreenGardenTheme(
     content: @Composable () -> Unit
 ) {
     val systemInDarkTheme = isSystemInDarkTheme()
-    val colorScheme = when {
+    val colorScheme = screenGardenColors(themePreference, accentColor, systemInDarkTheme)
+
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = ScreenGardenTypography,
+        content = content
+    )
+}
+
+/** Shared by Compose and the wallpaper; the same saved theme resolves in one place. */
+internal fun screenGardenColors(
+    themePreference: ThemePreference,
+    accentColor: AccentColor,
+    systemInDarkTheme: Boolean
+): androidx.compose.material3.ColorScheme {
+    val colors = when {
         themePreference.isAmoled -> AmoledColors
         themePreference.prefersDark(systemInDarkTheme) -> DarkColors
         else -> LightColors
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme.withAccent(accentColor, themePreference.prefersDark(systemInDarkTheme)),
-        typography = ScreenGardenTypography,
-        content = content
-    )
+    return colors.withAccent(accentColor, themePreference.prefersDark(systemInDarkTheme))
 }

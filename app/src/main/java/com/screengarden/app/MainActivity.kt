@@ -80,6 +80,7 @@ import com.screengarden.app.ui.screens.settings.BackupViewModel
 import com.screengarden.app.ui.screens.settings.SettingsActions
 import com.screengarden.app.ui.screens.settings.SettingsScreen
 import com.screengarden.app.ui.screens.settings.SettingsViewModel
+import com.screengarden.app.ui.screens.settings.WallpaperControls
 import com.screengarden.app.ui.theme.ScreenGardenTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -257,6 +258,9 @@ class MainActivity : ComponentActivity() {
                                         "package:$packageName".toUri()
                                     )
                                 )
+                            },
+                            wallpaperContent = {
+                                WallpaperControls(onPreview = { openWallpaperPreview(this@MainActivity) })
                             },
                             blockingContent = { back ->
                                 val blockFactory = remember(container) {
