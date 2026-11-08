@@ -55,6 +55,7 @@ import com.screengarden.app.ui.screens.garden.GardenScreen
 import com.screengarden.app.ui.screens.garden.GardenUiState
 import com.screengarden.app.ui.screens.habits.HabitsScreen
 import com.screengarden.app.ui.screens.habits.HabitsUiState
+import com.screengarden.app.ui.screens.help.BatteryHelpScreen
 import com.screengarden.app.ui.screens.insights.GardenHistoryScreen
 import com.screengarden.app.ui.screens.insights.GardenHistoryUiState
 import com.screengarden.app.ui.screens.insights.InsightsScreen
@@ -102,6 +103,11 @@ object DebugCatalog {
     }
 
     private fun resolveDestination(requested: String?, context: Context): DebugDestination? {
+        if (requested == "battery_demo") {
+            return DebugDestination(requested, ScreenGardenDestination.Settings) {
+                BatteryHelpScreen("Samsung", {}, {})
+            }
+        }
         if (requested in setOf("backup_demo", "backup_preview_demo", "backup_rtl_demo")) {
             return DebugDestination(requireNotNull(requested), ScreenGardenDestination.Settings) {
                 CompositionLocalProvider(

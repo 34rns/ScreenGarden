@@ -11,6 +11,9 @@ check.
 
 ## The idea
 
+Battery help is available in Settings → About, with offline guides for seven device brands.
+Menu paths may vary by version. See [battery help](docs/BATTERY_HELP.md).
+
 Plant artwork is bundled and loaded entirely offline. Ferns are available from
 the start; flowers unlock after five completed focus sessions, bonsai after a
 three-day streak, and cacti during summer. Existing plants always stay. See

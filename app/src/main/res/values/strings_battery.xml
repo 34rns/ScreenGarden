@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="battery_title">Help focus keep going</string>
+    <string name="battery_back">Back to Settings</string>
+    <string name="battery_intro">If focus stops unexpectedly or reminders arrive late, your phone may be limiting background work. Try the guide for your device.</string>
+    <string name="battery_caveat">These common settings paths may vary by Android version, region and device. Your device guide appears first; choose another brand if needed.</string>
+    <string name="battery_app_settings">Open ScreenGarden app settings</string>
+    <string name="battery_tradeoff">Allowing background activity may use more battery. Change only ScreenGarden’s setting, and leave other apps as they are. You can reverse it in the same menu.</string>
+    <string name="battery_limits">A battery exemption cannot guarantee exact reminders or recover a force-stopped app. Open ScreenGarden again after a force stop. Scheduled checks can still be delayed while your phone sleeps.</string>
+    <string name="battery_samsung">Samsung</string>
+    <string name="battery_xiaomi">Xiaomi</string>
+    <string name="battery_oppo">Oppo</string>
+    <string name="battery_vivo">Vivo</string>
+    <string name="battery_huawei">Huawei</string>
+    <string name="battery_oneplus">OnePlus</string>
+    <string name="battery_stock">Stock Android / other</string>
+    <string name="battery_steps_samsung">In ScreenGarden’s app settings, open Battery and look for Unrestricted or Allow background activity.\n\nIn Settings → Battery → Background usage limits, check that ScreenGarden is not in Sleeping apps or Deep sleeping apps. Some versions offer Never sleeping apps.</string>
+    <string name="battery_steps_xiaomi">In ScreenGarden’s app settings, find Battery saver and consider No restrictions.\n\nIf your version offers Autostart or Background autostart in app permissions, allow it for ScreenGarden. MIUI and HyperOS may place these controls in different menus.</string>
+    <string name="battery_steps_oppo">In ScreenGarden’s app settings, open Battery usage and look for Allow background activity.\n\nSome ColorOS versions also offer Auto launch in app or battery management. Enable it only for ScreenGarden if background focus is being interrupted.</string>
+    <string name="battery_steps_vivo">In Settings, look for Battery → Background power consumption management and choose ScreenGarden. Consider allowing background power use.\n\nSome Funtouch OS versions place Autostart under app permissions. Menu names vary; check your device’s help if these controls are absent.</string>
+    <string name="battery_steps_huawei">In Settings → Battery → App launch, find ScreenGarden. Some EMUI versions let you turn off Manage automatically and allow Auto-launch, Secondary launch and Run in background.\n\nUse the ScreenGarden app settings button to inspect the available battery controls.</string>
+    <string name="battery_steps_oneplus">In ScreenGarden’s app settings, open Battery usage and look for Allow background activity or an unrestricted choice.\n\nOlder OxygenOS versions may instead use Settings → Battery → Battery optimization → ScreenGarden → Don’t optimize.</string>
+    <string name="battery_steps_stock">In ScreenGarden’s app settings, open App battery usage or Battery. Look for Allow background usage or Unrestricted.\n\nOn older Android versions, look under Settings → Battery → Battery optimization, choose All apps, then ScreenGarden and Don’t optimize. These choices are optional.</string>
+</resources>

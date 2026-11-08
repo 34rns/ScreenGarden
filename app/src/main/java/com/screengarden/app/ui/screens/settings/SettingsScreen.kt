@@ -2,6 +2,8 @@
 
 package com.screengarden.app.ui.screens.settings
 
+import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -43,6 +45,7 @@ import com.screengarden.app.R
 import com.screengarden.app.domain.model.AccentColor
 import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.ui.onboarding.GoalSetup
+import com.screengarden.app.ui.screens.help.BatteryHelpScreen
 
 /** Scrollable, labelled preferences; permissions and writes stay with the caller. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -57,8 +60,16 @@ fun SettingsScreen(
     onNotificationSettings: () -> Unit = { },
     versionName: String = "",
     environmentContent: (@Composable () -> Unit)? = null,
-    backupContent: (@Composable () -> Unit)? = null
+    backupContent: (@Composable () -> Unit)? = null,
+    manufacturer: String = Build.MANUFACTURER,
+    onAppSettings: () -> Unit = { }
 ) {
+    var helpOpen by rememberSaveable { mutableStateOf(false) }
+    if (helpOpen) {
+        BackHandler { helpOpen = false }
+        BatteryHelpScreen(manufacturer, { helpOpen = false }, onAppSettings, modifier)
+        return
+    }
     var goalsOpen by rememberSaveable { mutableStateOf(false) }
     var confirmIntro by rememberSaveable { mutableStateOf(false) }
     var choices by remember(state.goals) { mutableStateOf(state.goals) }
@@ -153,6 +164,7 @@ fun SettingsScreen(
             }
             HorizontalDivider()
             SettingsHeading(R.string.settings_about)
+            TextButton({ helpOpen = true }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.battery_title)) }
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
             if (versionName.isNotBlank()) Text(stringResource(R.string.settings_version, versionName))
             SettingsBody(R.string.settings_privacy)

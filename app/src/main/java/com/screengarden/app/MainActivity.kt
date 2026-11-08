@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -246,6 +247,14 @@ class MainActivity : ComponentActivity() {
                                 )
                             },
                             versionName = packageManager.getPackageInfo(packageName, 0).versionName.orEmpty(),
+                            onAppSettings = {
+                                startActivity(
+                                    Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        "package:$packageName".toUri()
+                                    )
+                                )
+                            },
                             backupContent = {
                                 BackupControls(
                                     backupState,

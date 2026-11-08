@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 39 / P26; continuous batch)
+Last updated: 2026-11-08 (Session 41 / P27; continuous batch)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         345 JVM tests; 11 migration cases green on API 35 (P26)
+  Tests         346 JVM tests; 11 migration cases green on API 35 (P26)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -1122,6 +1122,14 @@ SECTION 6 - DECISIONS
       Permissions, channel choices and delivery ledgers are not exported. Files
       contain private app usage and are not encrypted; users choose their destination.
       Provider write failure may leave an incomplete file, explicitly reported.
+  D85 P27 LOCAL BATTERY HELP.
+      Manufacturer selects the first of seven guides, without saving an identifier.
+      Common menu names have explicit version/device caveats. ScreenGarden's
+      app-info intent is user initiated; no exemption permission or settings change.
+      Background allowances can cost battery and cannot guarantee exact reminders
+      or recovery after force-stop. No new dependency, permission, key or schema.
+      domain/help/BatteryGuide, ui/screens/help/BatteryHelpScreen, strings_battery.xml
+      and docs/BATTERY_HELP.md are the complete P27 additions.
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
   From P00 on, work is identified by PROMPT NUMBER. The old dotted IDs are kept
@@ -1181,7 +1189,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P24     done    Frozen garden preview, optional caption and Android PNG save picker [new]
   P25     done    Offline validated plant packs, artwork and seed unlock integration [new]
   P26     done   Validated JSON export/import, merge/replace, durable settings recovery [new]
-  P27     todo    Battery help [new]
+  P27     done    Local manufacturer-first battery help and app-settings action [new]
   P28     todo    Localization [new]
   P29     todo    Opt-in focus blocking [new]
   P30     todo    Live wallpaper [new]
@@ -1194,7 +1202,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P25 are published; P26 completed locally and awaits CI. See CURRENT STATUS.
+  Sequencing note: P00-P26 are published; P26 1951ab3 CI 42458504391 SUCCESS. P27 gates/native UI PASS; publication next.
   P04b repositories are complete, including BadgeRepository in P18.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
@@ -1580,8 +1588,8 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 345 JVM tests, zero failures/errors/skips.
-  Four final gates PASS: 345 JVM tests, zero failures/errors/skips; lint zero errors/five accepted warnings. Eleven API35 migrations PASS through v7. Native picker save/cancel/preview, merge and double-confirmed replace PASS. Disk-failure receipt recovery PASS. Old schemas unchanged; offline manifest/backup disabled; secret and whitespace checks PASS.
+  Current test state: 346 JVM tests, zero failures/errors/skips.
+  Four final gates PASS: 346 JVM tests, zero failures/errors/skips; lint zero errors/five accepted warnings. Eleven API35 migrations PASS through v7. Native picker save/cancel/preview, merge and double-confirmed replace PASS. Disk-failure receipt recovery PASS. Old schemas unchanged; offline manifest/backup disabled; secret and whitespace checks PASS.
   No signed GitHub release or Pages exists yet.
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
@@ -1614,19 +1622,18 @@ SECTION 10 - KNOWN ISSUES
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P25 are published; P25 182252c and CI 42455691660 SUCCESS. P26 finished
-  locally: all fourteen settings and seven user-data tables export through SAF,
-  validated preview, safe merge, confirmed replace and durable settings recovery
-  in Room v7. Final four gates PASS with 345 JVM tests, zero
-  failures/errors/skips and five accepted lint warnings. Eleven API35 migration
-  tests PASS. Native save/cancel/preview, merge and confirmed replace PASS.
-  Fake-only screenshots reviewed and corrected preview refreshed. P26
-  publication/CI is next; no signed release or Pages yet.
+  P00-P26 published; P26 1951ab3 CI 42458504391 SUCCESS. P27 complete locally:
+  seven offline battery guides, manufacturer-first ordering, optional app-info
+  button and Settings navigation. Four fresh gates PASS (unchanged outputs
+  up-to-date); current reports 346 JVM tests, no failures/errors/skips, lint
+  zero errors/five accepted warnings. Real API35 Settings/help/brand/app-info/
+  Back check PASS. Four fake-only screenshots reviewed; light refreshed.
+  P27 publication/CI next; no signed release or Pages yet.
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Commit/push P26 and verify CI, then P27-P33 continuously until explicitly
+  Publish P27 and check CI, then P28-P33 until explicitly
   stopped. GitHub Releases and Pages only; no F-Droid. Signing remains private
   and must never expose or commit key material.
 
@@ -2703,6 +2710,32 @@ SECTION 12 - NEXT STEP
               Signing remains private and must never expose or commit key
               material.
 
+  SESSION 40 - 2026-11-08 - P27 implementation checkpoint
+    Did       P26 1951ab3 CI 42458504391 SUCCESS. Added seven local battery guides,
+              manufacturer-first ordering, Settings help/back and app-info action,
+              fake-only battery_demo route, strings and docs/BATTERY_HELP.md.
+    Decided   Use existing Material tokens and one scrolling help page. No new
+              permission/dependency/schema. Device menu paths explicitly may vary.
+    Verified  Official Android Doze/settings references fetched. Test first failed
+              because the manufacturer policy did not exist; final gates running.
+    Not ver.  P27 final gates, native app-info action, captures and CI pending.
+    Next      Finish P27 verification/captures/publication, then P28-P33.
+  SESSION 41 - 2026-11-08 - P27 resumed final verification
+    Did       Read complete memory, checked status/20 commits and fetched origin;
+              no divergence from 1951ab3. Kept saved P27 work, reconciled stale
+              P26 status, reviewed all four emulator fake-only captures.
+    Decided   D85. Existing Material controls and offline guides; no new dependency,
+              permission, stored setting or schema. GitHub only (D69).
+    Verified  Four fresh gate invocations PASS (source outputs up-to-date): current
+              346 JVM reports, zero failures/errors/skips; lint zero errors/five
+              accepted warnings. API35 Settings help, manufacturer-first guide,
+              Samsung choice, native app-info and Back PASS. Four captures reviewed,
+              light refreshed on exact source. Emulator null roots retry with fresh
+              paths; no check weakened. No physical-device screenshot taken.
+    Not ver.  Manufacturer-specific physical devices, API26/new-size help layouts,
+              signed release and Pages. Video not available (Session 12).
+              P27 publication/CI pending. P28 not started.
+    Next      P27 commit/push/CI, then P28-P33 continuously until explicitly stopped.
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
   No open questions. All four were answered in P00; the decisions live in
