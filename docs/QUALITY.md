@@ -7,7 +7,7 @@ dedicated Android 15 emulator. No physical-device screenshots or data were used.
 
 The required checks are `ktlintCheck --no-build-cache`,
 `:app:testDebugUnitTest`, `:app:lintDebug`, and `:app:assembleDebug`.
-The current suite has 362 JVM tests, including real Room operations, Compose UI,
+The current suite has 384 JVM tests, including real Room operations, Compose UI,
 settings, usage boundaries, recoverable growth, backup validation and localization.
 
 The full Android 15 integration suite passed **20 tests, no failures or skips**.
@@ -49,6 +49,25 @@ RTL, permission, empty and retry-state regression tests remain part of the suite
 Additional small-phone, tablet and landscape emulator captures use 1.3x text.
 
 ## Practical limits
+
+P35 adds bounded camera/zoom and large-world mapping, mode/rendering limits,
+ephemeral focus growth, RTL targets, fullscreen exit without cancellation,
+Desk settings/charging offer, window restoration and backup-v3 compatibility
+tests. Extraction preserved five old app frames pixel-for-pixel below the Android
+status bar. Review found and fixed explicit sway loss and wallpaper dock overlap
+with a forty-plant regression case. No new permission, dependency or Room version.
+
+P35 emulator frame sampling over ten seconds recorded 227 World frames,
+132 Focus frames and 108 Desk frames. All three recorded zero frames during
+three-second reduced-motion and hidden-window samples. Desk's 30-second protection
+shift is checked separately. A failing-first clock test fixes English time reading order in RTL. Fullscreen tests verify cutout coverage, screen-on,
+6% Desk window brightness, Back exit and restoration after Home.
+
+The software-rendered emulator reported high frame delays (median approximately
+30 ms World, 32 ms Focus and 36 ms Desk). These measurements verify bounded work
+and pausing; they do not establish smoothness on a low-end phone or battery savings.
+Use low-power visuals for a still scene. The screenshot matrix covers World,
+fullscreen Focus, Desk and Desk settings in light, dark, AMOLED, 1.3× text and RTL.
 
 Compilation and emulator testing do not establish real-device reliability.
 Physical-device/OEM Doze behavior, long-term battery consumption, TalkBack listening,

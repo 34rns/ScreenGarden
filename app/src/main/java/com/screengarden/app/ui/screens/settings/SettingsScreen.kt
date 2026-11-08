@@ -46,6 +46,7 @@ import com.screengarden.app.domain.model.AccentColor
 import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.ui.onboarding.GoalSetup
 import com.screengarden.app.ui.screens.help.BatteryHelpScreen
+import com.screengarden.app.ui.world.toWorldState
 
 /** Scrollable, labelled preferences; permissions and writes stay with the caller. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -64,8 +65,19 @@ fun SettingsScreen(
     manufacturer: String = Build.MANUFACTURER,
     onAppSettings: () -> Unit = { },
     blockingContent: (@Composable (() -> Unit) -> Unit)? = null,
-    wallpaperContent: (@Composable () -> Unit)? = null
+    wallpaperContent: (@Composable () -> Unit)? = null,
+    world: com.screengarden.app.ui.screens.garden.GardenUiState? = null,
+    charging: Boolean = false
 ) {
+    var deskOpen by rememberSaveable { mutableStateOf(false) }
+    if (deskOpen && state.deskModeEnabled && world != null) {
+        com.screengarden.app.ui.world.WorldAmbientScreen(
+            world.toWorldState(),
+            com.screengarden.app.domain.world.RenderMode.DESK,
+            { deskOpen = false },
+            showClock = state.deskClock
+        )
+    }
     var blockingOpen by rememberSaveable { mutableStateOf(false) }
     if (blockingOpen && blockingContent != null) {
         BackHandler { blockingOpen = false }
@@ -155,6 +167,25 @@ fun SettingsScreen(
                 )
             }
             wallpaperContent?.invoke()
+            SettingsHeading(R.string.desk_title)
+            SettingsToggle(
+                R.string.desk_enable,
+                state.deskModeEnabled,
+                actions.setDeskMode,
+                !state.loading && !state.saving
+            )
+            SettingsBody(R.string.desk_copy)
+            if (state.deskModeEnabled) {
+                SettingsToggle(
+                    R.string.desk_clock,
+                    state.deskClock,
+                    actions.setDeskClock,
+                    !state.loading && !state.saving
+                )
+                TextButton({ deskOpen = true }, Modifier.fillMaxWidth(), enabled = world != null) {
+                    Text(stringResource(if (charging) R.string.desk_charging else R.string.desk_start))
+                }
+            }
             HorizontalDivider()
             SettingsHeading(R.string.tab_focus)
             SettingsToggle(

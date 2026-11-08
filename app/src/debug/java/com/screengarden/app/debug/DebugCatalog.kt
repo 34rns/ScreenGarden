@@ -44,6 +44,7 @@ import com.screengarden.app.domain.limits.LaunchableApp
 import com.screengarden.app.domain.model.OnboardingChoices
 import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.domain.notifications.Nudge
+import com.screengarden.app.domain.world.focusPreview
 import com.screengarden.app.ui.debug.BackupDemoScreen
 import com.screengarden.app.ui.debug.FocusBlockingDemoScreen
 import com.screengarden.app.ui.debug.NudgeDemoScreen
@@ -72,6 +73,7 @@ import com.screengarden.app.ui.screens.settings.SettingsActions
 import com.screengarden.app.ui.screens.settings.SettingsScreen
 import com.screengarden.app.ui.screens.settings.SettingsUiState
 import com.screengarden.app.ui.theme.ScreenGardenTheme
+import com.screengarden.app.ui.world.toWorldState
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -123,6 +125,73 @@ object DebugCatalog {
                     LocalLayoutDirection provides
                         if (requested == "blocking_rtl_demo") LayoutDirection.Rtl else LocalLayoutDirection.current
                 ) { FocusBlockingDemoScreen() }
+            }
+        }
+        if (requested in
+            setOf(
+                "world_demo",
+                "world_rtl_demo",
+                "world_focus_demo",
+                "world_focus_rtl_demo",
+                "desk_demo",
+                "desk_rtl_demo"
+            )
+        ) {
+            val state = GardenUiState(
+                false,
+                GardenAvailability.READY,
+                (0..24).map { index ->
+                    Plant(
+                        "world-demo-$index",
+                        listOf("flower", "fern", "bonsai", "cactus")[index % 4],
+                        listOf(45, 25, 15, 0)[index % 4],
+                        85,
+                        plantedAtUtcMillis = 1793318400000L + index * 86_400_000L
+                    )
+                },
+                score = 84,
+                streakDays = 4
+            )
+            return DebugDestination(
+                requireNotNull(requested),
+                if (requested.contains("focus")) ScreenGardenDestination.Focus else ScreenGardenDestination.Garden
+            ) {
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides
+                        if (requested.contains("rtl")) LayoutDirection.Rtl else LocalLayoutDirection.current
+                ) {
+                    var ambientOpen by remember { mutableStateOf(true) }
+                    if (!ambientOpen) {
+                        GardenScreen(state, { }, { }, { })
+                    } else {
+                        when {
+                            requested.startsWith("desk") -> com.screengarden.app.ui.world.WorldAmbientScreen(
+                                state.toWorldState(),
+                                com.screengarden.app.domain.world.RenderMode.DESK,
+                                { ambientOpen = false },
+                                showClock = true
+                            )
+                            requested.contains("focus") -> {
+                                val session = FocusSessionState(
+                                    "world-demo-session",
+                                    1793318400000L,
+                                    1793318400000L,
+                                    25,
+                                    actualDurationMs = 720_000,
+                                    plantId = "world-demo-3"
+                                )
+                                com.screengarden.app.ui.world.WorldAmbientScreen(
+                                    state.toWorldState().focusPreview(session),
+                                    com.screengarden.app.domain.world.RenderMode.FOCUS,
+                                    { ambientOpen = false },
+                                    timer = "13:00",
+                                    onStopFocus = { }
+                                )
+                            }
+                            else -> GardenScreen(state, { }, { }, { }, onSaveSnapshot = { })
+                        }
+                    }
+                }
             }
         }
         if (requested == "onboarding_demo") {
@@ -350,7 +419,18 @@ object DebugCatalog {
                         SettingsScreen(
                             {},
                             state = state,
-                            versionName = "0.1.0",
+                            versionName = "1.1.0",
+                            world = GardenUiState(
+                                false,
+                                plants = (0..8).map {
+                                    Plant(
+                                        "desk-$it",
+                                        "fern",
+                                        45,
+                                        plantedAtUtcMillis = 1793318400000L + it * 86_400_000L
+                                    )
+                                }
+                            ),
                             backupContent = { BackupControls(BackupUiState(), {}, {}, {}, {}) },
                             blockingContent = { back -> FocusBlockingDemoScreen(back) },
                             wallpaperContent = {
@@ -365,7 +445,9 @@ object DebugCatalog {
                                 setNotifications = { state = state.copy(notificationsOn = it) },
                                 setKeepScreenOn = { state = state.copy(keepScreenOn = it) },
                                 setHemisphere = { state = state.copy(hemisphere = it) },
-                                setLowPower = { state = state.copy(lowPowerVisuals = it) }
+                                setLowPower = { state = state.copy(lowPowerVisuals = it) },
+                                setDeskMode = { state = state.copy(deskModeEnabled = it) },
+                                setDeskClock = { state = state.copy(deskClock = it) }
                             )
                         )
                     }

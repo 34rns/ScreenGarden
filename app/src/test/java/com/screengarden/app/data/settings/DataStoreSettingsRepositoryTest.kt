@@ -43,6 +43,19 @@ import org.robolectric.annotation.Config
 @Config(sdk = [33])
 class DataStoreSettingsRepositoryTest {
     @Test
+    fun deskIsOptInAndClockChoiceSurvivesReopening() = runBlocking {
+        val settings = open().repository
+        assertFalse(settings.deskModeEnabled.first())
+        assertTrue(settings.deskClock.first())
+        settings.setDeskModeEnabled(true)
+        settings.setDeskClock(false)
+        closeAll()
+        val reopened = open().repository
+        assertTrue(reopened.deskModeEnabled.first())
+        assertFalse(reopened.deskClock.first())
+    }
+
+    @Test
     fun curatedAccentsAndAtomicGoalsSurviveReopening() = runBlocking {
         val settings = open()
         val choices = OnboardingChoices(120 * 60_000L, 45, 21 * 60, 6 * 60)

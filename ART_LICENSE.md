@@ -40,6 +40,11 @@ the author name and a link to this file.
 
 ## Note on the full text
 
+The P35 layered meadow, trees and Desk scenery are original code-drawn artwork,
+covered by the same CC BY-SA 4.0 license. No external textures, generated images
+or fonts were added. The drawing code remains GPL-3.0-or-later.
+
+
 Creative Commons recommends linking to the license rather than bundling a
 localized copy, so this repository does not reproduce the CC BY-SA 4.0 legal
 code. The canonical text is at

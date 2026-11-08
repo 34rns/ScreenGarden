@@ -18,3 +18,7 @@ Corresponding app source is available at every release tag.
 JUnit, Robolectric, ktlint, Android test tools and build plugins do not ship in the
 release APK. Their licenses are in `AGENT_MEMORY.txt`, Section 8. No proprietary
 SDK or paid asset is bundled.
+
+P35 adds no font file or library. Android's system sans-serif typography is used;
+the standard AOSP Roboto font is Apache-2.0 and supplied by Android. Device font
+fallbacks remain OS resources, not redistributed ScreenGarden assets.

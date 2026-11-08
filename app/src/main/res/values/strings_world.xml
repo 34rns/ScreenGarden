@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="world_description">Your growing world. Pan or pinch to explore; camera controls and the plant list are available below.</string>
+    <string name="world_focus_description">Your world during focus. Exit view returns to the controls while the session continues.</string>
+    <string name="desk_description">Your dim desk world. Exit view restores your previous brightness.</string>
+    <string name="world_pan_left">Pan left</string>
+    <string name="world_pan_right">Pan right</string>
+    <string name="world_zoom_in">Zoom in</string>
+    <string name="world_zoom_out">Zoom out</string>
+    <string name="world_reset">Return to the first planting</string>
+    <string name="world_plants">All your plants</string>
+    <string name="world_exit">Exit view</string>
+    <string name="world_enter_focus">Enter your world</string>
+    <string name="desk_title">Desk mode</string>
+    <string name="desk_enable">Enable Desk mode</string>
+    <string name="desk_clock">Show a clock</string>
+    <string name="desk_start">Start Desk mode</string>
+    <string name="desk_charging">Charging · Start Desk mode</string>
+    <string name="desk_copy">A dim, mostly dark view for your desk. The scene and clock shift slowly. This reduces static exposure but cannot guarantee protection from screen burn-in. Exit returns your previous brightness.</string>
+    <string name="world_pan_up">Pan up</string>
+    <string name="world_pan_down">Pan down</string>
+</resources>

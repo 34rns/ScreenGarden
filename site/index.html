@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="ScreenGarden is a free, open-source Android garden for calmer screen habits. Focus, grow recoverable plants, and keep your data on your device.">
-  <meta name="theme-color" content="#40694e">
+  <meta name="theme-color" content="#285b4e">
   <title>ScreenGarden — Make room to grow</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
@@ -21,7 +21,7 @@
       <div class="hero-copy">
         <p class="intro">A calmer relationship with your phone</p>
         <h1 id="headline">Make room for yourself.<br>Watch something grow.</h1>
-        <p class="lede">A little garden that grows with your focus and daily habits. Set gentle goals, take a breath, and come back to plants that can always recover.</p>
+        <p class="lede">A world that grows with your focus and daily habits. Explore older plantings, settle into fullscreen focus, or keep a quiet meadow beside you in Desk mode.</p>
         <div class="actions"><a class="button" href="https://github.com/34rns/ScreenGarden/releases/download/v0.1.0/ScreenGarden-v0.1.0.apk">Download v0.1.0</a><a class="text-link" href="#explore">Take a look around</a></div>
         <p class="compatibility">Free and open source. Android 8.0 and later.</p>
         <div class="theme-picker" role="group" aria-label="Preview garden theme">
@@ -33,17 +33,17 @@
       </div>
       <figure class="hero-garden">
         <div class="garden-halo" aria-hidden="true"></div>
-        <div class="phone"><img id="garden-preview" src="screenshots/garden_light.png" width="1080" height="2400" alt="ScreenGarden in light mode: a small garden of ferns, flowers, bonsai and cacti with a daily score." fetchpriority="high"></div>
-        <figcaption id="preview-caption">Your garden, in light mode.</figcaption>
+        <div class="phone"><img id="garden-preview" src="screenshots/world_light.png" width="1080" height="2400" alt="ScreenGarden in light mode: a growing field with camera controls and a daily score." fetchpriority="high"></div>
+        <figcaption id="preview-caption">Your world, in light mode.</figcaption>
       </figure>
     </section>
     <div class="promise-strip wrap"><p>No accounts</p><p>No ads or tracking</p><p>No internet permission</p><p>Always recoverable</p></div>
     <section id="explore" class="explore wrap" aria-labelledby="explore-title">
       <div class="section-intro"><h2 id="explore-title">Small habits.<br>A living reminder.</h2><p>You don’t need a perfect day. Quiet progress adds up, and a wilted plant is an invitation to begin again.</p></div>
       <div class="feature-grid">
-        <article><div class="feature-image focus-image"><img src="screenshots/focus_running.png" width="1080" height="2400" alt="A tagged focus session with a calm countdown and growing seed." loading="lazy"></div><h3>Give one thing your attention</h3><p>Choose a focus session, put your phone down, and let a seed grow. A gentle timer keeps running when you leave the app.</p></article>
+        <article><div class="feature-image focus-image ambient-image"><img src="screenshots/world_focus_light.png" width="1080" height="2400" alt="Your own world fullscreen with a small focus timer." loading="lazy"></div><h3>Give one thing your attention</h3><p>Focus in your own world with a small calm timer. A plant grows during the session; leaving the view keeps your timer running.</p></article>
         <article><div class="feature-image insights-image"><img src="screenshots/insights_light.png" width="1080" height="2400" alt="Local weekly screen-time bars, a goal line and a daily health-score chart." loading="lazy"></div><h3>Notice your own rhythm</h3><p>See local screen-time patterns and a simple weekly reflection. Set goals that fit your life, with compassion days when you need them.</p></article>
-        <article><div class="feature-image night-image"><img src="screenshots/bedtime_dark.png" width="1080" height="2400" alt="A moonlit sleep garden during a saved wind-down window." loading="lazy"></div><h3>Let the evening slow down</h3><p>Your garden follows the clock and seasons. Wind-down hours bring softer light, with optional reminders that respect quiet hours.</p></article>
+        <article><div class="feature-image night-image ambient-image"><img src="screenshots/desk_dark.png" width="1080" height="2400" alt="A dim Desk world with a shifting clock." loading="lazy"></div><h3>A quiet view beside you</h3><p>Opt into a dim Desk meadow with an optional clock and slow pixel shifting. Motion respects low-power and reduced-animation choices. Pixel shifting cannot guarantee prevention of screen burn-in.</p></article>
       </div>
       <p class="demo-note">Every screenshot uses fake debug-only demo data on the Android emulator. No personal phone data is shown. <a href="https://github.com/34rns/ScreenGarden/blob/main/docs/GALLERY.md">Browse the full gallery</a>.</p>
     </section>
@@ -60,7 +60,7 @@
       <details><summary>Can a plant die?</summary><p>Plants wilt gradually and can always recover. A calm day or completed focus session helps restore their health. Progress never requires a perfect streak.</p></details>
       <details><summary>Why is some screen-time history missing?</summary><p>Android exposes limited recent event history, and some devices omit events. ScreenGarden shows unknown data honestly instead of inventing a score. Previously stored measurements stay local.</p></details>
       <details><summary>How reliable are timers and reminders?</summary><p>Reminders and widget updates are approximate. Android sleep and manufacturer battery restrictions can delay work or timer completion. The app includes offline battery help, with version caveats.</p></details>
-      <details><summary>What has been tested?</summary><p>The quality pass verified 362 JVM tests and 20 Android 15 integration tests, plus emulator layouts with larger text, Spanish, RTL and several sizes. Physical-device reliability, actual reboot/process death, full current Android 8 layouts, low-end performance and fluent Spanish review remain unverified. <a href="https://github.com/34rns/ScreenGarden/blob/main/docs/QUALITY.md">Read the quality report</a>.</p></details>
+      <details><summary>What has been tested?</summary><p>The quality pass verified 384 JVM tests and 20 Android 15 integration tests, plus emulator layouts with larger text, Spanish, RTL and several sizes. Physical-device reliability, actual reboot/process death, full current Android 8 layouts, low-end performance and fluent Spanish review remain unverified. <a href="https://github.com/34rns/ScreenGarden/blob/main/docs/QUALITY.md">Read the quality report</a>.</p></details>
     </section>
   </main>
   <footer class="wrap"><a class="brand" href="#"><img src="icon.svg" width="28" height="28" alt="">ScreenGarden</a><p>Made for quieter days.</p><div><a href="https://github.com/34rns/ScreenGarden">Source &amp; contribute</a><a href="https://github.com/34rns/ScreenGarden/blob/main/SECURITY.md">Security</a><a href="https://github.com/34rns/ScreenGarden/blob/main/LICENSE">GPL-3.0-or-later</a><a href="https://github.com/34rns/ScreenGarden/blob/main/ART_LICENSE.md">Art: CC BY-SA 4.0</a></div></footer>

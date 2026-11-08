@@ -1,5 +1,28 @@
 # Screenshot gallery
 
+## ScreenGarden 1.1.0
+
+Fresh World, fullscreen Focus, Desk and Settings captures from the dedicated
+Android 15 emulator. Every view uses fake debug-only data or preferences.
+
+| View | Light | Dark | AMOLED |
+| --- | --- | --- | --- |
+| World | <img src="screenshots/world_light.png" width="200" alt="World in light mode"> | <img src="screenshots/world_dark.png" width="200" alt="World in dark mode"> | <img src="screenshots/world_amoled.png" width="200" alt="World in AMOLED mode"> |
+| Fullscreen Focus | <img src="screenshots/world_focus_light.png" width="200" alt="Focus world in light mode"> | <img src="screenshots/world_focus_dark.png" width="200" alt="Focus world in dark mode"> | <img src="screenshots/world_focus_amoled.png" width="200" alt="Focus world in AMOLED mode"> |
+| Desk | <img src="screenshots/desk_light.png" width="200" alt="Dim Desk view with light app preference"> | <img src="screenshots/desk_dark.png" width="200" alt="Dim Desk view with dark app preference"> | <img src="screenshots/desk_amoled.png" width="200" alt="Dim Desk view with AMOLED app preference"> |
+| Settings | <img src="screenshots/world_settings_light.png" width="200" alt="Desk preferences in light mode"> | <img src="screenshots/world_settings_dark.png" width="200" alt="Desk preferences in dark mode"> | <img src="screenshots/world_settings_amoled.png" width="200" alt="Desk preferences in AMOLED mode"> |
+
+| View | Large text (1.3×) | Right-to-left layout |
+| --- | --- | --- |
+| World | <img src="screenshots/world_large_font.png" width="200" alt="World with larger text"> | <img src="screenshots/world_rtl.png" width="200" alt="Mirrored World controls with aligned plant targets"> |
+| Fullscreen Focus | <img src="screenshots/world_focus_large_font.png" width="200" alt="Fullscreen Focus with larger text"> | <img src="screenshots/world_focus_rtl.png" width="200" alt="Fullscreen Focus in RTL"> |
+| Desk | <img src="screenshots/desk_large_font.png" width="200" alt="Desk with larger text"> | <img src="screenshots/desk_rtl.png" width="200" alt="Desk in RTL"> |
+| Settings | <img src="screenshots/world_settings_large_font.png" width="200" alt="Desk preferences with larger text"> | <img src="screenshots/world_settings_rtl.png" width="200" alt="Desk preferences in RTL"> |
+
+## Feature reference gallery
+
+Earlier feature captures below remain as reference; some show the v0.1.0 appearance.
+
 
 
 Captured on an Android 15 emulator (1080 × 2400) with demo mode enabled.

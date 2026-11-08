@@ -215,8 +215,16 @@ class MainActivity : ComponentActivity() {
                             allowed = NotificationManagerCompat.from(appContext).areNotificationsEnabled()
                             onPauseOrDispose { }
                         }
+                        val worldFactory =
+                            remember(container) { viewModelFactory { initializer { container.gardenViewModel() } } }
+                        val worldModel: GardenViewModel = viewModel(key = "desk-world", factory = worldFactory)
+                        val worldState by worldModel.uiState.collectAsStateWithLifecycle()
+                        LifecycleResumeEffect(worldModel) {
+                            worldModel.refresh()
+                            onPauseOrDispose { }
+                        }
                         SettingsScreen(
-                            limits,
+                            limits, world = worldState, charging = rememberWorldCharging(),
                             onMilestones = habits,
                             state = state,
                             actions = SettingsActions(
@@ -240,7 +248,9 @@ class MainActivity : ComponentActivity() {
                                 setKeepScreenOn = settings::setKeepScreenOn,
                                 setHemisphere = settings::setHemisphere,
                                 setLowPower = settings::setLowPower,
-                                showIntroduction = settings::showIntroduction
+                                showIntroduction = settings::showIntroduction,
+                                setDeskMode = settings::setDeskMode,
+                                setDeskClock = settings::setDeskClock
                             ),
                             notificationsAllowed = allowed,
                             onNotificationSettings = {
@@ -334,13 +344,22 @@ class MainActivity : ComponentActivity() {
                             focus.refresh()
                             onPauseOrDispose { }
                         }
+                        val worldFactory =
+                            remember(container) { viewModelFactory { initializer { container.gardenViewModel() } } }
+                        val worldModel: GardenViewModel = viewModel(key = "focus-world", factory = worldFactory)
+                        val worldState by worldModel.uiState.collectAsStateWithLifecycle()
+                        LifecycleResumeEffect(worldModel) {
+                            worldModel.refresh()
+                            onPauseOrDispose { }
+                        }
                         FocusScreen(
                             state,
                             focus::start,
                             focus::stop,
                             focus::setKeepScreenOn,
                             focus::dismissResult,
-                            focus::refresh
+                            focus::refresh,
+                            world = worldState
                         )
                     }
                     val limitsContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { back ->

@@ -2,7 +2,6 @@
 
 package com.screengarden.app.ui.screens.garden
 
-import android.animation.ValueAnimator
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -53,7 +52,8 @@ internal fun rememberGardenMotionEnabled(): Boolean {
     DisposableEffect(context, owner) {
         fun update() {
             enabled = owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) &&
-                ValueAnimator.areAnimatorsEnabled() &&
+                // Read the setting itself: the animator process cache can lag this observer callback.
+                Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f &&
                 context.getSystemService(PowerManager::class.java)?.isPowerSaveMode != true
         }
         val lifecycleObserver = LifecycleEventObserver { _, _ -> update() }

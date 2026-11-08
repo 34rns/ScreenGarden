@@ -2,8 +2,10 @@
 
 package com.screengarden.app.ui.screens.garden
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.provider.Settings
 import android.view.View
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
@@ -17,6 +19,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.test.core.app.ApplicationProvider
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.ui.theme.ScreenGardenTheme
@@ -76,6 +79,36 @@ class GardenMotionTest {
         compose.runOnIdle { owner.registry.currentState = Lifecycle.State.STARTED }
         compose.waitForIdle()
         compose.runOnIdle { assertFalse(enabled) }
+    }
+
+    @Test
+    fun reducedMotionReadsCurrentSettingRatherThanCachedAnimatorScale() {
+        val resolver = ApplicationProvider.getApplicationContext<Context>().contentResolver
+        val previous = Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
+        val owner = object : LifecycleOwner {
+            val registry = LifecycleRegistry.createUnsafe(this)
+            override val lifecycle: Lifecycle = registry
+        }
+        owner.registry.currentState = Lifecycle.State.RESUMED
+        var enabled = true
+        val cachedScale = android.animation.ValueAnimator::class.java.getDeclaredField("sDurationScale")
+            .apply { isAccessible = true }
+        val previousCache = cachedScale.getFloat(null)
+        try {
+            // The animator's process cache can still report enabled when this setting is already zero.
+            Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
+            cachedScale.setFloat(null, 1f)
+            compose.setContent {
+                CompositionLocalProvider(LocalLifecycleOwner provides owner) {
+                    val motion = rememberGardenMotionEnabled()
+                    SideEffect { enabled = motion }
+                }
+            }
+            compose.runOnIdle { assertFalse(enabled) }
+        } finally {
+            cachedScale.setFloat(null, previousCache)
+            Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, previous)
+        }
     }
 
     @Test

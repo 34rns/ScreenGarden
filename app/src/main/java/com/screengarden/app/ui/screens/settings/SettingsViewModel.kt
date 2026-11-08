@@ -27,6 +27,8 @@ class SettingsActions(
     val setKeepScreenOn: (Boolean) -> Unit = { },
     val setHemisphere: (Hemisphere) -> Unit = { },
     val setLowPower: (Boolean) -> Unit = { },
+    val setDeskMode: (Boolean) -> Unit = { },
+    val setDeskClock: (Boolean) -> Unit = { },
     val showIntroduction: () -> Unit = { }
 )
 
@@ -41,7 +43,9 @@ data class SettingsUiState(
     val lowPowerVisuals: Boolean = false,
     val saving: Boolean = false,
     val error: Boolean = false,
-    val saved: Boolean = false
+    val saved: Boolean = false,
+    val deskModeEnabled: Boolean = false,
+    val deskClock: Boolean = true
 )
 
 /** One state for stored preferences; toggles never pretend a failed write succeeded. */
@@ -95,7 +99,13 @@ class SettingsViewModel(
                         reminders to
                             keepOn
                     }
-                combine(goals, appearance, behavior) { choices, look, behavior -> Triple(choices, look, behavior) }
+                val desk = combine(repository.deskModeEnabled, repository.deskClock) { enabled, clock ->
+                    enabled to
+                        clock
+                }
+                combine(goals, appearance, behavior, desk) { choices, look, behavior, desk ->
+                    Triple(choices, look, listOf(behavior.first, behavior.second, desk.first, desk.second))
+                }
                     .collect { (choices, look, behavior) ->
                         state.update {
                             it.copy(
@@ -105,8 +115,10 @@ class SettingsViewModel(
                                 accent = look.accent,
                                 hemisphere = look.side,
                                 lowPowerVisuals = look.lowPower,
-                                notificationsOn = behavior.first,
-                                keepScreenOn = behavior.second
+                                notificationsOn = behavior[0],
+                                keepScreenOn = behavior[1],
+                                deskModeEnabled = behavior[2],
+                                deskClock = behavior[3]
                             )
                         }
                     }
@@ -124,6 +136,8 @@ class SettingsViewModel(
     fun setKeepScreenOn(value: Boolean) = save { repository.setKeepScreenOn(value) }
     fun setHemisphere(value: Hemisphere) = save { repository.setHemisphere(value) }
     fun setLowPower(value: Boolean) = save { repository.setLowPowerVisuals(value) }
+    fun setDeskMode(value: Boolean) = save { repository.setDeskModeEnabled(value) }
+    fun setDeskClock(value: Boolean) = save { repository.setDeskClock(value) }
     fun showIntroduction() = save { repository.setOnboardingDone(false) }
 
     private fun save(write: suspend () -> Unit) {

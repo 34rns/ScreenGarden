@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="garden_title">Your garden</string>
-    <string name="garden_subtitle">A little space for the time you give yourself.</string>
+    <string name="garden_title">Your world</string>
+    <string name="garden_subtitle">Every small beginning belongs here.</string>
     <string name="garden_plant_hint">Tap a plant to see how it is growing.</string>
     <string name="garden_start_focus">Start focus</string>
     <string name="garden_today_score">Today’s health score</string>

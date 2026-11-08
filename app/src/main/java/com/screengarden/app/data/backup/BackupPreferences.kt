@@ -33,6 +33,9 @@ internal class BackupPreferences(private val store: DataStore<Preferences>) {
         if (!json.has(FocusBlockPreferences.KEY_NAME)) {
             json.put(FocusBlockPreferences.KEY_NAME, FocusBlockCodec.encode(FocusBlockPolicy()))
         }
+        for ((key, value) in listOf("desk_mode_enabled" to false, "desk_clock" to true)) {
+            if (!json.has(key)) json.put(key, value)
+        }
         validate(json)
         store.edit { target ->
             defaults().keys().forEach { key ->
@@ -68,6 +71,8 @@ internal class BackupPreferences(private val store: DataStore<Preferences>) {
             .put("compassion_days_per_month", SettingsDefaults.COMPASSION_DAYS_PER_MONTH)
             .put("hemisphere", SettingsDefaults.HEMISPHERE.name)
             .put("low_power_visuals", SettingsDefaults.LOW_POWER_VISUALS)
+            .put("desk_mode_enabled", false)
+            .put("desk_clock", true)
             .put(FocusBlockPreferences.KEY_NAME, FocusBlockCodec.encode(FocusBlockPolicy()))
 
         fun validate(json: JSONObject) {

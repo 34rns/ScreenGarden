@@ -207,11 +207,19 @@ class GardenEngineTest {
 
     @Test
     fun plantingStopsAtTheCap() {
-        val full = (1..GardenTuning.MAX_PLANTS).map { seed(id = "plant-$it") }
-        val out = GardenEngine.advance(day(score = 100), full, rules, newPlantId = { "extra" })
+        val full = (1..5).map { seed(id = "plant-$it") }
+        val out = GardenEngine.advance(day(score = 100), full, rules.copy(maxPlants = 5), newPlantId = { "extra" })
 
         assertNull(out.planted)
-        assertEquals(GardenTuning.MAX_PLANTS, out.plants.size)
+        assertEquals(5, out.plants.size)
+    }
+
+    @Test fun lifetimeWorldKeepsGrowingBeyondTheFormerFivePlantPlot() {
+        val existing = (1..1024).map { seed(id = "old-$it") }
+        val out = GardenEngine.advance(day(score = 100), existing, newPlantId = { "next" })
+        assertEquals(1025, out.plants.size)
+        assertEquals("next", out.planted?.id)
+        assertEquals(existing.map { it.id }, out.plants.take(existing.size).map { it.id })
     }
 
     @Test
@@ -316,8 +324,8 @@ class GardenEngineTest {
 
     @Test
     fun anOversizedExistingGardenIsPreservedWithoutPlantingMore() {
-        val plants = (1..GardenTuning.MAX_PLANTS + 1).map { seed(id = "plant-$it") }
-        val out = GardenEngine.advance(day(score = 100), plants, rules)
+        val plants = (1..6).map { seed(id = "plant-$it") }
+        val out = GardenEngine.advance(day(score = 100), plants, rules.copy(maxPlants = 5))
 
         assertEquals(plants.map { it.id }, out.plants.map { it.id })
         assertNull(out.planted)

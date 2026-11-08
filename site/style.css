@@ -1,5 +1,5 @@
 /* Original ScreenGarden website; GPL-3.0-or-later. */
-:root { --paper:#f6fbf4; --ink:#1c2b20; --muted:#506452; --green:#40694e; --leaf:#d3eacb; --line:#c3d6c0; --night:#173c2b; --white:#fff; color-scheme:light; }
+:root { --paper:#f3f8f4; --ink:#192b24; --muted:#506353; --green:#285b4e; --leaf:#c9e9d8; --line:#c3d6c0; --night:#173c2b; --white:#fff; color-scheme:light; }
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; scroll-padding-top:24px; }
 body { margin:0; background:var(--paper); color:var(--ink); font:17px/1.65 'Segoe UI',system-ui,sans-serif; }
@@ -50,6 +50,8 @@ figcaption { color:var(--muted); font-size:13px; margin-top:18px; text-align:cen
 .focus-image { background:#e1eddb; }
 .insights-image { background:#e0eae6; }
 .night-image { background:#dce3ee; }
+.feature-image.ambient-image { padding-bottom:24px; }
+.feature-image.ambient-image img { height:100%; width:auto; max-width:100%; border-radius:21px; object-fit:contain; }
 .demo-note { margin-top:36px; font-size:13px; color:var(--muted); max-width:760px; }
 .privacy { background:var(--night); color:var(--paper); padding-block:88px; }
 .privacy-inner { display:grid; grid-template-columns:1.15fr .85fr; gap:100px; }

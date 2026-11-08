@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantStage
-import com.screengarden.app.ui.theme.LightPrimary
+import com.screengarden.app.ui.theme.OriginalPackLeaf
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -33,11 +33,11 @@ class PackPlantRenderer(private val images: Map<String, Map<PlantStage, ImageBit
             val matrix = ColorMatrix().apply { setToSaturation(1f - visuals.wilt.coerceIn(0f, 1f) * 0.75f) }
             val bundled = plant.species in setOf("fern", "flower", "bonsai", "cactus")
             if (bundled) {
-                // Original packs use LightPrimary; adapt their leaf hue to the selected theme/accent.
+                // Original packs use OriginalPackLeaf; adapt their leaf hue to the selected theme/accent.
                 val gains = floatArrayOf(
-                    palette.leaf.red / LightPrimary.red,
-                    palette.leaf.green / LightPrimary.green,
-                    palette.leaf.blue / LightPrimary.blue
+                    palette.leaf.red / OriginalPackLeaf.red,
+                    palette.leaf.green / OriginalPackLeaf.green,
+                    palette.leaf.blue / OriginalPackLeaf.blue
                 )
                 for (row in 0..2) for (column in 0..4) matrix.values[row * 5 + column] *= gains[row]
             }

@@ -13,11 +13,23 @@ import androidx.compose.ui.unit.sp
  * so body copy gets extra line height and headings stay medium weight.
  */
 internal val ScreenGardenTypography = Typography(
+    headlineLarge = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Light,
+        fontSize = 34.sp,
+        lineHeight = 42.sp
+    ),
+    displayLarge = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Light,
+        fontSize = 48.sp,
+        lineHeight = 56.sp
+    ),
     headlineSmall = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Medium,
-        fontSize = 24.sp,
-        lineHeight = 32.sp,
+        fontWeight = FontWeight.Normal,
+        fontSize = 28.sp,
+        lineHeight = 36.sp,
         letterSpacing = 0.sp
     ),
     titleLarge = TextStyle(

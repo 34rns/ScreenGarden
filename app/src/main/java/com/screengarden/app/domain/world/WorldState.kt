@@ -29,6 +29,7 @@ data class WorldState(
     val health: Int? = null,
     val streakDays: Int = 0,
     val phase: Float = 0f,
+    val animationsEnabled: Boolean = false,
     val lowPowerVisuals: Boolean = false,
     val backdrop: Boolean = true,
     val space: WorldSpace = WorldSpace.NORMALIZED

@@ -146,6 +146,7 @@ fun ScreenGardenTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = ScreenGardenTypography,
+        shapes = ScreenGardenShapes,
         content = content
     )
 }

@@ -21,7 +21,9 @@ class WallpaperImageTest {
     @Test fun portraitUsesSharedPlantsAndFullBleedSceneWithoutExportCaption() {
         val colors = screenGardenColors(ThemePreference.LIGHT, AccentColor.CALM_GREEN, false)
         val empty = GardenUiState(loading = false)
-        val populated = empty.copy(plants = listOf(Plant("fake", "flower", 45, 90, plantedAtUtcMillis = 1)))
+        val populated = empty.copy(
+            plants = (0..39).map { Plant("fake-$it", "flower", 45, 90, plantedAtUtcMillis = it.toLong()) }
+        )
         val background = renderGardenSnapshot(
             empty,
             colors,

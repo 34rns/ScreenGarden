@@ -24,8 +24,9 @@ import androidx.compose.ui.unit.LayoutDirection
 import com.screengarden.app.domain.garden.GardenLight
 import com.screengarden.app.domain.garden.GardenWeather
 import com.screengarden.app.domain.world.RenderMode
+import com.screengarden.app.domain.world.WorldSpace
 import com.screengarden.app.domain.world.WorldState
-import com.screengarden.app.domain.world.mapPlotPlants
+import com.screengarden.app.domain.world.mapWorldPlants
 import com.screengarden.app.ui.theme.GardenNightColors
 import com.screengarden.app.ui.world.drawWorld
 
@@ -65,10 +66,10 @@ internal fun renderGardenSnapshot(
                 addRoundRect(RoundRect(Rect(0f, 0f, size.width, size.height), CornerRadius(if (framed) 40f else 0f)))
             }
             clipPath(boundary) {
-                val plotFraction = if (!framed && size.height > size.width) 0.4f else 0.65f
                 drawWorld(
                     WorldState(
-                        plants = mapPlotPlants(state.plants, plotFraction),
+                        plants = mapWorldPlants(state.plants),
+                        space = WorldSpace.FIELD,
                         environment = environment,
                         lowPowerVisuals = state.lowPowerVisuals
                     ),

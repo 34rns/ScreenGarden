@@ -10,10 +10,14 @@ battery at or below 15%, and Android battery saver stop recurring work. A cold
 low-battery preview may render one still image before pausing. Changes to your garden
 appear on the next visible refresh. No usage events, rewards or network are involved.
 
-Plant packs and fallback shapes use the same renderer as the Garden and picture
+Plant packs and fallback shapes use the same renderer as World, Focus, Desk and picture
 export. Portrait images are bounded to 720 pixels wide and 2048 high before Android
 scales them to the surface. An empty garden shows the scenery without invented plants.
 Background allowances, exact refresh timing and launcher presentation vary by device.
+
+The starting view centers the first planting. Plants outside that view remain
+available in World. The lower fifth stays free of plants so Android dock controls
+have a quiet backdrop, including when the collection grows beyond the old five plants.
 
 The service binding uses Android's `BIND_WALLPAPER` protection; it is not a user
 permission request. Preview screenshots use the emulator and a debug-only fake garden;

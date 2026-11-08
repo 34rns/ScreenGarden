@@ -54,6 +54,15 @@ interface SettingsRepository {
     val keepScreenOn: Flow<Boolean>
     val compassionDaysPerMonth: Flow<Int>
     val hemisphere: Flow<Hemisphere>
+    val deskModeEnabled: Flow<Boolean> get() = kotlinx.coroutines.flow.flowOf(false)
+    val deskClock: Flow<Boolean> get() = kotlinx.coroutines.flow.flowOf(true)
+    suspend fun setDeskModeEnabled(enabled: Boolean) {
+        error("Desk settings unavailable")
+    }
+    suspend fun setDeskClock(enabled: Boolean) {
+        error("Desk settings unavailable")
+    }
+
     val lowPowerVisuals: Flow<Boolean>
 
     /** @throws IllegalArgumentException when [goalMs] is not positive. */

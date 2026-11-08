@@ -5,12 +5,16 @@ package com.screengarden.app.ui.screens.settings
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -34,6 +38,31 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class SettingsScreenTest {
+    @Test fun chargingOffersDeskWithoutStartingItAndManualExitWorks() {
+        val state = mutableStateOf(SettingsUiState(loading = false))
+        val charging = mutableStateOf(false)
+        compose.setContent {
+            ScreenGardenTheme {
+                SettingsScreen(
+                    {},
+                    state = state.value,
+                    actions = SettingsActions(setDeskMode = { state.value = state.value.copy(deskModeEnabled = it) }),
+                    world = com.screengarden.app.ui.screens.garden.GardenUiState(lowPowerVisuals = true),
+                    charging = charging.value
+                )
+            }
+        }
+        compose.onNodeWithText("Start Desk mode").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Enable Desk mode").performScrollTo().performClick()
+        compose.onNodeWithText("Start Desk mode").performScrollTo().assertIsDisplayed()
+        compose.runOnIdle { charging.value = true }
+        compose.onNodeWithTag("world_ambient").assertDoesNotExist()
+        compose.onNodeWithText("Charging · Start Desk mode").performScrollTo().performClick()
+        compose.onNodeWithTag("world_ambient").assertIsDisplayed()
+        compose.onNodeWithText("Exit view").performClick()
+        compose.onNodeWithTag("world_ambient").assertDoesNotExist()
+    }
+
     @get:Rule val compose = createComposeRule()
 
     @Test fun sceneryParagraphsKeepEnglishReadingOrderInMirroredSettings() {

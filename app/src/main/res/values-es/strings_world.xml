@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="world_focus_description">Tu mundo durante el enfoque. Salir vuelve a los controles mientras la sesión continúa.</string>
+    <string name="desk_description">Tu mundo tenue de escritorio. Salir restaura el brillo anterior.</string>
+    <string name="world_description">Tu mundo crece. Arrastra o pellizca para explorar; los controles y la lista de plantas están debajo.</string>
+    <string name="world_pan_left">Mover a la izquierda</string>
+    <string name="world_pan_right">Mover a la derecha</string>
+    <string name="world_zoom_in">Acercar</string>
+    <string name="world_zoom_out">Alejar</string>
+    <string name="world_reset">Volver a la primera planta</string>
+    <string name="world_plants">Todas tus plantas</string>
+    <string name="world_exit">Salir de la vista</string>
+    <string name="world_enter_focus">Entrar en tu mundo</string>
+    <string name="desk_title">Modo escritorio</string>
+    <string name="desk_enable">Activar modo escritorio</string>
+    <string name="desk_clock">Mostrar reloj</string>
+    <string name="desk_start">Iniciar modo escritorio</string>
+    <string name="desk_charging">Cargando · Iniciar modo escritorio</string>
+    <string name="desk_copy">Una vista tenue y oscura para tu escritorio. La escena y el reloj se desplazan lentamente. Reduce la exposición estática, pero no garantiza protección contra marcas permanentes. Al salir se restaura el brillo.</string>
+    <string name="world_pan_up">Mover hacia arriba</string>
+    <string name="world_pan_down">Mover hacia abajo</string>
+</resources>

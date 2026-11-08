@@ -95,4 +95,30 @@ class FocusScreenTest {
         compose.onNodeWithText(app.getString(R.string.focus_stop)).performScrollTo().performClick()
         assertEquals(1, stopped)
     }
+
+    @Test
+    fun fullscreenExitKeepsTheSessionAndExplicitStopRemainsAvailable() {
+        var stopped = 0
+        val running = FocusSessionState("world-session", 0, 0, 25, actualDurationMs = 60_000)
+        compose.setContent {
+            ScreenGardenTheme {
+                FocusScreen(
+                    FocusUiState(loading = false, active = running),
+                    { _, _ -> },
+                    { stopped++ },
+                    { },
+                    { },
+                    { },
+                    world = com.screengarden.app.ui.screens.garden.GardenUiState(lowPowerVisuals = true)
+                )
+            }
+        }
+        compose.onNodeWithTag("ambient_timer").assertIsDisplayed()
+        compose.onNodeWithText(app.getString(R.string.world_exit)).performClick()
+        assertEquals(0, stopped)
+        compose.onNodeWithText(app.getString(R.string.world_enter_focus)).performScrollTo().performClick()
+        compose.onNodeWithTag("ambient_timer").assertIsDisplayed()
+        compose.onNodeWithTag("ambient_stop").performClick()
+        assertEquals(1, stopped)
+    }
 }

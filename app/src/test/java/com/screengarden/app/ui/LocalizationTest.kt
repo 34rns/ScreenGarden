@@ -90,6 +90,6 @@ class LocalizationTest {
         }
         assertEquals("Racha de 1 día", spanish.getQuantityString(R.plurals.garden_streak_days, 1, 1))
         assertEquals("Racha de 2 días", spanish.getQuantityString(R.plurals.garden_streak_days, 2, 2))
-        assertEquals("Your garden", localized("ar").getString(R.string.garden_title))
+        assertEquals("Your world", localized("ar").getString(R.string.garden_title))
     }
 }

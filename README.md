@@ -16,17 +16,18 @@ Android 8.0+ · No accounts · No ads · No tracking · No internet permission
 
 ## A little space to grow
 
-| Garden | Focus | Insights |
+| World | Fullscreen Focus | Desk |
 | --- | --- | --- |
-| <img src="docs/screenshots/garden_light.png" width="240" alt="A garden of flowers, bonsai, cacti and ferns with a daily score"> | <img src="docs/screenshots/focus_light.png" width="240" alt="Focus duration and tag choices with a plant-a-seed action"> | <img src="docs/screenshots/insights_light.png" width="240" alt="Local weekly screen-time and health-score charts"> |
+| <img src="docs/screenshots/world_light.png" width="240" alt="An explorable meadow with every saved planting"> | <img src="docs/screenshots/world_focus_light.png" width="240" alt="Your world fullscreen with a small focus timer"> | <img src="docs/screenshots/desk_dark.png" width="240" alt="A dim dark meadow with an optional shifting clock"> |
 
 These are emulator screenshots with **fake debug-only demo data**. No personal
 phone data appears in the [full screenshot gallery](docs/GALLERY.md).
 
 ## What you can do
 
-- Grow a small garden with smooth, explainable daily scores and recoverable plants.
-- Start tagged focus sessions with a persistent timer, stop notification and gentle rewards.
+- Grow a lasting world, pan and zoom through older plants, and use the full plant list.
+- Focus fullscreen in your own world with a persistent timer and gentle rewards.
+- Enable a dim Desk view with a shifting clock, reduced motion and low-power controls.
 - Set screen-time, pickup and app goals; choose quiet hours and optional reminders.
 - See day/week/month charts, local reflections, streaks, compassion days and badges.
 - Choose light, dark or AMOLED themes, curated accents, seasons and low-power visuals.
@@ -41,7 +42,7 @@ are saved. See [how optional blocking works](docs/FOCUS_BLOCKING.md).
 ## Install
 
 Distribution is through [GitHub Releases](https://github.com/34rns/ScreenGarden/releases)
-only. [Download the signed v0.1.0 APK](https://github.com/34rns/ScreenGarden/releases/download/v0.1.0/ScreenGarden-v0.1.0.apk),
+only. [Get the latest signed APK](https://github.com/34rns/ScreenGarden/releases/latest),
 open it on Android, and allow installation from the app you used to download it. Turn that
 installation permission off afterward if you prefer.
 
@@ -91,10 +92,12 @@ focus, habits and summaries. Android adapters sit behind interfaces. Manual
 Day boundaries come from one `LocalDay` helper, with UTC epoch timestamps and DST
 tests. Room schemas v1–v7 are immutable; every upgrade needs a migration and test.
 Built-in [plant packs](docs/PLANT_PACKS.md) contain original, validated offline art.
+One deterministic world renderer serves World, Focus, Desk, widgets, wallpaper and
+snapshots. See the [World, Focus and Desk guide](docs/WORLD.md).
 
 ## Verification and limits
 
-The quality pass has **362 passing JVM tests and 20 passing Android 15 integration
+The quality pass has **384 passing JVM tests and 20 passing Android 15 integration
 tests**, zero lint errors and six documented warnings. Fake-data layouts were
 reviewed in light/dark/AMOLED, Spanish, RTL, small-phone, tablet and landscape modes,
 including larger text. See the [quality report](docs/QUALITY.md).
@@ -130,6 +133,7 @@ downloads are free. There is no F-Droid or Google Play release plan.
 ## Roadmap and contributing
 
 P01–P33 are complete, including the signed GitHub release and screenshot site.
+P35 adds the shared world, fullscreen Focus and Desk views; see the [changelog](CHANGELOG.md).
 Next improvements focus on device verification,
 translation review and accessibility feedback. See [the prompt roadmap](docs/PROMPTS.md)
 and [contribution guide](CONTRIBUTING.md), including small starter tasks.

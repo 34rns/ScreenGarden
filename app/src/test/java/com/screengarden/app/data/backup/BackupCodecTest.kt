@@ -16,7 +16,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class BackupCodecTest {
     private fun empty(): JSONObject = JSONObject()
-        .put("format", "ScreenGarden").put("schemaVersion", 2).put("createdAtUtcMillis", 1000L)
+        .put("format", "ScreenGarden").put("schemaVersion", 3).put("createdAtUtcMillis", 1000L)
         .put("settings", BackupPreferences.defaults())
         .put("tables", JSONObject().apply { BackupSchema.tables.keys.forEach { put(it, JSONArray()) } })
 
@@ -24,12 +24,14 @@ class BackupCodecTest {
     fun emptyBackupRoundTripsEveryTableAndSetting() {
         val parsed = BackupCodec.decode(empty().toString().toByteArray())
         assertEquals(7, parsed.tables.size)
-        assertEquals(15, parsed.settings.length())
+        assertEquals(17, parsed.settings.length())
         assertEquals(1000L, parsed.createdAtUtcMillis)
     }
 
     @Test fun originalV1BackupsUpgradeToDisabledPolicyWithoutChangingExistingSettings() {
         val old = empty().put("schemaVersion", 1)
+        old.getJSONObject("settings").remove("desk_mode_enabled")
+        old.getJSONObject("settings").remove("desk_clock")
         old.getJSONObject("settings").remove(FocusBlockPreferences.KEY_NAME)
         old.getJSONObject("settings").put("daily_goal_ms", 42L)
         val parsed = BackupCodec.decode(old.toString().toByteArray())
@@ -38,8 +40,19 @@ class BackupCodecTest {
             FocusBlockPolicy(),
             FocusBlockCodec.decode(parsed.settings.getString(FocusBlockPreferences.KEY_NAME))
         )
-        assertEquals(2, JSONObject(String(parsed.encode())).getInt("schemaVersion"))
+        assertEquals(3, JSONObject(String(parsed.encode())).getInt("schemaVersion"))
         BackupCodec.decode(parsed.encode())
+    }
+
+    @Test fun v2BackupsDefaultDeskOffAndKeepEveryPriorPreference() {
+        val old = empty().put("schemaVersion", 2)
+        old.getJSONObject("settings").remove("desk_mode_enabled")
+        old.getJSONObject("settings").remove("desk_clock")
+        old.getJSONObject("settings").put("daily_goal_ms", 42L)
+        val parsed = BackupCodec.decode(old.toString().toByteArray())
+        assertEquals(false, parsed.settings.getBoolean("desk_mode_enabled"))
+        assertEquals(true, parsed.settings.getBoolean("desk_clock"))
+        assertEquals(42L, parsed.settings.getLong("daily_goal_ms"))
     }
 
     @Test
@@ -48,7 +61,7 @@ class BackupCodecTest {
             "broken",
             "{}",
             empty().put("schemaVersion", 0).toString(),
-            empty().put("schemaVersion", 3).toString(),
+            empty().put("schemaVersion", 4).toString(),
             empty().toString() + "{}"
         )) {
             assertThrows(IllegalArgumentException::class.java) { BackupCodec.decode(text.toByteArray()) }

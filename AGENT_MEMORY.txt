@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 54 / P35 shared world extraction)
+Last updated: 2026-11-08 (Session 57 / P35 final visual checks and signed release readiness)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -126,7 +126,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         362 JVM tests; 11 migration cases green on API 35 (P26)
+  Tests         384 JVM tests; 20 native API35 integration cases, including migrations.
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -323,6 +323,15 @@ SECTION 4 - FOLDER LAYOUT
     main/res/values-es/{strings,strings_features}.xml; res/xml/locale_config.xml
     debug/res/values-es/strings.xml; test/ui/LocalizationTest.kt
     docs/screenshots/language_*.png and intro_*.png (fake-only emulator data)
+
+  P35 additions (shared world):
+    domain/world/WorldState, WorldCamera, RenderMode, FocusWorld, WorldMotion.kt
+    ui/world/WorldRenderer, WorldScene, WorldAmbientScreen, WorldStateMapper.kt
+    WorldWindow.kt (dialog brightness/bars/keep-on and charging adapter)
+    ui/theme/Shape.kt; values + values-es/strings_world.xml
+    WorldStateTest/WorldMotionTest/FocusWorldTest, WorldSceneTest/WorldWindowTest
+    docs/P35_WORLD.md, WORLD.md, releases/v1.1.0.md and root CHANGELOG.md
+    docs/screenshots/world_*.png, desk_*.png (twenty fresh fake-only mode views)
 
   P24 additions (snapshot export):
     app/src/main/java/com/screengarden/app/SnapshotDocumentAction.kt
@@ -1246,6 +1255,14 @@ SECTION 6 - DECISIONS
       permission: local window brightness/keep-on and charging broadcast only.
       Fullscreen Focus preview never commits rewards; existing terminal transaction owns them.
       Optional DreamService omitted; manual opt-in Desk with a charging offer is sufficient.
+      P35 replaces the five-plant lifetime cap with one seed per good completed day;
+      viewport culling and per-mode draw caps bound graphics, never delete older plants.
+      Square-spiral positions use saved chronological planting order. Importing earlier
+      plants can shift later positions; no customization or new Room version is claimed.
+      Backup JSON v3 adds Desk settings; v1/v2 imports explicitly default Desk off/clock on.
+      Scene frames update Canvas only: World <=30 fps, Focus <=15, Desk <=12; still
+      modes start no frame loop. Hidden/reduced-motion/low-power views stop idle frames.
+      Desk's slow 30-second shift continues with motion disabled; it is not a burn-in guarantee.
 
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
@@ -1711,8 +1728,8 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 362 JVM tests, zero failures/errors/skips.
-  Final four gates PASS; 362 JVM tests, zero failures/errors/skips; lint zero errors/six accepted warnings. P31 full API35 integration suite has 20 passing tests. Fake-only screenshots reviewed. Offline manifest, unchanged schemas, secret and whitespace checks PASS.
+  Current test state: 384 JVM tests, zero failures/errors/skips.
+  P35 final four gates PASS; 384 JVM tests, zero failures/errors/skips; lint zero errors/six accepted warnings. P31 full API35 integration suite has 20 passing tests. Fake-only screenshots reviewed. Offline manifest, unchanged schemas, secret and whitespace checks PASS.
   Signed GitHub release v0.1.0 and screenshot Pages site are published (P33).
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
@@ -1754,20 +1771,17 @@ SECTION 10 - KNOWN ISSUES
 
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P33 remain complete; v0.1.0 and https://34rns.github.io/ScreenGarden/ are public.
-  P35 active. Audit and pre-overhaul fake emulator baselines saved under .tools/p35-before/.
-  Pure world/camera/mode models and shared renderer now connected to legacy Garden art,
-  widget, snapshot and wallpaper adapter. Extraction verification complete: 369 JVM tests, all four gates PASS;
-  five before/after fake-emulator app frames identical (Android status icons excluded).
-  No new permission/dependency or Room schema. Existing private update key preserved.
+  P35 implementation complete locally: shared World, fullscreen Focus, Desk, backup v3 and new tokens. All four gates PASS, 384 JVM tests; saved API35 integration 20 PASS. Twenty fake-only images inspected; fullscreen cutout, clock contrast and English RTL clock defects corrected. Native mode/pause/pixel-shift and four-width browser checks PASS. Signed final R8 build/lint and production update smoke PASS; main CI, signed preflight/tag and public verification pending. No new permission/dependency/Room schema; existing update key preserved.
+
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Continue docs/P35_WORLD.md: complete extraction gates/pixel comparison and commit,
-  then interactive World/new appearance/fullscreen Focus/Desk and v1.1.0 verification.
-  Preserve all schema 1-7 artifacts. Positions derive from persisted planting order;
-  a future stored-position change would require v8, not rewriting the already shipped v2.
---------------------------------------------------------------------------------
+  Finish current final gates, then API35 integration, native frame/pause checks and
+  all twenty P35 fake-only screenshots. Inspect every image and finish docs/site checks,
+  commit/push/main CI, signed preflight and immutable v1.1.0 release protocol.
+  Keep schema 1-7 and the update key unchanged. Positions use saved planting order;
+  future stored positions need v8, not replacement of published v2.
+
 SECTION 13 - SESSION LOG
 --------------------------------------------------------------------------------
   SESSION 1 - 2026-11-02 - Task 0.1 + 0.2 (project skeleton + nav shell)
@@ -3023,6 +3037,68 @@ SECTION 13 - SESSION LOG
               OLED lifetime, OEM support and physical-device performance remain unverified.
     Next      Finish extraction verification/commit, then remaining docs/P35_WORLD.md steps.
 
+  SESSION 55 - 2026-11-08 - P35 resumed integration (active)
+    Did       Resumed all uncommitted integration files rather than repeat extraction.
+              Read complete memory, checked twenty commits/fetched origin; extraction
+              74b8b1b and CI 42479248900 SUCCESS. Added real UI/window/settings regressions.
+    Decided   Deterministic saved-order positions need no schema; existing v2 cannot be
+              rewritten. Combine already integrated plan steps 2-4 in one reviewable
+              feature checkpoint, then independent release verification. No new library,
+              permission, external font or asset. Manual Desk remains available unplugged.
+    Verified  Saved predecessor integration four gates completed with all exit codes 0.
+              RTL regression reproduced mirrored tap targets; absoluteOffset fixes their
+              alignment. Window regression reproduced un-restored system-bar behavior;
+              adapter now restores it. Focus exit assertions pass before explicit stop;
+              test selects the dialog stop action separately from the underlying screen.
+              New Desk defaults/reopen persistence test PASS. Final focused rerun pending.
+    Found     Both new world string files had Windows-1252 bytes under a UTF-8 XML
+              declaration. Converted the actual resource text to UTF-8, preserving wording.
+    Not ver.  Final gates, native modes/performance checks, twenty fresh images, final
+              review, main CI and v1.1.0 release pending. Real battery use, heat, OLED
+              lifetime and physical/OEM behavior remain unverified; no physical captures.
+    Next      Finish P35 via docs/P35_WORLD.md and docs/RELEASING.md; preserve private key.
+
+  SESSION 56 - 2026-11-08 - P35 final resumed verification (active)
+    Did       Read current checkpoint/memory, checked Git history/fetched origin with
+              no divergence; kept all integrated work and completed the saved signing
+              and native checks. Previous independent review had no major findings;
+              its sway/dock/cap-comment findings are fixed with regression coverage.
+    Found     Native mode helper first hit Android's immersive tutorial, then matched
+              the wrong brightness dump label; dismissed the tutorial and checked the
+              actual sbrt=0.06 and KEEP_SCREEN_ON. App overrides were already correct.
+              Frame sampling found intermittent animator cache lag: a test with a stale
+              cache fails on old code. Read the current public system animation setting
+              in the observer. Image review found roots above the meadow; shared field
+              culling now places visible roots below the horizon, with a failing-first test.
+    Verified  Saved exact-source four gates PASS (381 JVM cases); saved native integration
+              20 PASS. Native World camera/list and Focus Back/keep-on PASS; Desk dimming
+              and pause window restoration PASS. Initial signed R8 build/lint PASS.
+              No secrets/private-file candidates found; immutable key remains untouched.
+    Not ver.  Post-fix final gates, native rerun/frame sampling, twenty final captures,
+              main CI/preflight/tag/public APK/site checks pending. Software-rendered
+              emulator frame delays were high; no low-end or real battery savings claim.
+              Physical power/heat/OLED lifetime/OEM behavior and portable key backup
+              remain unverified. No real-device screenshot or data was used.
+    Found     Final image review found a dark clock under the light app theme and a
+              dialog strip reserved for the emulator's cutout. Clock uses the night
+              onBackground token; the fullscreen window permits SDK-appropriate cutouts
+              and restores the original attributes. Cutout regression failed first;
+              all 383 tests now pass. Lint rejected an untyped saved cutout integer;
+              a copied attributes snapshot preserves its annotated type. Shipping
+              four gates PASS, lint zero errors/six unchanged warnings. Capture helper
+              now taps the labelled Switch instead of its non-clickable text.
+    Next      Finish verification and docs, then v1.1.0 per docs/RELEASING.md.
+
+  SESSION 57 - 2026-11-08 - P35 final visual checks and signed release readiness
+    Did       Resumed checkpoint, read full memory, fetched Git with no divergence, retained integrated work, refreshed and inspected twenty emulator demo images, corrected Settings framing and English Desk clock RTL order with a failing-first Compose test. Updated guides, quality report, gallery, licenses, changelog and website images.
+    Decided   Retain D92 and derived positions, no new schema or permission. English clock content direction follows its text under RTL; Desk stays mostly black in every app theme. Pixel shifting cannot guarantee prevention of burn-in.
+    Verified  All four final gates PASS; 384 JVM tests, zero failures/errors/skips; lint zero errors/six accepted warnings. Saved exact-source native integration 20 PASS; fresh camera/list, cutouts/Back/screen-on, Desk dimming/pause cleanup and reduced-motion pixel shift PASS. Frame samples 227/132/108 per ten seconds (World/Focus/Desk), zero reduced/hidden frames over three seconds. Browser widths 1440/768/390/320 PASS. Secret/privacy/schema/whitespace and site image guards PASS. Final signed R8 build/lint PASS.
+    Not ver.  GitHub publication checks pending. Software emulator timings do not establish low-end smoothness or battery savings. Physical power/heat/OLED wear/OEM reliability, actual reboot/process death, full current API26 UI, TalkBack listening, fluent Spanish review and portable private-key backup remain unverified.
+    Next      Commit/push P35, verify main CI/Pages, dispatch signed main preflight, create immutable v1.1.0 only after green checks, verify public APK certificate/hash/emulator update and final site links. Keep schemas 1-7 and the private update key unchanged.
+
+    Verified  Final signed APK signature/16KiB alignment PASS; certificate matches v0.1.0. Production update smoke verifies Focus start/fullscreen/exit/Home/stop/restart, Insights/Settings, Desk start/dimming/pause/exit without crash.
+    Found     Smoke helper expected Start Desk mode below the fold; actual switch was enabled. Added explicit scroll and reran successfully; no app code or check was weakened.
+
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
   No open questions. All four were answered in P00; the decisions live in
@@ -3218,9 +3294,10 @@ SECTION 16 - CORE DESIGN
         full-health plant to 58, not permanent loss; the floor is always 10.
       - Unknown score: no score/streak growth and no health penalty. Known
         focus completions still grow and heal. Negative counts give no rewards.
-      - One new fern seed after a score >= 60, only while there are fewer than
-        FIVE plants. Never delete an existing plant, even if an imported garden
-        exceeds the configured cap. The new seed receives no previous rewards
+      - One new seed after a score >= 60. P09 initially capped the collection at
+        FIVE; P35 retains all plants and caps visible drawing instead. Caller-supplied
+        GardenRules may still impose a cap. Never delete an existing plant, even if
+        an imported world exceeds that cap. The new seed receives no previous rewards
         or completed-focus timestamp.
 
     advance() returns immutable plants plus planted/bloomed/wilted/recovered
@@ -3276,7 +3353,8 @@ SECTION 16 - CORE DESIGN
     season with SPRING/SUMMER/AUTUMN/WINTER. Default fern, focus-5 flower,
     streak-3 bonsai and summer cactus. New good-day seeds rotate among eligible
     packs; prior plants stay and keep their art after season/streak changes.
-    Focus-created first seed stays fern. Five-plant cap/growth/health rules stay.
+    Focus-created first seed stays fern. P35 removes the default five-plant lifetime
+    cap; growth/health and once-only reward rules stay.
     No schema/preference change. Shared cached renderer and safe vector fallback.
     Bounds, contributor example and validator are in docs/PLANT_PACKS.md.
     Optional user-imported packs are not implemented; no misleading import UI.

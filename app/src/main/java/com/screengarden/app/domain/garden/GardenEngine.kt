@@ -15,8 +15,8 @@ import kotlin.math.roundToInt
  */
 object GardenTuning {
 
-    /** Most plants a garden can hold. The cap is P09's decision (16.2). */
-    const val MAX_PLANTS: Int = 5
+    /** Lifetime plant ledger; P35 caps only visible rendering, never removes older plantings. */
+    const val MAX_PLANTS: Int = Int.MAX_VALUE
 
     /** Ceiling on growth per day, however good the day was. */
     const val MAX_GROWTH_PER_DAY: Int = 10
@@ -154,9 +154,9 @@ data class GardenOutcome(
  *    lost" guarantee: no number of poor days can take a plant away, and one good
  *    day starts the climb back. Wilting takes about seven poor days from full
  *    health, which is "gradual over several days" rather than a cliff.
- *  - A day at or above 60 plants one new seed when there is room under the cap of
- *    five. At most one plant is added per advance, so a run of good days fills the
- *    garden one day at a time.
+ *  - A day at or above 60 plants one new seed under the caller's optional cap.
+ *    The default world retains all plants and grows one planting at a time;
+ *    graphics caps are independent of this permanent ledger.
  *  - An unknown score gives no score or streak growth and costs no health; focus
  *    still grows and heals, because completions are known even without usage data.
  *

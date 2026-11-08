@@ -2,7 +2,6 @@
 
 package com.screengarden.app.ui.screens.focus
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,10 +57,9 @@ import com.screengarden.app.R
 import com.screengarden.app.domain.focus.FocusStatus
 import com.screengarden.app.domain.focus.FocusTag
 import com.screengarden.app.domain.garden.Plant
-import com.screengarden.app.ui.screens.garden.LocalPlantRenderer
-import com.screengarden.app.ui.screens.garden.PlantPalette
-import com.screengarden.app.ui.screens.garden.PlantVisuals
+import com.screengarden.app.domain.world.focusPreview
 import com.screengarden.app.ui.theme.ScreenGardenTheme
+import com.screengarden.app.ui.world.toWorldState
 
 /** Focus setup, countdown and results; service work stays outside the screen. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -73,7 +71,8 @@ fun FocusScreen(
     onKeepScreenOn: (Boolean) -> Unit,
     onDismissResult: () -> Unit,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    world: com.screengarden.app.ui.screens.garden.GardenUiState? = null
 ) {
     var minutes by rememberSaveable { mutableIntStateOf(25) }
     var custom by rememberSaveable { mutableStateOf(false) }
@@ -82,6 +81,26 @@ fun FocusScreen(
     val configured = if (custom) customText.toIntOrNull() else minutes
     val active = state.active
     val result = state.result
+    var worldOpen by rememberSaveable(active?.id) { mutableStateOf(active != null) }
+    if (worldOpen && active != null && world != null) {
+        val seconds = (active.remainingDurationMs + 999) / 1000
+        com.screengarden.app.ui.world.WorldAmbientScreen(
+            world.toWorldState().focusPreview(active),
+            com.screengarden.app.domain.world.RenderMode.FOCUS,
+            onExit = {
+                worldOpen = false
+            },
+            timer = stringResource(R.string.focus_countdown, seconds / 60, seconds % 60),
+            onStopFocus = if (state.pending) {
+                null
+            } else {
+                {
+                    onStop()
+                    worldOpen = false
+                }
+            }
+        )
+    }
     val view = LocalView.current
     DisposableEffect(view, state.keepScreenOn, active != null) {
         view.keepScreenOn = state.keepScreenOn && active != null
@@ -108,6 +127,11 @@ fun FocusScreen(
                 when {
                     active != null -> {
                         val progress = (active.actualDurationMs.toFloat() / active.plannedDurationMs).coerceIn(0f, 1f)
+                        if (world != null) {
+                            TextButton({ worldOpen = true }, Modifier.fillMaxWidth()) {
+                                FocusText(stringResource(R.string.world_enter_focus))
+                            }
+                        }
                         FocusSeed(progress)
                         val seconds = (active.remainingDurationMs + 999) / 1000
                         FocusText(
@@ -270,25 +294,11 @@ fun FocusScreen(
 
 @Composable
 private fun FocusSeed(progress: Float) {
-    val colors = MaterialTheme.colorScheme
-    val renderer = LocalPlantRenderer.current
-    val palette = PlantPalette(
-        colors.primary,
-        colors.outline,
-        colors.secondary,
-        colors.tertiary,
-        colors.tertiaryContainer,
-        colors.onSecondaryContainer
-    )
     val description = stringResource(R.string.focus_seed_description)
-    Canvas(modifier = Modifier.size(160.dp).semantics { contentDescription = description }) {
-        renderer.draw(
-            this,
-            Plant("focus-visual", "flower", growthPoints = (progress * 45).toInt()),
-            palette,
-            PlantVisuals(progress, ((progress - 0.5f) * 2).coerceIn(0f, 1f), 0f)
-        )
-    }
+    com.screengarden.app.ui.screens.garden.GardenPlantArt(
+        Plant("focus-visual", "flower", growthPoints = (progress * 45).toInt()),
+        Modifier.size(160.dp).semantics { contentDescription = description }
+    )
 }
 
 @Composable

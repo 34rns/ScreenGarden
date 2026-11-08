@@ -595,3 +595,8 @@ the corrected full AGENT_MEMORY.txt.
 - After every task, build and run the app before moving on. Paste any compiler errors back with Prompt R2.
 - Commit to Git after every finished prompt.
 - Always save the updated `AGENT_MEMORY.txt` before closing the chat.
+
+## Owner follow-up P35 — World visual overhaul
+
+The follow-up task and small-step verification ledger are in [P35_WORLD.md](P35_WORLD.md).
+Build the shared renderer, explorable World, fullscreen Focus and opt-in Desk, then ship v1.1.0 through GitHub only.

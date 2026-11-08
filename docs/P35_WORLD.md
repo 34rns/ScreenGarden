@@ -68,36 +68,36 @@ UI, bitmap, widget and wallpaper adapters. Existing repositories own all rewards
 
 ### 2. Persistent field and World interaction
 
-- [ ] Add `ui/world/WorldScene.kt`, bounded pan/pinch zoom, reset/zoom buttons and
+- [x] Add `ui/world/WorldScene.kt`, bounded pan/pinch zoom, reset/zoom buttons and
   screen-reader/keyboard alternatives. Preserve plant detail, score, empty/error,
   permission, bedtime and export flows; rename the tab to World.
-- [ ] Extend good-day planting beyond the old cap while preserving all old plants;
+- [x] Extend good-day planting beyond the old cap while preserving all old plants;
   test camera recovery, mapping after a new plant and a large visible field.
 - [ ] Run gates and emulator interactions/captures, checkpoint, commit/CI.
 
 ### 3. New shared appearance
 
-- [ ] Update Color/Type/Shape/environment tokens and original scene/vector art.
+- [x] Update Color/Type/Shape/environment tokens and original scene/vector art.
   Preserve curated accents, true-black AMOLED and large-text/RTL legibility.
 - [ ] Refresh affected captures and site originals; inspect each, gates, commit/CI.
 
 ### 4. Fullscreen Focus and Desk
 
-- [ ] Add `ui/world/WorldAmbientScreen.kt` and the single-Activity window adapter.
+- [x] Add `ui/world/WorldAmbientScreen.kt` and the single-Activity window adapter.
   Focus shows the owner's field, ephemeral growing plant, small timer, accessible
   exit/stop, screen-on flag and system back. Keep soft-fail/service rules unchanged.
-- [ ] Add validated local Desk enabled/clock settings and backup compatibility;
+- [x] Add validated local Desk enabled/clock settings and backup compatibility;
   dim and restore window brightness/system bars/flags on exit/pause, stop frame
   work when hidden, cap Desk at 12 fps, preserve shifting with reduced motion.
-- [ ] Test charging offer opt-in, unplug behavior, lifecycle/window restoration,
+- [x] Test charging offer opt-in, unplug behavior, lifecycle/window restoration,
   focus exit without cancellation, mode limits and settings round-trip.
 - [ ] Gates, emulator checks/captures, checkpoint, commit/CI.
 
 ### 5. Verify and ship
 
-- [ ] Fresh World/Focus/Desk/Settings light/dark/AMOLED/1.3×/RTL emulator captures,
+- [x] Fresh World/Focus/Desk/Settings light/dark/AMOLED/1.3×/RTL emulator captures,
   visual inspection and fixes. Native integration, migration and release smoke.
-- [ ] Measure emulator frame work/pause behavior; explicitly leave real-device
+- [x] Measure emulator frame work/pause behavior; explicitly leave real-device
   battery consumption, thermal/OLED lifetime and OEM behavior unverified.
 - [ ] Update README, user guides, gallery, site, changelog and memory. Set version
   name 1.1.0 and increase versionCode. Keep private signing key untouched.
@@ -118,3 +118,23 @@ Extraction complete: all four gates PASS, 369 JVM tests; five legacy before/afte
 app frames identical below the Android status bar. Scene and snapshot inspected.
 Local evidence: .tools/p35-{before,after}/ and p35-extract-{gates,captures}.log.
 World/Focus/Desk integration and v1.1.0 are next.
+
+Resume ledger (Session 55): extraction 74b8b1b / CI 42479248900 SUCCESS.
+Ruling: combine already integrated steps 2-4 in one feature checkpoint; they share
+the scene/window/settings interface and separating them would require dismantling
+working inherited changes. Keep release verification as a separate checkpoint.
+RTL tap-target regression reproduced and fixed with absolute camera coordinates;
+window pause regression reproduced un-restored bar behavior, now restored.
+Normalized new English/Spanish world XML from Windows-1252 to declared UTF-8.
+Targeted checks/review running; native modes and twenty captures still pending.
+
+Final verification (Session 57): 384 JVM tests pass, including the failing-first
+English Desk clock RTL regression; all four gates pass with six existing lint
+warnings and no errors. The full saved native suite has 20 passing integration
+cases. Fresh mode checks verify camera/list, fullscreen cutouts/Back/screen-on,
+Desk brightness/pause cleanup and pixel shifting with decorative motion disabled.
+Ten-second samples recorded 227 World, 132 Focus and 108 Desk frames; reduced and
+hidden three-second samples recorded zero. All twenty emulator originals were
+inspected; Settings framing and the RTL clock were corrected. Website layout,
+images, themes, FAQ, keyboard and reduced motion pass at four browser widths.
+Signed final smoke/main CI/preflight/tag and public download checks are pending.

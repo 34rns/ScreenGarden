@@ -11,12 +11,11 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.unit.dp
 import com.screengarden.app.domain.garden.GardenLight
-import com.screengarden.app.domain.garden.PlantCondition
-import com.screengarden.app.domain.garden.PlantStage
 import com.screengarden.app.domain.world.RenderMode
 import com.screengarden.app.domain.world.WorldPlant
 import com.screengarden.app.domain.world.WorldSpace
 import com.screengarden.app.domain.world.WorldState
+import com.screengarden.app.domain.world.motion
 import com.screengarden.app.ui.screens.garden.PlantPalette
 import com.screengarden.app.ui.screens.garden.PlantRenderer
 import com.screengarden.app.ui.screens.garden.PlantVisuals
@@ -36,8 +35,12 @@ internal fun DrawScope.drawWorld(
 ) {
     val sceneColors = gardenEnvironmentColors(state.environment, colors)
     if (state.backdrop) {
-        drawWorldBackdrop(sceneColors, colors, state.environment.light)
-        if (mode.policy.maxParticles > 0) {
+        if (state.space == WorldSpace.FIELD) {
+            drawMeadow(state, mode, sceneColors, colors)
+        } else {
+            drawWorldBackdrop(sceneColors, colors, state.environment.light)
+        }
+        if (mode.policy.maxParticles > 0 && mode != RenderMode.DESK) {
             val motes = if (state.streakDays > 0 && state.environment.light != GardenLight.NIGHT) 6 else 0
             drawGardenWeather(
                 state.environment.weather,
@@ -47,7 +50,11 @@ internal fun DrawScope.drawWorld(
                 (mode.policy.maxParticles - motes).coerceIn(0, 12)
             )
         }
-        if (state.streakDays > 0 && !state.lowPowerVisuals && state.environment.light != GardenLight.NIGHT) {
+        if (mode != RenderMode.DESK &&
+            state.streakDays > 0 &&
+            !state.lowPowerVisuals &&
+            state.environment.light != GardenLight.NIGHT
+        ) {
             repeat(6.coerceAtMost(mode.policy.maxParticles)) { index ->
                 val x = size.width * ((index * 0.17f + state.phase * 0.08f) % 1f)
                 val y = size.height * (0.15f + index * 0.07f) +
@@ -62,30 +69,59 @@ internal fun DrawScope.drawWorld(
             }
         }
     }
-    val palette = plantPalette ?: PlantPalette(
-        colors.primary,
-        colors.secondary,
-        colors.secondary,
-        colors.tertiary,
-        colors.onTertiary,
-        colors.onSecondaryContainer
-    )
-    state.plants.take(mode.policy.maxPlants).forEach { placed ->
+    val palette = plantPalette ?: if (mode == RenderMode.DESK) {
+        PlantPalette(
+            com.screengarden.app.ui.theme.DeskFoliage,
+            com.screengarden.app.ui.theme.DeskFoliage,
+            com.screengarden.app.ui.theme.DeskFoliage,
+            com.screengarden.app.ui.theme.DeskBloom,
+            com.screengarden.app.ui.theme.DeskFoliage,
+            com.screengarden.app.ui.theme.DeskFoliage
+        )
+    } else {
+        PlantPalette(
+            colors.primary,
+            colors.secondary,
+            colors.secondary,
+            colors.tertiary,
+            colors.onTertiary,
+            colors.onSecondaryContainer
+        )
+    }
+    visibleWorldPlants(state, mode, size.width, size.height).forEach { placed ->
         val rect = worldPlantRect(placed, state, size.width, size.height)
-        if (rect[2] <= 0 ||
-            rect[3] <= 0 ||
-            rect[0] + rect[2] < 0 ||
-            rect[1] + rect[3] < 0 ||
-            rect[0] > size.width ||
-            rect[1] > size.height
-        ) {
-            return@forEach
-        }
         inset(rect[0], rect[1], size.width - rect[0] - rect[2], size.height - rect[1] - rect[3]) {
-            renderer.draw(this, placed.plant, palette, plantVisuals(placed))
+            val sway = if (state.animationsEnabled) {
+                sin(
+                    (
+                        state.phase +
+                            Math.floorMod(placed.plant.id.hashCode(), 100) / 100f
+                        ) * (2 * PI).toFloat()
+                ) * 1.5f
+            } else {
+                placed.swayDegrees
+            }
+            renderer.draw(this, placed.plant, palette, plantVisuals(placed.copy(swayDegrees = sway)))
         }
     }
 }
+
+/** Cull before the rendering cap, so distant older and imported plants remain reachable. */
+internal fun visibleWorldPlants(state: WorldState, mode: RenderMode, width: Float, height: Float): List<WorldPlant> =
+    state.plants.asSequence().filter {
+        val r = worldPlantRect(it, state, width, height)
+        r.all { value -> value.isFinite() } &&
+            r[2] > 0 &&
+            r[3] > 0 &&
+            r[0] + r[2] >= 0 &&
+            r[1] + r[3] >= 0 &&
+            r[0] <= width &&
+            r[1] <= height &&
+            // Field plants are rooted in the foreground, never floating above the distant hills.
+            (state.space != WorldSpace.FIELD || r[1] + r[3] >= height * 0.49f) &&
+            // Keep Android's wallpaper dock area clear, including large collections.
+            (mode != RenderMode.WALLPAPER || r[1] + r[3] <= height * 0.8f)
+    }.take(mode.policy.maxPlants).toList().sortedWith(compareBy<WorldPlant> { it.y }.thenBy { it.x })
 
 /** Geometry only; callers can also position accessible tap targets with these same bounds. */
 internal fun worldPlantRect(placed: WorldPlant, state: WorldState, width: Float, height: Float): FloatArray {
@@ -103,20 +139,8 @@ internal fun worldPlantRect(placed: WorldPlant, state: WorldState, width: Float,
 
 /** Shared stage/health mapping; animation overrides are drawing inputs, never stored growth. */
 internal fun plantVisuals(placed: WorldPlant): PlantVisuals {
-    val plant = placed.plant
-    val growth = placed.growth ?: when (plant.stage) {
-        PlantStage.SEED -> 0f
-        PlantStage.SPROUT -> 0.5f
-        PlantStage.BUD -> 0.78f
-        PlantStage.BLOOM -> 1f
-    }
-    return PlantVisuals(
-        growth,
-        placed.bloom ?: if (plant.stage == PlantStage.BLOOM) 1f else 0f,
-        placed.wilt
-            ?: if (plant.condition == PlantCondition.GROWING) 0f else ((60 - plant.health) / 50f).coerceIn(0f, 1f),
-        placed.swayDegrees
-    )
+    val motion = placed.motion()
+    return PlantVisuals(motion.growth, motion.bloom, motion.wilt, placed.swayDegrees)
 }
 
 private fun DrawScope.drawWorldBackdrop(sceneColors: GardenEnvironmentColors, colors: ColorScheme, light: GardenLight) {
@@ -145,5 +169,55 @@ private fun DrawScope.drawWorldBackdrop(sceneColors: GardenEnvironmentColors, co
         val moon = Offset(size.width * 0.84f, size.height * 0.11f)
         drawCircle(colors.onTertiaryContainer, 12.dp.toPx(), moon)
         drawCircle(sceneColors.sky, 11.dp.toPx(), moon + Offset(5.dp.toPx(), -3.dp.toPx()))
+    }
+}
+
+/** Original layered meadow; details are deterministic and never request an art/weather service. */
+private fun DrawScope.drawMeadow(
+    state: WorldState,
+    mode: RenderMode,
+    scene: GardenEnvironmentColors,
+    colors: ColorScheme
+) {
+    val desk = mode == RenderMode.DESK
+    val sky = if (desk) com.screengarden.app.ui.theme.DeskSky else scene.sky
+    val ground = if (desk) com.screengarden.app.ui.theme.DeskGround else scene.ground
+    drawRect(Brush.verticalGradient(listOf(sky, if (desk) sky else scene.horizon)))
+    fun hill(top: Float, bend: Float, ink: androidx.compose.ui.graphics.Color) {
+        val path = Path().apply {
+            moveTo(0f, size.height * top)
+            cubicTo(
+                size.width * 0.25f,
+                size.height * (top - bend),
+                size.width * 0.75f,
+                size.height * (top + bend),
+                size.width,
+                size.height * (top - 0.04f)
+            )
+            lineTo(size.width, size.height)
+            lineTo(0f, size.height)
+            close()
+        }
+        drawPath(path, ink)
+    }
+    hill(0.35f, 0.16f, androidx.compose.ui.graphics.lerp(sky, ground, 0.55f))
+    hill(0.43f, -0.08f, androidx.compose.ui.graphics.lerp(sky, ground, 0.8f))
+    hill(0.49f, 0.09f, ground)
+    // Small grove beyond the cultivated field; no texture or bitmap allocations.
+    repeat(if (desk) 4 else 9) { index ->
+        val x = size.width * (index * 0.12f + 0.02f)
+        val y = size.height * (0.38f + sin(index * 1.8f) * 0.025f)
+        val radius = size.width * (0.015f + (index % 3) * 0.004f)
+        val ink = if (desk) com.screengarden.app.ui.theme.DeskFoliage else colors.secondary.copy(alpha = 0.25f)
+        drawLine(ink, Offset(x, y), Offset(x, y + radius * 2), radius * 0.22f)
+        drawCircle(ink, radius, Offset(x, y - radius * 0.3f))
+        drawCircle(ink, radius * 0.7f, Offset(x + radius * 0.6f, y))
+    }
+    if (!desk && !state.lowPowerVisuals) {
+        repeat(24) { index ->
+            val x = size.width * ((index * 0.137f) % 1f)
+            val y = size.height * (0.58f + (index * 0.073f) % 0.38f)
+            drawOval(colors.primary.copy(alpha = 0.09f), Offset(x, y), Size(size.width * 0.025f, size.height * 0.006f))
+        }
     }
 }

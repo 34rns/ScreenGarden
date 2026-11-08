@@ -39,8 +39,11 @@ The internal recovery receipt is not part of an exported document.
 Wrong types, unknown/missing tables or columns, duplicate record keys, invalid settings, corrupt history
 payloads, negative or out-of-range counters and trailing content are rejected. Files are limited to
 **32 MiB** and **100,000 total records** to bound memory use. Larger exports report a failure, without
-deleting stored history. Versions outside 1–2 are rejected. The explicit v1-to-v2 upgrade is tested;
+deleting stored history. Versions outside 1–3 are rejected. The explicit v1/v2-to-v3 upgrades are tested;
 a future format must define and test its upgrades.
+
+Version 3 adds Desk mode and clock preferences. Older files default Desk mode off
+and the clock on. It changes the backup format only; Room remains schema v7.
 
 Cancelling either file picker changes nothing. If Android kills the process while the save picker is
 open, the unsaved export snapshot is lost and saving reports an error; make a new backup. A provider

@@ -43,6 +43,8 @@ internal object SettingsKeys {
     val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
     val COMPASSION_DAYS_PER_MONTH = intPreferencesKey("compassion_days_per_month")
     val HEMISPHERE = stringPreferencesKey("hemisphere")
+    val DESK_MODE_ENABLED = booleanPreferencesKey("desk_mode_enabled")
+    val DESK_CLOCK = booleanPreferencesKey("desk_clock")
     val LOW_POWER_VISUALS = booleanPreferencesKey("low_power_visuals")
 }
 
@@ -58,6 +60,17 @@ internal object SettingsKeys {
  * caller can persist a value the rest of the app cannot interpret.
  */
 class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>) : SettingsRepository {
+    override val deskModeEnabled: Flow<Boolean> = preferences { it[SettingsKeys.DESK_MODE_ENABLED] ?: false }
+    override val deskClock: Flow<Boolean> = preferences { it[SettingsKeys.DESK_CLOCK] ?: true }
+    override suspend fun setDeskModeEnabled(enabled: Boolean) {
+        dataStore.edit {
+            it[SettingsKeys.DESK_MODE_ENABLED] =
+                enabled
+        }
+    }
+    override suspend fun setDeskClock(enabled: Boolean) {
+        dataStore.edit { it[SettingsKeys.DESK_CLOCK] = enabled }
+    }
 
     override val dailyGoalMs: Flow<Long> =
         preferences { it[SettingsKeys.DAILY_GOAL_MS] ?: SettingsDefaults.DAILY_GOAL_MS }

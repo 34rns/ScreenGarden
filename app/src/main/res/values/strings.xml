@@ -3,7 +3,7 @@
     <string name="app_name">ScreenGarden</string>
 
     <!-- Bottom navigation -->
-    <string name="tab_garden">Garden</string>
+    <string name="tab_garden">World</string>
     <string name="tab_focus">Focus</string>
     <string name="tab_insights">Insights</string>
     <string name="tab_settings">Settings</string>

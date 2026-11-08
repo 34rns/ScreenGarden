@@ -19,7 +19,7 @@ internal data class BackupDocument(
     val tables: Map<String, List<JSONObject>>
 ) {
     fun preview(): BackupPreview = BackupPreview(createdAtUtcMillis, tables.mapValues { it.value.size })
-    fun encode(): ByteArray = JSONObject().put("format", "ScreenGarden").put("schemaVersion", 2)
+    fun encode(): ByteArray = JSONObject().put("format", "ScreenGarden").put("schemaVersion", 3)
         .put("createdAtUtcMillis", createdAtUtcMillis).put("settings", settings)
         .put("tables", JSONObject().apply { tables.forEach { (name, rows) -> put(name, JSONArray(rows)) } })
         .toString().toByteArray(Charsets.UTF_8)
@@ -47,12 +47,16 @@ internal object BackupCodec {
             )
         )
         require(root.get("format") == "ScreenGarden")
-        val version = integer(root.get("schemaVersion"), 1, 2)
+        val version = integer(root.get("schemaVersion"), 1, 3)
         val created = integer(root.get("createdAtUtcMillis"), 0, Long.MAX_VALUE)
         val settings = root.getJSONObject("settings")
         if (version == 1L) {
             require(!settings.has(FocusBlockPreferences.KEY_NAME))
             settings.put(FocusBlockPreferences.KEY_NAME, FocusBlockCodec.encode(FocusBlockPolicy()))
+        }
+        if (version < 3) {
+            require(!settings.has("desk_mode_enabled") && !settings.has("desk_clock"))
+            settings.put("desk_mode_enabled", false).put("desk_clock", true)
         }
         BackupPreferences.validate(settings)
         val source = root.getJSONObject("tables")

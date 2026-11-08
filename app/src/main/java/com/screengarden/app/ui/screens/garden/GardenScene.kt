@@ -6,35 +6,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
-import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDirection
-import androidx.compose.ui.unit.dp
-import com.screengarden.app.R
 import com.screengarden.app.domain.garden.GardenEnvironment
 import com.screengarden.app.domain.garden.GardenLight
 import com.screengarden.app.domain.garden.GardenWeather
@@ -43,8 +18,10 @@ import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.domain.garden.PlantStage
 import com.screengarden.app.domain.world.RenderMode
 import com.screengarden.app.domain.world.WorldPlant
+import com.screengarden.app.domain.world.WorldSpace
 import com.screengarden.app.domain.world.WorldState
-import com.screengarden.app.ui.theme.gardenEnvironmentColors
+import com.screengarden.app.domain.world.mapWorldPlants
+import com.screengarden.app.ui.world.WorldScene
 import com.screengarden.app.ui.world.drawWorld
 import kotlin.math.PI
 import kotlin.math.sin
@@ -60,7 +37,6 @@ fun GardenScene(
     environment: GardenEnvironment = GardenEnvironment(),
     lowPowerVisuals: Boolean = false
 ) {
-    val colors = MaterialTheme.colorScheme
     val scene = if (isBedtime) {
         environment.copy(
             light = GardenLight.NIGHT,
@@ -69,95 +45,17 @@ fun GardenScene(
     } else {
         environment
     }
-    val sceneColors = gardenEnvironmentColors(scene, colors)
-    val motionEnabled = rememberGardenMotionEnabled() && !isBedtime && !lowPowerVisuals
-    val phase = rememberGardenPhase(motionEnabled && plants.isNotEmpty())
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = sceneColors.sky
-    ) {
-        BoxWithConstraints {
-            val columns = if (maxWidth >= 340.dp) 3 else 2
-            Box {
-                Canvas(modifier = Modifier.matchParentSize()) {
-                    drawWorld(
-                        WorldState(
-                            environment = scene,
-                            phase = phase.value,
-                            streakDays = if (plants.isEmpty()) 0 else streakDays.coerceAtLeast(1),
-                            lowPowerVisuals = lowPowerVisuals
-                        ),
-                        RenderMode.INTERACTIVE,
-                        colors,
-                        VectorPlantRenderer
-                    )
-                }
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 184.dp)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    plants.chunked(columns).forEach { row ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            row.forEach { plant ->
-                                key(plant.id) {
-                                    PlantTarget(
-                                        plant = plant,
-                                        onClick = { onPlantSelected(plant) },
-                                        modifier = Modifier.weight(1f),
-                                        motionEnabled = motionEnabled,
-                                        phase = phase
-                                    )
-                                }
-                            }
-                            repeat(columns - row.size) { Box(modifier = Modifier.weight(1f)) }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PlantTarget(
-    plant: Plant,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    motionEnabled: Boolean,
-    phase: State<Float>
-) {
-    val name = stringResource(plantNameResource(plant.species))
-    val stage = stringResource(plantStageResource(plant.stage))
-    val condition = stringResource(plantConditionResource(plant.condition))
-    val description = stringResource(R.string.garden_plant_description, name, stage)
-    Surface(
-        onClick = onClick,
-        modifier = modifier
-            .heightIn(min = 144.dp)
-            .testTag("garden_plant_${plant.id}")
-            .semantics(mergeDescendants = true) {
-                contentDescription = description
-                stateDescription = condition
-                role = Role.Button
-            },
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0f),
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-    ) {
-        Column {
-            GardenPlantArt(plant, Modifier.fillMaxWidth().height(108.dp), motionEnabled, phase)
-            Text(
-                text = name,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp).clearAndSetSemantics { },
-                style = MaterialTheme.typography.labelLarge.copy(textDirection = TextDirection.Content),
-                textAlign = TextAlign.Center
-            )
-        }
-    }
+    WorldScene(
+        WorldState(
+            plants = mapWorldPlants(plants),
+            environment = scene,
+            streakDays = streakDays,
+            lowPowerVisuals = lowPowerVisuals || isBedtime,
+            space = WorldSpace.FIELD
+        ),
+        modifier,
+        onPlantSelected = onPlantSelected
+    )
 }
 
 @Composable
