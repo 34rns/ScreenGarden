@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 52 / P33 published release and final site links)
+Last updated: 2026-11-08 (Session 53 / P33 completed GitHub release and screenshot site)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -1300,15 +1300,15 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P29     done   Opt-in focus blocking [new]
   P30     done    Live wallpaper [new]
   P31     done    Quality pass: accessibility, perf, more screen sizes
-                  [0.4 DONE in P00b; 3.3 remains]
+                  [0.4, 3.3]
   P32     done    Docs + release assets [3.4 part]
-  P33     doing   Signed GitHub release published; final Pages announcement/checkpoint pending
+  P33     done    Signed v0.1.0 GitHub release and verified screenshot Pages site
 
   The old 0.4 (visual verification) is COMPLETE as of P00b for the current UI:
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P32 complete; P33 release published, final site links/CI pending.
+  Sequencing note: P00-P33 complete. Signed release and screenshot site are public.
   P04b repositories are complete, including BadgeRepository in P18.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
@@ -1742,12 +1742,12 @@ SECTION 10 - KNOWN ISSUES
 
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P33 implemented. Signed v0.1.0 release is public and verified; initial Pages deployment is live. Main CI 42474603886, Pages 42474603912, signed main preflight 42474604474 and tag release 42475358257 all SUCCESS on 5a5a323. Final README/site download links and screenshot release notes are prepared and locally verified; their commit/push and final deployment verification remain.
+  P00-P33 complete. Signed v0.1.0 is published: https://github.com/34rns/ScreenGarden/releases/tag/v0.1.0 . Screenshot site is live: https://34rns.github.io/ScreenGarden/ . Final announcement 6b69d33 CI 42476379987 and Pages 42476380041 SUCCESS. Signed main preflight 42474604474 and tag release 42475358257 SUCCESS on immutable 5a5a323. All required gates and public download/site checks pass. No unfinished feature work or blocking issue remains; practical device/testing limits below are explicit.
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Commit/push the final P33 release announcement, verify its CI/Pages, recheck live download links and browser layouts, and save the completed handoff. No feature prompt remains; preserve the existing signing key.
+  No planned prompt remains. Preserve the existing private update key; an owner-controlled portable encrypted backup and real-device/OEM accessibility/reliability checks are the next optional follow-ups. Future changes must increase versionCode, retain the signing key, and follow docs/RELEASING.md. Continue only with a new requested task.
 
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
@@ -2980,6 +2980,13 @@ SECTION 13 - SESSION LOG
     Verified  Fresh four gate invocations PASS on unchanged app source; reports contain 362 JVM tests with zero failures/errors/skips and lint zero errors/six warnings. Prior full API35 suite: 20 PASS. Public APK matches GitHub SHA256 63c29341aa4fb47ea103e41ca0fef42b20884d0d5ad06026563bbb93ba70c0cc; all public checksums, signature and alignment PASS. Fresh downloaded-APK emulator focus/Home/stop/restart/Insights/Settings smoke PASS, without screenshots. Local four-width browser check PASS; existing public site HTTP200. Offline/nondebuggable one-Activity manifest, seven immutable schemas and site image hashes PASS.
     Not ver.  Final announcement CI/Pages pending. Physical-device/OEM reliability, actual reboot/process death, complete current API26 UI, low-end performance, TalkBack listening and fluent Spanish review remain unverified. Owner portable private signing-key backup remains a manual custody task. Optional video not available (Session 12).
     Next      Commit/push the final P33 release announcement, verify its CI/Pages, recheck live download links and browser layouts, and save the completed handoff. No feature prompt remains; preserve the existing signing key.
+
+  SESSION 53 - 2026-11-08 - P33 completed GitHub release and screenshot site
+    Did       Resumed saved P33 work; read complete memory and fetched origin without divergence. Confirmed public signed release and green preflight/tag workflows. Published final README/site direct APK links and screenshot release notes; completed live website/browser and public download checks. Reconciled checklist/status/next step and the local handoff checkpoint.
+    Decided   Keep GitHub Releases/Pages only, existing immutable v0.1.0 tag and private update key. Screenshots remain byte-identical emulator fake-debug originals. No app behavior, dependency, permission or schema change.
+    Verified  Fresh four gate invocations PASS on unchanged app source; reports contain 362 JVM tests with zero failures/errors/skips and lint zero errors/six warnings. Prior full API35 suite: 20 PASS. Public APK matches GitHub SHA256 63c29341aa4fb47ea103e41ca0fef42b20884d0d5ad06026563bbb93ba70c0cc; public checksums/signature/alignment PASS. Fresh downloaded-APK emulator focus/Home/stop/restart/Insights/Settings smoke PASS, without screenshots. Local and live browser checks PASS at 1440/768/390/320 pixels: images/themes/FAQ/keyboard/motion, no overflow/errors. Public HTTP APK download/hash, release screenshot URLs and exact release notes PASS. Offline/nondebuggable one-Activity manifest, seven immutable schemas, site image hashes, secret/whitespace sweep PASS. Final announcement CI 42476379987 and Pages 42476380041 SUCCESS.
+    Not ver.  Physical-device/OEM reliability, actual reboot/process death, complete current API26 UI, low-end performance, TalkBack listening and fluent Spanish review remain unverified. Independent byte-for-byte build reproduction is unverified. Owner portable private signing-key backup remains a manual custody task. Optional video not available (Session 12).
+    Next      No planned prompt remains. Preserve the existing private update key; an owner-controlled portable encrypted backup and real-device/OEM accessibility/reliability checks are the next optional follow-ups. Future changes must increase versionCode, retain the signing key, and follow docs/RELEASING.md. Continue only with a new requested task.
 
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
