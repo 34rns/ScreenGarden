@@ -4,6 +4,7 @@ package com.screengarden.app.ui.screens.garden
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.screengarden.app.core.time.BedtimeWindow
 import com.screengarden.app.core.time.LocalDay
 import com.screengarden.app.domain.garden.GardenDay
 import com.screengarden.app.domain.garden.GardenDayRecord
@@ -11,6 +12,7 @@ import com.screengarden.app.domain.garden.GardenSnapshot
 import com.screengarden.app.domain.garden.GardenStore
 import com.screengarden.app.domain.garden.HealthScoreCalculator
 import com.screengarden.app.domain.garden.HealthScoreInputs
+import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -36,7 +39,8 @@ class GardenViewModel(
     private val syncUsage: suspend () -> Unit,
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val zoneId: ZoneId = ZoneId.systemDefault(),
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    bedtimeWindow: Flow<BedtimeWindow?> = flowOf(null)
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(GardenUiState())
@@ -44,6 +48,7 @@ class GardenViewModel(
     private val today = MutableStateFlow(LocalDay.startOfDay(nowMillis(), zoneId))
     private val permission = MutableStateFlow(false)
     private val refreshVersion = MutableStateFlow(0)
+    private val moment = MutableStateFlow(nowMillis())
     private var refreshJob: kotlinx.coroutines.Job? = null
 
     init {
@@ -59,6 +64,11 @@ class GardenViewModel(
                 }
                 val goals = combine(dailyGoalMs, pickupGoal, streakThreshold) { daily, pickups, threshold ->
                     Goals((daily / 60_000L).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(), pickups, threshold)
+                }
+                launch {
+                    combine(bedtimeWindow, moment) { window, now ->
+                        window?.contains(Instant.ofEpochMilli(now).atZone(zoneId).toLocalTime()) == true
+                    }.collect { night -> mutableState.update { it.copy(isBedtime = night) } }
                 }
                 combine(snapshots, goals, permission) { snapshot, settings, granted ->
                     Triple(snapshot, settings, granted)
@@ -79,7 +89,7 @@ class GardenViewModel(
         if (refreshJob?.isActive == true) return
         refreshJob = viewModelScope.launch(dispatcher) {
             try {
-                today.value = LocalDay.startOfDay(nowMillis(), zoneId)
+                updateTime()
                 permission.value = hasUsageAccess()
                 if (permission.value) syncUsage()
                 mutableState.update { it.copy(loading = false, error = false) }
@@ -89,6 +99,12 @@ class GardenViewModel(
                 mutableState.update { it.copy(loading = false, error = true) }
             }
         }
+    }
+
+    /** Visible-screen minute tick changes presentation only; it does not repeatedly query usage. */
+    fun updateTime() {
+        moment.value = nowMillis()
+        today.value = LocalDay.startOfDay(moment.value, zoneId)
     }
 
     private fun show(snapshot: GardenSnapshot, goals: Goals, granted: Boolean) {
@@ -106,7 +122,8 @@ class GardenViewModel(
                 plants = snapshot.plants,
                 score = if (granted && current?.usageIsBounded == true) score(current, goals) else null,
                 streakDays = streak(snapshot.days, LocalDay.previousDayStart(today.value, zoneId), goals.threshold),
-                error = previous.error
+                error = previous.error,
+                isBedtime = previous.isBedtime
             )
         }
     }
@@ -142,6 +159,7 @@ class GardenViewModel(
             pickups = day.pickups,
             pickupGoal = goals.pickups,
             focusMinutes = day.focusMinutes,
+            bedtimeMinutes = day.bedtimeMinutes,
             limitOveragesMinutes = day.limitOveragesMinutes
         )
     )?.value

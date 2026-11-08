@@ -11,7 +11,8 @@ data class GardenUiState(
     val plants: List<Plant> = emptyList(),
     val score: Int? = null,
     val streakDays: Int = 0,
-    val error: Boolean = false
+    val error: Boolean = false,
+    val isBedtime: Boolean = false
 )
 
 /** Normal data availability, independent of saved plants and recoverable read errors. */

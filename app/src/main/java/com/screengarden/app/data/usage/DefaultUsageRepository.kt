@@ -2,6 +2,7 @@
 
 package com.screengarden.app.data.usage
 
+import com.screengarden.app.core.time.BedtimeWindow
 import com.screengarden.app.core.time.LocalDay
 import java.time.ZoneId
 
@@ -28,6 +29,7 @@ import java.time.ZoneId
  */
 class DefaultUsageRepository(
     private val source: UsageSource,
+    private val bedtimeWindow: suspend () -> BedtimeWindow? = { null },
     private val nowMillis: () -> Long = System::currentTimeMillis
 ) : UsageRepository {
 
@@ -53,7 +55,14 @@ class DefaultUsageRepository(
                 )
             )
         }
-        val window = measureWindow(dayStartUtcMillis, endMillis, LocalDay.previousDayStart(dayStartUtcMillis, zoneId))
+        val bedtime = bedtimeWindow()
+        val window = measureWindow(
+            dayStartUtcMillis,
+            endMillis,
+            LocalDay.previousDayStart(dayStartUtcMillis, zoneId),
+            bedtime = bedtime,
+            zone = zoneId
+        )
         return DayUsageResult.Available(
             DayUsage(
                 dayStartUtcMillis,
@@ -61,7 +70,8 @@ class DefaultUsageRepository(
                 window.pickups,
                 window.unlocks,
                 window.apps,
-                window.usageIsBounded
+                window.usageIsBounded,
+                if (window.usageIsBounded && bedtime != null) window.bedtimeUsageMillis else null
             )
         )
     }
@@ -77,13 +87,22 @@ class DefaultUsageRepository(
         dayStartUtcMillis: Long,
         endMillis: Long,
         queryStart: Long,
-        screenOnAtStart: Boolean = false
+        screenOnAtStart: Boolean = false,
+        bedtime: BedtimeWindow? = null,
+        zone: ZoneId = ZoneId.systemDefault()
     ): UsageWindow {
         val launchablePackages = source.launchablePackages()
+        val measuredWindows = LinkedHashMap<String, MutableWindow>()
+        var bedtimeUsageMillis = 0L
+        fun closeMeasuredWindow(packageName: String?, since: Long, until: Long) {
+            closeWindow(packageName, since, until, windows = measuredWindows, windowStartMillis = dayStartUtcMillis)
+            if (packageName in launchablePackages && bedtime != null) {
+                bedtimeUsageMillis += bedtime.overlapMillis(maxOf(since, dayStartUtcMillis), until, zone)
+            }
+        }
         val lastUsedByPackage = source.appTotals(dayStartUtcMillis, endMillis)
             .associate { it.packageName to it.lastTimeUsedMillis }
 
-        val windows = LinkedHashMap<String, MutableWindow>()
         var openPackage: String? = null
         var openActivity: String? = null
         var openSinceMillis = dayStartUtcMillis
@@ -108,13 +127,13 @@ class DefaultUsageRepository(
                 UsageEventType.SCREEN_NON_INTERACTIVE -> {
                     hasScreenEvidence = true
                     if (interactive) {
-                        closeWindow(openPackage, openSinceMillis, timestamp, windows, dayStartUtcMillis)
+                        closeMeasuredWindow(openPackage, openSinceMillis, timestamp)
                     }
                     interactive = false
                 }
                 UsageEventType.DEVICE_SHUTDOWN -> {
                     if (interactive) {
-                        closeWindow(openPackage, openSinceMillis, timestamp, windows, dayStartUtcMillis)
+                        closeMeasuredWindow(openPackage, openSinceMillis, timestamp)
                     }
                     openPackage = null
                     openActivity = null
@@ -134,13 +153,13 @@ class DefaultUsageRepository(
                         continue
                     }
                     if (interactive) {
-                        closeWindow(openPackage, openSinceMillis, timestamp, windows, dayStartUtcMillis)
+                        closeMeasuredWindow(openPackage, openSinceMillis, timestamp)
                     }
                     openPackage = packageName
                     openActivity = event.activityName
                     openSinceMillis = timestamp
                     if (inDay) {
-                        val window = windows.getOrPut(packageName) { MutableWindow() }
+                        val window = measuredWindows.getOrPut(packageName) { MutableWindow() }
                         window.launchCount++
                         window.lastResumedMillis = timestamp
                     }
@@ -152,7 +171,7 @@ class DefaultUsageRepository(
                         (event.activityName == null || openActivity == null || event.activityName == openActivity)
                     ) {
                         if (interactive) {
-                            closeWindow(openPackage, openSinceMillis, timestamp, windows, dayStartUtcMillis)
+                            closeMeasuredWindow(openPackage, openSinceMillis, timestamp)
                         }
                         openPackage = null
                         openActivity = null
@@ -160,9 +179,9 @@ class DefaultUsageRepository(
                 }
             }
         }
-        if (interactive) closeWindow(openPackage, openSinceMillis, endMillis, windows, dayStartUtcMillis)
+        if (interactive) closeMeasuredWindow(openPackage, openSinceMillis, endMillis)
 
-        val apps = windows
+        val apps = measuredWindows
             .filterKeys { it in launchablePackages }
             .map { (packageName, window) ->
                 AppUsage(
@@ -180,7 +199,8 @@ class DefaultUsageRepository(
             apps = apps,
             pickups = pickups,
             unlocks = if (source.supportsUnlocks) UnlockCount.Supported(unlocks) else UnlockCount.Unsupported,
-            usageIsBounded = source.supportsScreenState && hasScreenEvidence
+            usageIsBounded = source.supportsScreenState && hasScreenEvidence,
+            bedtimeUsageMillis = bedtimeUsageMillis
         )
     }
 
@@ -210,5 +230,6 @@ data class UsageWindow(
     val apps: List<AppUsage>,
     val pickups: Int,
     val unlocks: UnlockCount,
-    val usageIsBounded: Boolean
+    val usageIsBounded: Boolean,
+    val bedtimeUsageMillis: Long = 0L
 )

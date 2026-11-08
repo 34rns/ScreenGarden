@@ -127,10 +127,23 @@ object DebugCatalog {
                 }
             }
         }
-        if (requested in setOf("garden_demo", "garden_rtl_demo", "garden_empty_demo", "garden_permission_demo")) {
+        if (requested in setOf(
+                "garden_demo",
+                "garden_rtl_demo",
+                "garden_empty_demo",
+                "garden_permission_demo",
+                "bedtime_demo",
+                "bedtime_rtl_demo",
+                "bedtime_empty_demo",
+                "bedtime_permission_demo"
+            )
+        ) {
             val state = when (requested) {
-                "garden_permission_demo" -> GardenUiState(false, GardenAvailability.NO_PERMISSION)
-                "garden_empty_demo" -> GardenUiState(false, GardenAvailability.NO_DATA)
+                "garden_permission_demo", "bedtime_permission_demo" -> GardenUiState(
+                    false,
+                    GardenAvailability.NO_PERMISSION
+                )
+                "garden_empty_demo", "bedtime_empty_demo" -> GardenUiState(false, GardenAvailability.NO_DATA)
                 else -> GardenUiState(
                     loading = false,
                     availability = GardenAvailability.READY,
@@ -144,11 +157,11 @@ object DebugCatalog {
                     score = 84,
                     streakDays = 4
                 )
-            }
+            }.let { it.copy(isBedtime = requested?.startsWith("bedtime") == true) }
             // Pure fake presentation: never reads or writes anybody's usage or garden.
             return DebugDestination(requireNotNull(requested)) {
                 CompositionLocalProvider(
-                    LocalLayoutDirection provides if (requested == "garden_rtl_demo") {
+                    LocalLayoutDirection provides if (requested in setOf("garden_rtl_demo", "bedtime_rtl_demo")) {
                         LayoutDirection.Rtl
                     } else {
                         LocalLayoutDirection.current

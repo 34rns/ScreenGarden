@@ -50,6 +50,32 @@ class GardenScreenTest {
     private val application: Application = ApplicationProvider.getApplicationContext()
 
     @Test
+    fun sleepGardenKeepsPlantsAndFocusAccessible() {
+        var starts = 0
+        composeRule.setContent {
+            ScreenGardenTheme {
+                GardenScreen(
+                    GardenUiState(false, GardenAvailability.READY, listOf(flower), 72, 4, isBedtime = true),
+                    { starts++ },
+                    { },
+                    { }
+                )
+            }
+        }
+        composeRule.onNodeWithText(text(R.string.bedtime_title)).assertIsDisplayed()
+        composeRule.onNodeWithTag("garden_plant_${flower.id}").assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.garden_start_focus)).performScrollTo().performClick()
+        assertEquals(1, starts)
+    }
+
+    @Test
+    fun sleepGardenWithoutPermissionKeepsItsExplanation() {
+        show(GardenUiState(false, GardenAvailability.NO_PERMISSION, isBedtime = true))
+        composeRule.onNodeWithText(text(R.string.bedtime_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.garden_permission_title)).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
     fun missingPermissionKeepsScoreUnknownAndBothActionsWork() {
         var grants = 0
         var starts = 0

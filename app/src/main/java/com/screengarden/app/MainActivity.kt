@@ -11,12 +11,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -34,6 +38,7 @@ import com.screengarden.app.ui.screens.garden.GardenViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
 import com.screengarden.app.ui.theme.ScreenGardenTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -94,6 +99,15 @@ class MainActivity : ComponentActivity() {
                     }
                     val garden: GardenViewModel = viewModel(factory = factory)
                     val state by garden.uiState.collectAsStateWithLifecycle()
+                    val gardenLifecycle = LocalLifecycleOwner.current.lifecycle
+                    LaunchedEffect(garden, gardenLifecycle) {
+                        gardenLifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                            while (true) {
+                                garden.updateTime()
+                                delay(60_000)
+                            }
+                        }
+                    }
                     LifecycleResumeEffect(garden) {
                         garden.refresh()
                         onPauseOrDispose { }

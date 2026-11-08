@@ -187,4 +187,76 @@ class ScreenGardenDatabaseMigrationTest {
     private companion object {
         const val TEST_DATABASE = "migration-test.db"
     }
+
+    @Test
+    fun migratingFrom3To4KeepsAllTablesAndMarksBedtimeUnknown() {
+        helper.createDatabase(TEST_DATABASE, 3).use { old ->
+            old.execSQL(
+                "INSERT INTO daily_stats (dayStartUtcMillis, focusMinutes, screenMinutes, sessionsCompleted, " +
+                    "plantsGrown, updatedAtUtcMillis, score, usageIsBounded, gardenApplied) " +
+                    "VALUES (1700000000000, 25, 90, 1, 2, 1700000000123, 84, 1, 1)"
+            )
+            old.execSQL(
+                "INSERT INTO plants (plantId, species, stage, health, plantedAtUtcMillis, growthPoints, condition) " +
+                    "VALUES ('plant', 'fern', 3, 42, 1700000000000, 45, 'RECOVERING')"
+            )
+            old.execSQL("INSERT INTO app_usage_daily VALUES (1700000000000, 'fake.reader', 5400000, 3, 1700000000123)")
+            old.execSQL("INSERT INTO app_limits VALUES ('fake.reader', 60, 1, 1700000000123)")
+            old.execSQL(
+                "INSERT INTO focus_sessions (sessionId, dayStartUtcMillis, startedAtUtcMillis, plannedMinutes, " +
+                    "wasCompleted, plantId, tag, status, actualDurationMs, updatedAtUtcMillis, bootCount) " +
+                    "VALUES ('session', 1700000000000, 1700000000000, 25, 0, 'plant', 'READING', 'RUNNING', 120000, 1700000120000, 7)"
+            )
+            old.execSQL("INSERT INTO badges VALUES ('first-recovery', 1700000001000)")
+        }
+        helper.runMigrationsAndValidate(TEST_DATABASE, 4, true, ScreenGardenDatabase.MIGRATION_3_4).use { migrated ->
+            for (table in listOf(
+                "daily_stats",
+                "plants",
+                "app_usage_daily",
+                "app_limits",
+                "focus_sessions",
+                "badges"
+            )) {
+                migrated.query("SELECT COUNT(*) FROM $table").use { rows ->
+                    assertTrue(rows.moveToFirst())
+                    assertEquals(1, rows.getInt(0))
+                }
+            }
+            migrated.query("SELECT * FROM daily_stats").use { rows ->
+                assertTrue(rows.moveToFirst())
+                assertTrue(rows.isNull(rows.getColumnIndexOrThrow("bedtimeMinutes")))
+                assertEquals(84, rows.getInt(rows.getColumnIndexOrThrow("score")))
+                assertEquals(1, rows.getInt(rows.getColumnIndexOrThrow("gardenApplied")))
+                assertEquals(25, rows.getInt(rows.getColumnIndexOrThrow("focusMinutes")))
+            }
+            migrated.query("SELECT * FROM focus_sessions").use { rows ->
+                assertTrue(rows.moveToFirst())
+                assertEquals("RUNNING", rows.getString(rows.getColumnIndexOrThrow("status")))
+                assertEquals(120_000L, rows.getLong(rows.getColumnIndexOrThrow("actualDurationMs")))
+            }
+            migrated.query("SELECT * FROM plants").use { rows ->
+                assertTrue(rows.moveToFirst())
+                assertEquals("RECOVERING", rows.getString(rows.getColumnIndexOrThrow("condition")))
+                assertEquals(45, rows.getInt(rows.getColumnIndexOrThrow("growthPoints")))
+            }
+        }
+    }
+
+    @Test
+    fun allPublishedVersionsCanReach4WithoutDestructiveFallback() {
+        helper.createDatabase(TEST_DATABASE, 1).use {
+            it.execSQL("INSERT INTO badges VALUES ('first-bloom', 1700000001000)")
+        }
+        helper.runMigrationsAndValidate(
+            TEST_DATABASE,
+            4,
+            true,
+            ScreenGardenDatabase.MIGRATION_1_2,
+            ScreenGardenDatabase.MIGRATION_2_3,
+            ScreenGardenDatabase.MIGRATION_3_4
+        ).use { migrated ->
+            migrated.query("SELECT * FROM badges").use { assertEquals(1, it.count) }
+        }
+    }
 }

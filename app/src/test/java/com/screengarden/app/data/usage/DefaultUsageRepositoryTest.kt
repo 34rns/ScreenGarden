@@ -2,8 +2,10 @@
 
 package com.screengarden.app.data.usage
 
+import com.screengarden.app.core.time.BedtimeWindow
 import com.screengarden.app.core.time.LocalDay
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -24,6 +26,39 @@ import org.junit.Test
  * the class of bug H13 exists to prevent.
  */
 class DefaultUsageRepositoryTest {
+
+    @Test
+    fun bedtimeCountsOnlyLaunchableScreenOnTimeAndClipsAtNow() = runBlocking {
+        val source = FakeUsageSource(
+            events = listOf(
+                event(UsageEventType.SCREEN_INTERACTIVE, 0),
+                resumed(APP_A, 390),
+                event(UsageEventType.SCREEN_NON_INTERACTIVE, 400),
+                paused(APP_A, 500),
+                event(UsageEventType.SCREEN_INTERACTIVE, 1320),
+                resumed("hidden.app", 1320),
+                resumed(APP_A, 1340)
+            )
+        )
+        val repository = DefaultUsageRepository(
+            source,
+            bedtimeWindow = { BedtimeWindow(LocalTime.of(22, 30), LocalTime.of(7, 0)) },
+            nowMillis = { DAY_START + 1380 * MINUTE }
+        )
+        val usage = repository.readDay(DAY_START, ZONE).requireUsage()
+        assertEquals(50 * MINUTE, usage.totalScreenTimeMillis)
+        assertEquals(40 * MINUTE, usage.bedtimeUsageMillis)
+    }
+
+    @Test
+    fun bedtimeIsUnknownWithoutBoundedEvidence() = runBlocking {
+        val repository = DefaultUsageRepository(
+            FakeUsageSource(events = listOf(resumed(APP_A, 390), paused(APP_A, 420))),
+            bedtimeWindow = { BedtimeWindow(LocalTime.of(22, 30), LocalTime.of(7, 0)) },
+            nowMillis = { DAY_START + 1440 * MINUTE }
+        )
+        assertNull(repository.readDay(DAY_START, ZONE).requireUsage().bedtimeUsageMillis)
+    }
 
     @Test
     fun stoppingThePreviousActivityDoesNotCloseItsReplacement() {

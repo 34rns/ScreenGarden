@@ -120,6 +120,11 @@ class DailyUsageSync(
                 pickups = if (usage.usageIsBounded) usage.pickups else null,
                 unlocks = (usage.unlocks as? UnlockCount.Supported)?.count,
                 usageIsBounded = usage.usageIsBounded,
+                bedtimeMinutes = if (usage.usageIsBounded) {
+                    usage.bedtimeUsageMillis?.div(MILLIS_PER_MINUTE)?.coerceIn(0L, Int.MAX_VALUE.toLong())?.toInt()
+                } else {
+                    null
+                },
                 updatedAtUtcMillis = nowMillis
             )
         )

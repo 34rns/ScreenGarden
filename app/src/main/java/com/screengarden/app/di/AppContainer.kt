@@ -82,7 +82,7 @@ class AppContainer(context: Context) {
      * is what persists it into `app_usage_daily`.
      */
     val usageRepository: DefaultUsageRepository by lazy {
-        DefaultUsageRepository(AndroidUsageSource(appContext))
+        DefaultUsageRepository(AndroidUsageSource(appContext), bedtimeWindow = { bedtimeWindow.first() })
     }
 
     /** Day aggregates; written by the daily sync (P06), read by Insights later. */
@@ -125,7 +125,8 @@ class AppContainer(context: Context) {
         syncUsage = {
             dailyUsageSync.run()
             Unit
-        }
+        },
+        bedtimeWindow = bedtimeWindow
     )
 
     /** Per-app screen time; written by the daily sync (P06). */
@@ -153,6 +154,12 @@ class AppContainer(context: Context) {
     }
 
     val nudgeScheduler: NudgeScheduler by lazy { NudgeScheduler { WorkManager.getInstance(appContext) } }
+
+    private val bedtimeWindow by lazy {
+        combine(settingsRepository.bedtimeStart, settingsRepository.bedtimeEnd) { start, end ->
+            runCatching { BedtimeWindow(LocalTime.parse(start), LocalTime.parse(end)) }.getOrNull()
+        }
+    }
 
     val nudgeCheck: GentleNudgeCheck by lazy {
         GentleNudgeCheck(

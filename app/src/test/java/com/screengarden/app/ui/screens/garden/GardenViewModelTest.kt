@@ -2,12 +2,14 @@
 
 package com.screengarden.app.ui.screens.garden
 
+import com.screengarden.app.core.time.BedtimeWindow
 import com.screengarden.app.core.time.LocalDay
 import com.screengarden.app.domain.garden.GardenDay
 import com.screengarden.app.domain.garden.GardenDayRecord
 import com.screengarden.app.domain.garden.GardenSnapshot
 import com.screengarden.app.domain.garden.GardenStore
 import com.screengarden.app.domain.garden.Plant
+import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -108,6 +110,36 @@ class GardenViewModelTest {
         org.junit.Assert.assertTrue(
             requireNotNull(limited.uiState.value.score) < requireNotNull(baseline.uiState.value.score)
         )
+    }
+
+    @Test
+    fun bedtimeUsageReducesTheDisplayedScore() = runTest(dispatcher) {
+        val baseline = model(FakeStore(listOf(day(today).copy(bedtimeMinutes = 0))))
+        val night = model(FakeStore(listOf(day(today).copy(bedtimeMinutes = 60))))
+        advanceUntilIdle()
+        org.junit.Assert.assertTrue(
+            requireNotNull(night.uiState.value.score) < requireNotNull(baseline.uiState.value.score)
+        )
+    }
+
+    @Test
+    fun bedtimeWindowAndVisibleClockChangeTheSleepState() = runTest(dispatcher) {
+        var now = today + 23 * 60 * 60_000L
+        val window = MutableStateFlow<BedtimeWindow?>(BedtimeWindow(LocalTime.of(22, 30), LocalTime.of(7, 0)))
+        val model = GardenViewModel(
+            FakeStore(listOf(day(today))), flowOf(10_800_000L), flowOf(80), flowOf(60), { false }, { },
+            { now }, zone, dispatcher, window
+        )
+        advanceUntilIdle()
+        assertEquals(true, model.uiState.value.isBedtime)
+        assertEquals(GardenAvailability.NO_PERMISSION, model.uiState.value.availability)
+        now = today + 8 * 60 * 60_000L
+        model.updateTime()
+        advanceUntilIdle()
+        assertEquals(false, model.uiState.value.isBedtime)
+        window.value = BedtimeWindow(LocalTime.of(7, 0), LocalTime.of(9, 0))
+        advanceUntilIdle()
+        assertEquals(true, model.uiState.value.isBedtime)
     }
 
     private fun day(key: Long) = GardenDayRecord(key, null, 30, 0, 0, 3, 1, true, false, 7L)

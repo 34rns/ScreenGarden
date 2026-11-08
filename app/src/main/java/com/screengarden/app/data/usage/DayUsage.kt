@@ -44,7 +44,9 @@ data class DayUsage(
     val unlocks: UnlockCount,
     val apps: List<AppUsage>,
     /** False when the event stream cannot bound activity time with screen state. */
-    val usageIsBounded: Boolean = false
+    val usageIsBounded: Boolean = false,
+    /** Unknown until both a configured window and bounded foreground intervals are available. */
+    val bedtimeUsageMillis: Long? = null
 ) {
 
     /** The entry for one package, or null when it was not used that day. */

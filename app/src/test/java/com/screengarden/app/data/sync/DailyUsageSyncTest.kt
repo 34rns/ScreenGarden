@@ -32,6 +32,22 @@ import org.junit.Test
 class DailyUsageSyncTest {
 
     @Test
+    fun bedtimePersistsOnlyBoundedMinutesAndResyncKeepsTheValue() = runTest {
+        val usage = FakeUsageRepository().apply {
+            bounded = true
+            bedtimeMillis = 65_000L
+        }
+        val stats = FakeDailyStatRepository()
+        val worker = sync(usage, stats, FakeAppUsageRepository())
+        worker.run()
+        worker.run()
+        assertEquals(1, stats.stats.getValue(TODAY).bedtimeMinutes)
+        usage.bounded = false
+        worker.run()
+        assertEquals(null, stats.stats.getValue(TODAY).bedtimeMinutes)
+    }
+
+    @Test
     fun secondRunOverwritesTheSameRowsInsteadOfDuplicating() = runTest {
         val usage = FakeUsageRepository()
         val stats = FakeDailyStatRepository()
@@ -151,6 +167,8 @@ class DailyUsageSyncTest {
 
     /** Serves the same two-app day for whatever day is asked for. */
     private class FakeUsageRepository(var granted: Boolean = true) : UsageRepository {
+        var bounded = false
+        var bedtimeMillis: Long? = null
 
         val requestedDays = mutableListOf<Long>()
 
@@ -165,6 +183,8 @@ class DailyUsageSyncTest {
                     totalScreenTimeMillis = SCREEN_MILLIS,
                     pickups = 4,
                     unlocks = UnlockCount.Supported(1),
+                    usageIsBounded = bounded,
+                    bedtimeUsageMillis = bedtimeMillis,
                     apps = listOf(
                         AppUsage(PKG_A, APP_MILLIS, launchCount = 2, lastUsedUtcMillis = dayStartUtcMillis),
                         AppUsage(PKG_B, APP_MILLIS, launchCount = 1, lastUsedUtcMillis = dayStartUtcMillis)
@@ -196,6 +216,7 @@ class DailyUsageSyncTest {
                 pickups = stat.pickups,
                 unlocks = stat.unlocks,
                 usageIsBounded = stat.usageIsBounded,
+                bedtimeMinutes = stat.bedtimeMinutes,
                 updatedAtUtcMillis = stat.updatedAtUtcMillis
             ) ?: stat
         }

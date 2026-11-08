@@ -22,7 +22,7 @@ import com.screengarden.app.data.local.entity.FocusSession
 import com.screengarden.app.data.local.entity.Plant
 
 /** Bumped together with [DATABASE_VERSION] when the schema changes (D22). */
-private const val DATABASE_VERSION = 3
+private const val DATABASE_VERSION = 4
 
 /**
  * The app's single Room database: everything ScreenGarden knows, stored on device.
@@ -106,7 +106,14 @@ abstract class ScreenGardenDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+        /** Existing measurements never claim a bedtime duration they did not record. */
+        val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE daily_stats ADD COLUMN bedtimeMinutes INTEGER")
+            }
+        }
+
+        private val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 
         /** Builds the on-disk database. The DI container calls this lazily (D1). */
         fun build(context: Context): ScreenGardenDatabase =

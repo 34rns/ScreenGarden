@@ -36,13 +36,15 @@ interface DailyStatDao {
             stat.pickups,
             stat.unlocks,
             stat.usageIsBounded,
-            stat.updatedAtUtcMillis
+            stat.updatedAtUtcMillis,
+            stat.bedtimeMinutes
         )
     }
 
     @Query(
         "UPDATE daily_stats SET screenMinutes = :screenMinutes, pickups = :pickups, unlocks = :unlocks, " +
             "usageIsBounded = :usageIsBounded, updatedAtUtcMillis = :updatedAtUtcMillis, " +
+            "bedtimeMinutes = :bedtimeMinutes, " +
             "score = CASE WHEN gardenApplied = 0 THEN NULL ELSE score END " +
             "WHERE dayStartUtcMillis = :dayStartUtcMillis"
     )
@@ -52,7 +54,8 @@ interface DailyStatDao {
         pickups: Int?,
         unlocks: Int?,
         usageIsBounded: Boolean,
-        updatedAtUtcMillis: Long
+        updatedAtUtcMillis: Long,
+        bedtimeMinutes: Int? = null
     ): Int
 
     /** Rejects a calculation if its measured row changed or was already rewarded. */

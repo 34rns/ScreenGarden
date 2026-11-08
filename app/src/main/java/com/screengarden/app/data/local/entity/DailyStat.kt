@@ -26,5 +26,7 @@ data class DailyStat(
     val unlocks: Int? = null,
     /** False for migrated rows until the bounded measurement replaces their usage. */
     @ColumnInfo(defaultValue = "0") val usageIsBounded: Boolean = false,
-    @ColumnInfo(defaultValue = "0") val gardenApplied: Boolean = false
+    @ColumnInfo(defaultValue = "0") val gardenApplied: Boolean = false,
+    /** Measured against the bedtime settings at the last sync; old history remains unknown. */
+    val bedtimeMinutes: Int? = null
 )

@@ -126,5 +126,6 @@ private fun DailyStat.toDomain(): GardenDayRecord = GardenDayRecord(
     unlocks = unlocks,
     usageIsBounded = usageIsBounded,
     gardenApplied = gardenApplied,
-    updatedAtUtcMillis = updatedAtUtcMillis
+    updatedAtUtcMillis = updatedAtUtcMillis,
+    bedtimeMinutes = bedtimeMinutes
 )

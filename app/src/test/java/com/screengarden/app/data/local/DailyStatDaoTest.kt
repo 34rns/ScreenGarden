@@ -51,6 +51,19 @@ class DailyStatDaoTest {
     }
 
     @Test
+    fun bedtimeUsageUpdatesWithoutErasingFocusOrAppliedRewards() = runTest {
+        dao.upsert(stat(DAY_ONE, focusMinutes = 25).copy(score = 85, gardenApplied = true, plantsGrown = 2))
+        dao.saveUsage(stat(DAY_ONE).copy(bedtimeMinutes = 42, usageIsBounded = true))
+        val stored = requireNotNull(dao.getByDay(DAY_ONE))
+        assertEquals(42, stored.bedtimeMinutes)
+        assertEquals(25, stored.focusMinutes)
+        assertEquals(85, stored.score)
+        assertEquals(2, stored.plantsGrown)
+        dao.saveUsage(stat(DAY_ONE).copy(bedtimeMinutes = null))
+        assertNull(dao.getByDay(DAY_ONE)?.bedtimeMinutes)
+    }
+
+    @Test
     fun updateChangesValues() = runTest {
         dao.upsert(stat(DAY_ONE, focusMinutes = 25))
         val stored = requireNotNull(dao.getByDay(DAY_ONE))

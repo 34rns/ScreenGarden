@@ -54,6 +54,16 @@ Optional reminders, using fake debug-only examples:
 | --- | --- |
 | <img src="docs/screenshots/nudges_light.png" width="240" alt="Gentle daily and app-limit reminders in the notification shade"> | <img src="docs/screenshots/nudges_dark.png" width="240" alt="Gentle reminders with a dark notification shade"> |
 
+Sleep garden during the saved wind-down window, using fake debug-only data:
+
+| Light | Dark | AMOLED |
+| --- | --- | --- |
+| <img src="docs/screenshots/bedtime_light.png" width="220" alt="Sleep garden with a moonlit plot"> | <img src="docs/screenshots/bedtime_dark.png" width="220" alt="Sleep garden in dark mode"> | <img src="docs/screenshots/bedtime_amoled.png" width="220" alt="Sleep garden with true-black surfaces"> |
+
+| Large text | Mirrored layout | Empty garden | Usage access missing |
+| --- | --- | --- | --- |
+| <img src="docs/screenshots/bedtime_large_font.png" width="200" alt="Sleep garden at 1.3 times font scale"> | <img src="docs/screenshots/bedtime_rtl.png" width="200" alt="Sleep garden with RTL controls and readable English copy"> | <img src="docs/screenshots/bedtime_empty.png" width="200" alt="Sleep garden waiting for data"> | <img src="docs/screenshots/bedtime_permission.png" width="200" alt="Sleep garden explaining optional Usage access"> |
+
 ## Privacy promise
 
 - **No internet permission.** The app cannot make a network request, even by
@@ -95,6 +105,10 @@ by intention. A pull request that adds network access or telemetry is rejected.
 - Optional gentle reminders at 50%, 80% and 100% of the daily goal and enabled
   app limits. Quiet hours use your bedtime window. Separate Android notification
   channels let you control daily and app reminders; milestones do not repeat that day.
+- Your saved bedtime window opens a quiet sleep garden with a moonlit plot.
+  Measured screen time inside that window shapes the health score after a 15-minute
+  grace, using the same gradual curve as the other habits. Saved plants remain
+  accessible and recoverable. Old bedtime history is unknown until remeasured.
 - Usage without reliable screen events (including Android 8.0–8.1) is shown as
   incomplete rather than given a fabricated score. Insights and the remaining
   Settings controls are still being built.

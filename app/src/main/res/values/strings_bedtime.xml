@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bedtime_title">Your sleep garden</string>
+    <string name="bedtime_subtitle">The garden is settling in for the night. Let the next moment be a little quieter.</string>
+    <string name="bedtime_reassurance">Screen time during your wind-down window gently shapes today’s score after a 15-minute grace. Your plants can always recover.</string>
+</resources>

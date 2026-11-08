@@ -50,10 +50,11 @@ fun GardenScene(
     plants: List<Plant>,
     onPlantSelected: (Plant) -> Unit,
     modifier: Modifier = Modifier,
-    streakDays: Int = 0
+    streakDays: Int = 0,
+    isBedtime: Boolean = false
 ) {
     val colors = MaterialTheme.colorScheme
-    val motionEnabled = rememberGardenMotionEnabled()
+    val motionEnabled = rememberGardenMotionEnabled() && !isBedtime
     val phase = rememberGardenPhase(motionEnabled && plants.isNotEmpty())
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -84,6 +85,11 @@ fun GardenScene(
                         Offset(size.width * 0.62f, size.height * 0.08f),
                         Size(size.width * 0.24f, 12.dp.toPx())
                     )
+                    if (isBedtime) {
+                        val moon = Offset(size.width * 0.84f, size.height * 0.11f)
+                        drawCircle(colors.onTertiaryContainer, 12.dp.toPx(), moon)
+                        drawCircle(colors.tertiaryContainer, 11.dp.toPx(), moon + Offset(5.dp.toPx(), -3.dp.toPx()))
+                    }
                     if (plants.isNotEmpty()) {
                         val time = phase.value
                         repeat(6) { index ->
@@ -92,7 +98,7 @@ fun GardenScene(
                                 sin((time * 2 * PI + index).toFloat()) * 4.dp.toPx()
                             drawCircle(colors.onTertiaryContainer.copy(alpha = 0.12f), 1.5.dp.toPx(), Offset(x, y))
                         }
-                        if (streakDays >= 3) {
+                        if (streakDays >= 3 && !isBedtime) {
                             val center = Offset(size.width * (0.18f + time * 0.6f), size.height * 0.16f)
                             val wing = 2.dp.toPx() + kotlin.math.abs(sin(time * 12 * PI).toFloat()) * 3.dp.toPx()
                             drawOval(colors.tertiary, center - Offset(wing, 3.dp.toPx()), Size(wing, 6.dp.toPx()))

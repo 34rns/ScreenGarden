@@ -83,6 +83,9 @@ private val DarkColors = darkColorScheme(
     inversePrimary = DarkInversePrimary
 )
 
+/** The night plot reuses the app's existing dark semantic palette in every appearance mode. */
+internal val GardenNightColors = DarkColors
+
 private val AmoledColors = darkColorScheme(
     primary = DarkPrimary,
     onPrimary = DarkOnPrimary,

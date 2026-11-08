@@ -48,6 +48,7 @@ import com.screengarden.app.R
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.domain.model.ThemePreference
+import com.screengarden.app.ui.theme.GardenNightColors
 import com.screengarden.app.ui.theme.ScreenGardenTheme
 import java.time.Instant
 import java.time.ZoneId
@@ -78,21 +79,27 @@ fun GardenScreen(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = stringResource(R.string.garden_title),
+                        text = stringResource(if (state.isBedtime) R.string.bedtime_title else R.string.garden_title),
                         modifier = Modifier.semantics { heading() },
                         style = MaterialTheme.typography.headlineSmall.copy(textDirection = TextDirection.Content)
                     )
-                    GardenBody(stringResource(R.string.garden_subtitle))
+                    GardenBody(
+                        stringResource(if (state.isBedtime) R.string.bedtime_subtitle else R.string.garden_subtitle)
+                    )
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    GardenScene(
-                        plants = state.plants,
-                        onPlantSelected = { selectedPlantId = it.id },
-                        streakDays = state.streakDays
-                    )
+                    MaterialTheme(colorScheme = if (state.isBedtime) GardenNightColors else MaterialTheme.colorScheme) {
+                        GardenScene(
+                            plants = state.plants,
+                            onPlantSelected = { selectedPlantId = it.id },
+                            streakDays = state.streakDays,
+                            isBedtime = state.isBedtime
+                        )
+                    }
                     if (state.plants.isNotEmpty()) GardenBody(stringResource(R.string.garden_plant_hint))
                 }
                 GardenSummary(score = state.score, streakDays = state.streakDays)
+                if (state.isBedtime) GardenBody(stringResource(R.string.bedtime_reassurance))
                 GardenStatus(state = state, onGrantUsage = onGrantUsage, onRetry = onRetry)
                 Button(onClick = onStartFocus, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
                     Text(stringResource(R.string.garden_start_focus))
@@ -339,4 +346,17 @@ private fun GardenIncompletePreview() {
 @Composable
 private fun GardenEmptyPreview() {
     ScreenGardenTheme { GardenScreen(GardenUiState(loading = false), { }, { }, { }) }
+}
+
+@Preview(showBackground = true, name = "Sleep garden")
+@Composable
+private fun SleepGardenPreview() {
+    ScreenGardenTheme {
+        GardenScreen(
+            GardenUiState(false, GardenAvailability.READY, previewPlants, 72, 4, isBedtime = true),
+            { },
+            { },
+            { }
+        )
+    }
 }
