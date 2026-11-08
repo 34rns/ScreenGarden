@@ -18,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import com.screengarden.app.R
 import com.screengarden.app.domain.garden.Hemisphere
@@ -39,9 +40,12 @@ fun EnvironmentControls(
             Modifier.semantics {
                 heading()
             },
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleLarge.copy(textDirection = TextDirection.Content)
         )
-        Text(stringResource(R.string.environment_hemisphere_copy))
+        Text(
+            stringResource(R.string.environment_hemisphere_copy),
+            style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.Content)
+        )
         Column {
             Hemisphere.entries.forEach { choice ->
                 FilterChip(
@@ -74,7 +78,10 @@ fun EnvironmentControls(
             Text(label, Modifier.weight(1f))
             Switch(lowPower, onLowPower, Modifier.semantics { contentDescription = label }, enabled = !saving)
         }
-        Text(stringResource(R.string.environment_low_power_copy), style = MaterialTheme.typography.bodyMedium)
+        Text(
+            stringResource(R.string.environment_low_power_copy),
+            style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content)
+        )
         if (error) Text(stringResource(R.string.environment_save_error), color = MaterialTheme.colorScheme.error)
     }
 }

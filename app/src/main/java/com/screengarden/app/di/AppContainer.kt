@@ -28,7 +28,6 @@ import com.screengarden.app.data.repo.GardenRepositoryImpl
 import com.screengarden.app.data.repo.HabitsRepository
 import com.screengarden.app.data.repo.InsightsRepository
 import com.screengarden.app.data.settings.DataStoreSettingsRepository
-import com.screengarden.app.data.settings.SettingsRepository
 import com.screengarden.app.data.settings.settingsDataStore
 import com.screengarden.app.data.sync.DailyUsageSync
 import com.screengarden.app.data.usage.AndroidUsageSource
@@ -36,12 +35,14 @@ import com.screengarden.app.data.usage.DefaultUsageRepository
 import com.screengarden.app.data.usage.LaunchableAppCatalog
 import com.screengarden.app.data.work.NudgeScheduler
 import com.screengarden.app.data.work.UsageSyncScheduler
+import com.screengarden.app.domain.settings.SettingsRepository
 import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenViewModel
 import com.screengarden.app.ui.screens.habits.HabitsViewModel
 import com.screengarden.app.ui.screens.insights.GardenHistoryViewModel
 import com.screengarden.app.ui.screens.insights.InsightsViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
+import com.screengarden.app.ui.screens.settings.SettingsViewModel
 import java.time.LocalTime
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -74,6 +75,8 @@ class AppContainer(context: Context) {
     val settingsRepository: SettingsRepository by lazy {
         DataStoreSettingsRepository(appContext.settingsDataStore)
     }
+
+    fun settingsViewModel(): SettingsViewModel = SettingsViewModel(settingsRepository)
 
     /**
      * Persists the first-run answers (P07). Built here rather than in the Activity so

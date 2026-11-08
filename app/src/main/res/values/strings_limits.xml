@@ -16,5 +16,4 @@
     <string name="limits_retry">Try again</string>
     <string name="limits_no_apps">No launchable apps are available. Try refreshing the list.</string>
     <string name="limits_no_match">No apps match this search. Try a different name.</string>
-    <string name="limits_settings_copy">Choose gentle daily limits for individual apps.</string>
 </resources>

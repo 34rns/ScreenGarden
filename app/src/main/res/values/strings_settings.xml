@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_goals">Goals</string>
+    <string name="settings_edit_goals">Edit your goals</string>
+    <string name="settings_close_goals">Close goal editor</string>
+    <string name="settings_save_goals">Save goals</string>
+    <string name="settings_saved">Choices saved.</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_reminders">Gentle reminders</string>
+    <string name="settings_reminders_copy">Optional nudges as you approach your daily goal or app limits. Bedtime is quiet time. Android may delay reminders to save battery.</string>
+    <string name="settings_notifications_off">Android has notifications off for ScreenGarden. Allow them in notification settings to receive reminders.</string>
+    <string name="settings_notification_controls">Android notification settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_accent">Accent palette</string>
+    <string name="settings_system">System</string>
+    <string name="settings_light">Light</string>
+    <string name="settings_dark">Dark</string>
+    <string name="settings_amoled">AMOLED</string>
+    <string name="settings_green">Calm green</string>
+    <string name="settings_blue">Soft blue</string>
+    <string name="settings_heather">Heather</string>
+    <string name="settings_keep_screen_on">Keep screen on during focus</string>
+    <string name="settings_focus_copy">Optional. Keeping the display on uses more battery. Focus continues when you leave the app.</string>
+    <string name="settings_data">Data</string>
+    <string name="settings_data_copy">Your measurements and garden are stored on this device. ScreenGarden has no cloud backup or automatic sharing.</string>
+    <string name="settings_show_intro">Show introduction again</string>
+    <string name="settings_intro_copy">Revisit the privacy, permission and goal steps. Your existing garden and history will be kept.</string>
+    <string name="settings_cancel">Cancel</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_privacy">Free, offline and open source. No internet permission, tracking, advertisements or accounts.</string>
+    <string name="settings_license">Code: GPL-3.0-or-later. Original artwork: CC BY-SA 4.0.</string>
+</resources>

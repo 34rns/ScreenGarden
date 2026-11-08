@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package com.screengarden.app.data.settings
+package com.screengarden.app.domain.settings
 
 import com.screengarden.app.domain.garden.Hemisphere
 import com.screengarden.app.domain.model.AccentColor
+import com.screengarden.app.domain.model.OnboardingChoices
 import com.screengarden.app.domain.model.ThemePreference
 import kotlinx.coroutines.flow.Flow
 
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.Flow
  *
  * Every key is exposed as a [Flow] rather than a one-shot read so a screen that
  * is already visible updates the moment a value changes. Each flow always emits
- * a value: an absent key reports its [SettingsDefaults] entry, never `null`, so
+ * a value: an absent key reports its documented default, never `null`, so
  * callers never have to branch on "not set yet".
  *
  * Nothing here invents a key. A new setting must be added to SECTION 16.7 first
@@ -84,4 +85,12 @@ interface SettingsRepository {
     suspend fun setCompassionDaysPerMonth(limit: Int)
     suspend fun setHemisphere(value: Hemisphere)
     suspend fun setLowPowerVisuals(enabled: Boolean)
+
+    /** Save the four goal choices together in the production settings store. */
+    suspend fun setGoals(choices: OnboardingChoices) {
+        setDailyGoalMs(choices.dailyGoalMs)
+        setPickupGoal(choices.pickupGoal)
+        setBedtimeStart(choices.bedtimeStartText)
+        setBedtimeEnd(choices.bedtimeEndText)
+    }
 }

@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 31 / P21 scenery)
+Last updated: 2026-11-08 (Session 33 / P22 completion)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         298 JVM tests; 9 migration cases green on API 35 (P20)
+  Tests         309 JVM tests; 9 migration cases green on API 35 (P20)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -238,7 +238,7 @@ SECTION 4 - FOLDER LAYOUT
           |       |-- domain/focus/                pure session state machine (P12)
           |       |-- data/onboarding/             first-run writes (P07)
           |       |-- data/repo/                   6 repository interfaces, 2 impls (P06)
-          |       |-- data/settings/               DataStore settings repository (P04)
+          |       |-- data/settings/               DataStore settings implementation (P04/P22)
           |       |-- data/sync/DailyUsageSync.kt  day -> Room, idempotent (P06)
           |       |-- data/usage/                  usage source + aggregator (P05)
           |       |                                LaunchableAppCatalog (P15)
@@ -263,7 +263,8 @@ SECTION 4 - FOLDER LAYOUT
           |                 screens/limits/ (AppLimitsScreen + ViewModel, P15)
           |                 screens/habits/ (milestones, compassion controls + ViewModel, P18)
           |                 screens/insights/ (single state, Canvas charts and labelled heatmap, P19),
-          |                 screens/settings/EnvironmentControls.kt (P21)
+          |                 screens/settings/EnvironmentControls.kt (P21), SettingsScreen/ViewModel (P22)
+          |                 domain/settings/SettingsRepository.kt (P22 contract)
           |-- debug/                            DEBUG-ONLY source set (P05b)
           |   |-- res/values/strings.xml        self-check strings, never shipped
           |   `-- java/com/screengarden/app/
@@ -1012,6 +1013,19 @@ SECTION 6 - DECISIONS
       battery saver/reduced animations and hidden destinations also stop motion.
       Settings stores hemisphere and lowPowerVisuals under new stable keys, with
       labelled controls and visible write failures. Use existing Material tokens.
+  D80 P22 SETTINGS AND CURATED ACCENTS.
+      SettingsRepository moves to domain/settings; data implementation and stable
+      preference keys remain unchanged. SettingsViewModel exposes one state with
+      saved/loading/write-error flags. Four goals save in one DataStore edit.
+      Theme and three curated accent palettes reach the sole app theme resolver;
+      true-black AMOLED surfaces remain black. Dynamic color stays off (D6).
+      Status/navigation icon contrast follows the stored theme through WindowCompat.
+      Existing notification permission/channel controls and keepScreenOn are reused.
+      Reopening onboarding changes only onboardingDone, preserving Room history.
+      The temporary debug AMOLED intent hook is removed. Debug settings demos
+      hold fake state only and use the same labelled controls as production.
+      RTL scenery paragraphs explicitly resolve content direction, preserving punctuation
+      while controls mirror. No new dependency, permission or Room schema.
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
@@ -1067,7 +1081,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P19     done    Insights charts, safe summaries and recent hourly evidence [2.3]
   P20     done    Local weekly reflection + actual stored garden timeline [new]
   P21     done    Day/night, seasons, weather visuals [new]
-  P22     todo    Themes (incl. AMOLED toggle; removes D35's hook) [3.1]
+  P22     done    Six Settings sections, persisted themes/curated palettes [3.1]
   P23     todo    Widget + Quick Settings tile [new]
   P24     todo    Snapshot export [new]
   P25     todo    Plant packs (16.5) [new]
@@ -1085,8 +1099,8 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P21 are implemented and locally verified; see CURRENT STATUS for CI.
-  P04b repositories are complete, including BadgeRepository in P18. P22 is next.
+  Sequencing note: P00-P22 are implemented and locally verified; see CURRENT STATUS for CI.
+  P04b repositories are complete, including BadgeRepository in P18. P23 is next.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
 --------------------------------------------------------------------------------
@@ -1279,11 +1293,8 @@ SECTION 9 - PERMISSIONS
 --------------------------------------------------------------------------------
 SECTION 10 - KNOWN ISSUES
 --------------------------------------------------------------------------------
-  K1  The AMOLED scheme is a persisted setting now (P04), but nothing writes it
-      yet: the picker is P22's work, so on device it is still reachable only
-      through the debug intent extra (D35). Close in P22.
-  K2  Garden, Focus, App limits, Milestones and Insights are implemented. Settings
-      has limits/milestones entries; remaining Settings controls are P22.
+  K1  CLOSED in P22. Theme and accent pickers persist choices; AMOLED is reachable in Settings.
+  K2  Garden, Focus, App limits, Milestones, Insights and six Settings sections are implemented.
   K3  P10 GardenViewModel reads Room through GardenStore. Five repositories are
       implemented, including BadgeRepository in P18.
   K4  kotlinOptions { jvmTarget } is deprecated in Kotlin 2.1 (still compiles).
@@ -1297,8 +1308,7 @@ SECTION 10 - KNOWN ISSUES
       light/dark/AMOLED, 1.3x font, RTL. Theme colours were verified by pixel
       probe, not by eye. See K26/K29 for what this did NOT cover (status-bar
       icons, other screen sizes, API 26 rendering).
-  K9  The theme honours a persisted preference, but no in-app control changes
-      it yet (K1/P22).
+  K9  CLOSED in P22. Stored theme/accent controls update the app and survive restart.
   K10 The launcher icon's monochrome layer reuses the coloured foreground
       drawable; themed icons on API 33+ may flatten the two-tone leaf. Not
       verified on a launcher in P00b (only in-app screens were captured).
@@ -1352,9 +1362,7 @@ SECTION 10 - KNOWN ISSUES
       screenshot pass leaves the launcher on screen and every "capture" is
       wrong. P00b hit this once. Always reinstall (`adb install -r`) and verify
       `mCurrentFocus` contains screengarden before capturing.
-  K28 The debug-only AMOLED intent extra (D35) is a temporary hook. It must be
-      deleted in P22 together with the real preference, or it becomes a second,
-      undocumented way to set the theme.
+  K28 CLOSED in P22. Temporary debug AMOLED intent extra removed; one theme resolver remains.
   K29 Visual coverage is one screen size only: 1080x2400 (Pixel 6 profile),
       API 35. Small phones, tablets, foldables and API 26 rendering are
       unverified; P31 owns a multi-size pass.
@@ -1429,9 +1437,7 @@ SECTION 10 - KNOWN ISSUES
   K47 The first-run flow has no screenshots. It was verified by Compose UI tests
       (Robolectric) but not captured on an emulator, so docs/screenshots/ still
       shows only the tab shell. Re-capture with P22 or the next visual pass.
-  K48 Onboarding cannot be re-run once it is done: there is no "show the intro
-      again" action, and clearing app data is the only way back. A reset belongs to
-      the Settings screen (P22), not to a debug hook.
+  K48 CLOSED in P22. Introduction can be reopened after confirmation; only onboardingDone changes.
   K49 CLOSED in P10. GardenViewModel scores bounded daily records using
       HealthScoreCalculator. Focus (P14) and app limits (P15) now feed score;
       bedtime (P17) now feeds the score. Weights remain untuned against real days.
@@ -1461,12 +1467,12 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 298 JVM tests, zero failures/errors/skips. Four P21 gates
+  Current test state: 309 JVM tests, zero failures/errors/skips. Four P22 gates
   PASS; lint zero errors/four accepted warnings. P20 nine API 35 migrations PASS
-  through v6; P21 does not change schema. Real scenery preferences survive restart;
-  moving/system-disabled/low-power frame checks PASS. Twenty-three P21 fake-only
-  captures reviewed, including updated Garden and bedtime images with large text
-  and RTL. No signed release or Pages exists yet.
+  through v6; P22 does not change schema. Real emulator theme/accent preferences
+  survive restart, introduction cancel and notification settings opening PASS.
+  Eleven P22 fake-only captures reviewed, including themes, 1.3x text and RTL.
+  No signed GitHub release or Pages exists yet.
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
       Physical-device periodic/reboot behavior and API 26 visuals are unverified.
@@ -1486,19 +1492,18 @@ SECTION 10 - KNOWN ISSUES
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P20 are published. P20 85c4de3 CI 42440690508 SUCCESS.
-  P21 local clock/season scenery, offline decorative weather, persisted hemisphere
-  and lowPowerVisuals controls are complete. Four gates PASS: 298 JVM tests,
-  zero failures/errors/skips; lint zero errors/four accepted warnings.
-  Real emulator preferences persist across restart; motion and disabled/low-power
-  frame checks PASS. Twenty-three fake-only captures reviewed; minimum seasonal
-  plant-label contrast 7.17:1. No permission, dependency or Room schema change.
-  P21 publication/CI pending. No signed release or Pages yet.
-
+  P00-P21 are published; P21 e1454cd CI 42442493453 SUCCESS.
+  P22 is complete locally: six Settings sections, stored themes/three palettes,
+  atomic goals, optional notification and focus controls, introduction restart.
+  Four gates PASS; 309 JVM tests, zero failures/errors/skips; lint zero errors
+  and four accepted warnings. Real emulator theme/accent restart persistence,
+  intro cancel and Android notification controls PASS. Eleven fake-only captures
+  reviewed, including large text and RTL. No new dependency/permission/schema.
+  P22 commit/push/CI pending after final resumed verification. No signed GitHub release or Pages yet.
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Publish P21 and confirm its CI; then P22 themes and complete Settings sections.
+  Publish P22 and confirm GitHub CI, then P23 widget and Quick Settings tile.
   Continue P22-P33 in order, GitHub only, until explicitly stopped by the owner.
   Save checkpoints and use compaction to continue; do not stop at task/context
   milestones. Never request, print or commit secret values.
@@ -2351,6 +2356,50 @@ SECTION 13 - SESSION LOG
               No app defect found by those helper failures; no check weakened.
               Optional video not available (Session 12). P21 CI pending push.
     Next      Publish P21/check CI, then P22-P33 until the owner stops work.
+  SESSION 32 - 2026-11-08 - P22 settings completion
+    Did       Read full memory; fetched origin, no divergence from e1454cd;
+              verified P21 CI success. Finished six Settings sections and the
+              domain settings boundary, stored themes/three palettes, atomic
+              goal edits, introduction confirmation and existing platform controls.
+              Fixed status/navigation icons to follow the selected app theme,
+              after screenshots exposed dark ink on dark backgrounds.
+              Added eleven repository/ViewModel/UI/contrast tests and eleven reviewed
+              fake-only emulator images. Refreshed README gallery/status.
+    Decided   D80. Reuse Material tokens and stable setting keys, keep dynamic
+              color off, preserve schema v6 and remove the debug AMOLED hook.
+    Verified  Four final gates PASS: 309 JVM tests, zero failures/errors/skips;
+              lint zero errors/four accepted warnings. Actual emulator theme and
+              accent survive restart; introduction cancel and Android notification
+              screen PASS. Light/dark/AMOLED, 1.3x text and RTL captures reviewed.
+              Merged manifest offline/backup disabled, schemas unchanged,
+              secret sweep and whitespace checks PASS.
+    Not ver.  Physical-device reliability, API 26/new-size settings rendering,
+              complete real onboarding restart flow, signed release and Pages.
+              Initial native helper missed a below-fold accent and treated a
+              multi-line window result as a single negative match; fixed scrolling
+              and output handling, then verified the actual notification activity.
+              Capture framing and system-bar contrast improved before publication.
+              Official WindowInsetsControllerCompat API docs verified; no check weakened.
+              Video not available (Session 12). P22 CI pending publication.
+    Next      P22 push/CI, then P23-P33 continuously until the owner stops.
+  SESSION 33 - 2026-11-08 - P22 final RTL fix and resumed verification
+    Did       Read complete memory, checked status/history, fetched origin. Kept
+              all saved P22 work. Corrected two scenery paragraphs whose English
+              punctuation reversed in mirrored Settings; added a regression test.
+              Re-ran real emulator Settings interactions and eleven fake-only
+              captures; reviewed the corrected renders. Updated resume checkpoint.
+    Decided   Reuse content direction on explicit Material text styles; no new
+              dependency, permission, storage key or database schema. GitHub only.
+    Verified  Fresh four gates PASS; 309 JVM tests, zero failures/errors/skips;
+              lint zero errors/four accepted warnings. Regression fails on the
+              previous unspecified direction and passes after correction. Real
+              theme/accent restart, intro cancel and notification controls PASS.
+              Eleven fake-only emulator captures reviewed. Privacy manifest,
+              immutable schemas, secret sweep and whitespace checks PASS.
+    Not ver.  Physical-device reliability, API 26/new-size Settings rendering,
+              complete real introduction restart flow, signed release and Pages.
+              Video not available (Session 12). P22 CI pending publication.
+    Next      Publish P22, verify CI, then P23-P33 continuously until stopped.
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
@@ -2610,7 +2659,7 @@ SECTION 16 - CORE DESIGN
     bedtimeStart      String  local time, e.g. "22:30"
     bedtimeEnd        String  local time, e.g. "07:00"
     theme             enum    system | light | dark | amoled
-    accentColor       enum    calm palette variant
+    accentColor       enum    calm_green | soft_blue | heather (P22)
     streakThreshold   Int     default 60
     gentleMode        Boolean default true
     notificationsOn   Boolean default false

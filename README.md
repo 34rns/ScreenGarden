@@ -4,8 +4,7 @@ A calm, offline garden that grows while you focus and keep your screen time in
 check.
 
 > **Status: work in progress.** Onboarding, local settings, usage collection and
-> the Garden, Focus, Insights, App limits and Milestones screens are implemented. Settings controls are
-> still being built. There is no installable signed release yet.
+> the Garden, Focus, Insights, App limits and Milestones screens are implemented. Settings now includes goals, themes, palettes, scenery, reminders and focus preferences. There is no installable signed release yet.
 
 [![CI](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml)
 ![Status](https://img.shields.io/badge/status-work%20in%20progress-yellow)
@@ -21,8 +20,7 @@ nothing is uploaded or sold.
 ## Screenshots
 
 Captured on an Android 15 emulator (1080 × 2400) with demo mode enabled.
-Garden, Focus, Insights, App limits and Milestones images use fake debug-only demo data. Settings shows
-the App limits and Milestones entries. No image contains personal phone data.
+Garden, Focus, Insights, App limits and Milestones images use fake debug-only demo data. Settings images use fake debug-only preferences. No image contains personal phone data.
 
 | | Light | Dark | AMOLED |
 | --- | --- | --- | --- |
@@ -92,6 +90,12 @@ Scenery follows the local clock and season. These emulator previews use fake deb
 | Winter | Evening | Night |
 |---|---|---|
 | <img src="docs/screenshots/environment_winter.png" width="220" alt="A winter plot with decorative snow"> | <img src="docs/screenshots/environment_sunset.png" width="220" alt="Warm evening light over the garden"> | <img src="docs/screenshots/environment_night.png" width="220" alt="A moonlit garden with decorative fireflies"> |
+
+Settings includes stored themes, curated accents and optional visual controls:
+
+| Appearance | AMOLED appearance | Data and about |
+|---|---|---|
+| <img src="docs/screenshots/settings_light_appearance.png" width="220" alt="Stored theme, curated palette and scenery choices"> | <img src="docs/screenshots/settings_amoled_appearance.png" width="220" alt="True-black AMOLED settings with labelled choices"> | <img src="docs/screenshots/settings_data_about.png" width="220" alt="Local data, introduction restart and license information"> |
 
 ## Privacy promise
 

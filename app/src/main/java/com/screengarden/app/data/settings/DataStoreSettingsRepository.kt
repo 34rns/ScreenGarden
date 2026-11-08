@@ -12,7 +12,9 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.screengarden.app.domain.garden.Hemisphere
 import com.screengarden.app.domain.model.AccentColor
+import com.screengarden.app.domain.model.OnboardingChoices
 import com.screengarden.app.domain.model.ThemePreference
+import com.screengarden.app.domain.settings.SettingsRepository
 import java.io.IOException
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -166,6 +168,18 @@ class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>)
 
     override suspend fun setLowPowerVisuals(enabled: Boolean) {
         dataStore.edit { it[SettingsKeys.LOW_POWER_VISUALS] = enabled }
+    }
+
+    override suspend fun setGoals(choices: OnboardingChoices) {
+        require(choices.dailyGoalMs > 0 && choices.pickupGoal >= 0)
+        val start = canonicalBedtime(choices.bedtimeStartText)
+        val end = canonicalBedtime(choices.bedtimeEndText)
+        dataStore.edit {
+            it[SettingsKeys.DAILY_GOAL_MS] = choices.dailyGoalMs
+            it[SettingsKeys.PICKUP_GOAL] = choices.pickupGoal
+            it[SettingsKeys.BEDTIME_START] = start
+            it[SettingsKeys.BEDTIME_END] = end
+        }
     }
 
     /**

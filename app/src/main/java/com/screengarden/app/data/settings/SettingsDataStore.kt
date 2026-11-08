@@ -8,6 +8,7 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.screengarden.app.domain.settings.SettingsRepository
 
 /** File name of the single settings store; changing it would orphan saved settings. */
 private const val SETTINGS_FILE_NAME = "screengarden_settings"

@@ -2,10 +2,10 @@
 
 package com.screengarden.app.data.onboarding
 
-import com.screengarden.app.data.settings.SettingsRepository
 import com.screengarden.app.domain.model.AccentColor
 import com.screengarden.app.domain.model.OnboardingChoices
 import com.screengarden.app.domain.model.ThemePreference
+import com.screengarden.app.domain.settings.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest

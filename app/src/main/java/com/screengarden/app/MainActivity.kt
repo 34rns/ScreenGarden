@@ -2,22 +2,33 @@
 
 package com.screengarden.app
 
+import android.Manifest
+import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -46,7 +57,9 @@ import com.screengarden.app.ui.screens.insights.InsightsScreen
 import com.screengarden.app.ui.screens.insights.InsightsViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
-import com.screengarden.app.ui.screens.settings.EnvironmentControls
+import com.screengarden.app.ui.screens.settings.SettingsActions
+import com.screengarden.app.ui.screens.settings.SettingsScreen
+import com.screengarden.app.ui.screens.settings.SettingsViewModel
 import com.screengarden.app.ui.theme.ScreenGardenTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
@@ -77,7 +90,6 @@ class MainActivity : ComponentActivity() {
         val settingsRepository = container.settingsRepository
         val onboardingCompletion = container.onboardingCompletion
         val appContext = applicationContext
-        val amoledPreview = isDebugExtraAllowed() && intent.getBooleanExtra(EXTRA_AMOLED, false)
         // DebugCatalog.destination returns null in release builds (the release
         // source set has a stub), so this is a no-op there.
         val debugDestination = requestedDebugScreen()?.let { DebugCatalog.destination(it, this) }
@@ -90,9 +102,18 @@ class MainActivity : ComponentActivity() {
             // before DataStore emits the stored choice (K31).
             val themePreference by settingsRepository.theme
                 .collectAsStateWithLifecycle(initialValue = ThemePreference.SYSTEM)
+            val accentColor by settingsRepository.accentColor.collectAsStateWithLifecycle(SettingsDefaults.ACCENT_COLOR)
+            val darkBars = themePreference.prefersDark(isSystemInDarkTheme())
+            SideEffect {
+                // App-selected dark themes can differ from the device's system theme.
+                WindowCompat.getInsetsController(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = !darkBars
+                    isAppearanceLightNavigationBars = !darkBars
+                }
+            }
             ScreenGardenTheme(
                 themePreference = themePreference,
-                amoled = amoledPreview
+                accentColor = accentColor
             ) {
                 // null means DataStore has not answered yet. Drawing nothing for that
                 // single frame is deliberate: starting at `false` would flash the
@@ -103,38 +124,62 @@ class MainActivity : ComponentActivity() {
                     settingsRepository.onboardingDone.map<Boolean, Boolean?> { done -> done }
                 }
                 val onboardingDone by onboardingDoneFlow.collectAsStateWithLifecycle(initialValue = null)
-                val environmentContent: @androidx.compose.runtime.Composable () -> Unit = {
-                    val hemisphere by settingsRepository.hemisphere.collectAsStateWithLifecycle(
-                        SettingsDefaults.HEMISPHERE
-                    )
-                    val lowPower by settingsRepository.lowPowerVisuals.collectAsStateWithLifecycle(
-                        SettingsDefaults.LOW_POWER_VISUALS
-                    )
-                    var saving by remember { mutableStateOf(false) }
-                    var error by remember { mutableStateOf(false) }
-                    val scope = rememberCoroutineScope()
-                    fun save(write: suspend () -> Unit) {
-                        if (saving) return
-                        scope.launch {
-                            saving = true
-                            error = false
-                            try {
-                                write()
-                            } catch (failure: Exception) {
-                                if (failure is kotlinx.coroutines.CancellationException) throw failure
-                                error = true
-                            } finally {
-                                saving = false
-                            }
-                        }
+                val settingsContent: @androidx.compose.runtime.Composable (
+                    () -> Unit,
+                    () -> Unit
+                ) -> Unit = { limits, habits ->
+                    val factory =
+                        remember(container) { viewModelFactory { initializer { container.settingsViewModel() } } }
+                    val settings: SettingsViewModel = viewModel(factory = factory)
+                    val state by settings.uiState.collectAsStateWithLifecycle()
+                    var allowed by remember {
+                        mutableStateOf(NotificationManagerCompat.from(appContext).areNotificationsEnabled())
                     }
-                    EnvironmentControls(
-                        hemisphere,
-                        lowPower,
-                        { save { settingsRepository.setHemisphere(it) } },
-                        { save { settingsRepository.setLowPowerVisuals(it) } },
-                        saving = saving,
-                        error = error
+                    val permission =
+                        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                            allowed = granted && NotificationManagerCompat.from(appContext).areNotificationsEnabled()
+                            settings.setNotifications(granted)
+                        }
+                    LifecycleResumeEffect(settings) {
+                        allowed = NotificationManagerCompat.from(appContext).areNotificationsEnabled()
+                        onPauseOrDispose { }
+                    }
+                    SettingsScreen(
+                        limits,
+                        onMilestones = habits,
+                        state = state,
+                        actions = SettingsActions(
+                            saveGoals = settings::saveGoals,
+                            setTheme = settings::setTheme,
+                            setAccent = settings::setAccent,
+                            setNotifications = { enabled ->
+                                if (enabled &&
+                                    Build.VERSION.SDK_INT >= 33 &&
+                                    ContextCompat.checkSelfPermission(
+                                        appContext,
+                                        Manifest.permission.POST_NOTIFICATIONS
+                                    ) !=
+                                    PackageManager.PERMISSION_GRANTED
+                                ) {
+                                    permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    settings.setNotifications(enabled)
+                                }
+                            },
+                            setKeepScreenOn = settings::setKeepScreenOn,
+                            setHemisphere = settings::setHemisphere,
+                            setLowPower = settings::setLowPower,
+                            showIntroduction = settings::showIntroduction
+                        ),
+                        notificationsAllowed = allowed,
+                        onNotificationSettings = {
+                            startActivity(
+                                Intent(
+                                    Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                                ).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                            )
+                        },
+                        versionName = packageManager.getPackageInfo(packageName, 0).versionName.orEmpty()
                     )
                 }
                 val gardenContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { startFocus ->
@@ -238,7 +283,7 @@ class MainActivity : ComponentActivity() {
                         habitsContent = habitsContent,
                         insightsContent = insightsContent,
                         historyContent = historyContent,
-                        environmentContent = environmentContent
+                        settingsContent = settingsContent
                     )
                     onboardingDone == null -> Box(
                         modifier = Modifier
@@ -280,7 +325,7 @@ class MainActivity : ComponentActivity() {
                         habitsContent = habitsContent,
                         insightsContent = insightsContent,
                         historyContent = historyContent,
-                        environmentContent = environmentContent
+                        settingsContent = settingsContent
                     )
                 }
             }
@@ -298,9 +343,6 @@ class MainActivity : ComponentActivity() {
     private fun isDebugExtraAllowed(): Boolean = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
     private companion object {
-        /** Launch extra: `adb shell am start ... --ez amoled true`. Debug only. */
-        const val EXTRA_AMOLED = "amoled"
-
         /** Launch extra: `adb shell am start ... --es screen usage_self_check`. */
         const val EXTRA_DEBUG_SCREEN = "screen"
     }

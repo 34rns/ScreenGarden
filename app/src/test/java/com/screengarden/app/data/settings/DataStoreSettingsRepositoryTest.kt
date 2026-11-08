@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import com.screengarden.app.domain.garden.Hemisphere
 import com.screengarden.app.domain.model.AccentColor
+import com.screengarden.app.domain.model.OnboardingChoices
 import com.screengarden.app.domain.model.ThemePreference
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -41,6 +42,32 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class DataStoreSettingsRepositoryTest {
+    @Test
+    fun curatedAccentsAndAtomicGoalsSurviveReopening() = runBlocking {
+        val settings = open()
+        val choices = OnboardingChoices(120 * 60_000L, 45, 21 * 60, 6 * 60)
+        settings.repository.setGoals(choices)
+        settings.repository.setTheme(ThemePreference.AMOLED)
+        settings.repository.setAccentColor(AccentColor.HEATHER)
+        closeAll()
+        val reopened = open().repository
+        assertEquals(choices.dailyGoalMs, reopened.dailyGoalMs.first())
+        assertEquals(45, reopened.pickupGoal.first())
+        assertEquals("21:00", reopened.bedtimeStart.first())
+        assertEquals("06:00", reopened.bedtimeEnd.first())
+        assertEquals(ThemePreference.AMOLED, reopened.theme.first())
+        assertEquals(AccentColor.HEATHER, reopened.accentColor.first())
+    }
+
+    @Test
+    fun invalidGoalBatchDoesNotPartiallyOverwriteSavedChoices() = runBlocking {
+        val settings = open().repository
+        val before = settings.dailyGoalMs.first()
+        assertTrue(runCatching { settings.setGoals(OnboardingChoices(pickupGoal = -1)) }.isFailure)
+        assertEquals(before, settings.dailyGoalMs.first())
+        assertEquals(80, settings.pickupGoal.first())
+    }
+
     @Test
     fun compassionAllowanceHasAStableDefaultAndValidatedUpdates() = runBlocking {
         val settings = open()

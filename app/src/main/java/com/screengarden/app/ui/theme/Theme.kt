@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import com.screengarden.app.domain.model.AccentColor
 import com.screengarden.app.domain.model.ThemePreference
 
 private val LightColors = lightColorScheme(
@@ -127,28 +128,27 @@ private val AmoledColors = darkColorScheme(
  * App theme.
  *
  * The scheme is decided in exactly one place (DECISION D42): the stored
- * [themePreference] wins over the device setting, and [amoled] is the debug-only
- * preview override from DECISION D35 so screenshots can reach the true-black
- * variant before its picker ships in P22.
+ * [themePreference] wins over the device setting. Curated accents affect only
+ * accent roles; AMOLED keeps its true-black surfaces.
  *
- * @param themePreference the persisted choice from [com.screengarden.app.data.settings.SettingsRepository].
- * @param amoled debug-only override that forces the true-black scheme.
+ * @param themePreference the persisted choice from [com.screengarden.app.domain.settings.SettingsRepository].
+ * @param accentColor the persisted curated accent.
  */
 @Composable
 fun ScreenGardenTheme(
     themePreference: ThemePreference = ThemePreference.SYSTEM,
-    amoled: Boolean = false,
+    accentColor: AccentColor = AccentColor.CALM_GREEN,
     content: @Composable () -> Unit
 ) {
     val systemInDarkTheme = isSystemInDarkTheme()
     val colorScheme = when {
-        amoled || themePreference.isAmoled -> AmoledColors
+        themePreference.isAmoled -> AmoledColors
         themePreference.prefersDark(systemInDarkTheme) -> DarkColors
         else -> LightColors
     }
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = colorScheme.withAccent(accentColor, themePreference.prefersDark(systemInDarkTheme)),
         typography = ScreenGardenTypography,
         content = content
     )

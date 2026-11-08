@@ -41,6 +41,7 @@ import com.screengarden.app.domain.insights.InsightsSummary
 import com.screengarden.app.domain.insights.Reflections
 import com.screengarden.app.domain.limits.AppLimitRule
 import com.screengarden.app.domain.limits.LaunchableApp
+import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.domain.notifications.Nudge
 import com.screengarden.app.ui.debug.NudgeDemoScreen
 import com.screengarden.app.ui.debug.UsageSelfCheckScreen
@@ -60,7 +61,10 @@ import com.screengarden.app.ui.screens.insights.InsightsUiState
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
 import com.screengarden.app.ui.screens.limits.AppLimitsUiState
 import com.screengarden.app.ui.screens.settings.EnvironmentControls
+import com.screengarden.app.ui.screens.settings.SettingsActions
 import com.screengarden.app.ui.screens.settings.SettingsScreen
+import com.screengarden.app.ui.screens.settings.SettingsUiState
+import com.screengarden.app.ui.theme.ScreenGardenTheme
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -258,8 +262,45 @@ object DebugCatalog {
                 })
             }
         }
-        if (requested == "settings_demo") {
-            return DebugDestination(requested, ScreenGardenDestination.Settings) { SettingsScreen({ }) }
+        if (requested in setOf("settings_demo", "settings_dark_demo", "settings_amoled_demo", "settings_rtl_demo")) {
+            return DebugDestination(requireNotNull(requested), ScreenGardenDestination.Settings) {
+                var state by remember {
+                    mutableStateOf(
+                        SettingsUiState(
+                            loading = false,
+                            theme = when (requested) {
+                                "settings_dark_demo" -> ThemePreference.DARK
+                                "settings_amoled_demo" -> ThemePreference.AMOLED
+                                else -> ThemePreference.LIGHT
+                            }
+                        )
+                    )
+                }
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides if (requested == "settings_rtl_demo") {
+                        LayoutDirection.Rtl
+                    } else {
+                        LocalLayoutDirection.current
+                    }
+                ) {
+                    ScreenGardenTheme(state.theme, state.accent) {
+                        SettingsScreen(
+                            {},
+                            state = state,
+                            versionName = "0.1.0",
+                            actions = SettingsActions(
+                                saveGoals = { state = state.copy(goals = it, saved = true) },
+                                setTheme = { state = state.copy(theme = it) },
+                                setAccent = { state = state.copy(accent = it) },
+                                setNotifications = { state = state.copy(notificationsOn = it) },
+                                setKeepScreenOn = { state = state.copy(keepScreenOn = it) },
+                                setHemisphere = { state = state.copy(hemisphere = it) },
+                                setLowPower = { state = state.copy(lowPowerVisuals = it) }
+                            )
+                        )
+                    }
+                }
+            }
         }
         if (requested in setOf("limits_demo", "limits_empty_demo", "limits_rtl_demo")) {
             val state = AppLimitsUiState(

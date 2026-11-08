@@ -2,8 +2,8 @@
 
 package com.screengarden.app.data.onboarding
 
-import com.screengarden.app.data.settings.SettingsRepository
 import com.screengarden.app.domain.model.OnboardingChoices
+import com.screengarden.app.domain.settings.SettingsRepository
 
 /**
  * Writes the first-run answers into settings (P07).

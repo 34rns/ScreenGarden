@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.screengarden.app.ui.screens.settings.SettingsScreen
 
 /**
  * App shell: a [Scaffold] with the persistent bottom bar and the tab [ScreenGardenNavHost].
@@ -27,7 +28,9 @@ fun ScreenGardenApp(
     habitsContent: @Composable (() -> Unit) -> Unit = { _ -> },
     insightsContent: @Composable (() -> Unit) -> Unit = { _ -> },
     historyContent: @Composable (() -> Unit) -> Unit = { _ -> },
-    environmentContent: @Composable () -> Unit = { }
+    settingsContent: @Composable (() -> Unit, () -> Unit) -> Unit = { limits, habits ->
+        SettingsScreen(limits, onMilestones = habits)
+    }
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -64,7 +67,7 @@ fun ScreenGardenApp(
             habitsContent = habitsContent,
             insightsContent = insightsContent,
             historyContent = historyContent,
-            environmentContent = environmentContent
+            settingsContent = settingsContent
         )
     }
 }
