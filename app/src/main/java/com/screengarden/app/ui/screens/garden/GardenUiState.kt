@@ -2,6 +2,7 @@
 
 package com.screengarden.app.ui.screens.garden
 
+import com.screengarden.app.domain.garden.GardenEnvironment
 import com.screengarden.app.domain.garden.Plant
 
 /** A single snapshot of the garden. Missing measurements never become a zero score. */
@@ -12,7 +13,9 @@ data class GardenUiState(
     val score: Int? = null,
     val streakDays: Int = 0,
     val error: Boolean = false,
-    val isBedtime: Boolean = false
+    val isBedtime: Boolean = false,
+    val environment: GardenEnvironment = GardenEnvironment(),
+    val lowPowerVisuals: Boolean = false
 )
 
 /** Normal data availability, independent of saved plants and recoverable read errors. */

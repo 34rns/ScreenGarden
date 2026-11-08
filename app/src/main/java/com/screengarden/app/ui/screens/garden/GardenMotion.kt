@@ -53,7 +53,8 @@ internal fun rememberGardenMotionEnabled(): Boolean {
     DisposableEffect(context, owner) {
         fun update() {
             enabled = owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) &&
-                ValueAnimator.areAnimatorsEnabled()
+                ValueAnimator.areAnimatorsEnabled() &&
+                context.getSystemService(PowerManager::class.java)?.isPowerSaveMode != true
         }
         val lifecycleObserver = LifecycleEventObserver { _, _ -> update() }
         val scaleObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {

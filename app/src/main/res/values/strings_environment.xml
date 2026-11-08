@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="environment_settings">Garden scenery</string>
+    <string name="environment_hemisphere_copy">Seasons follow your device date and hemisphere. Weather is decorative, created on your device.</string>
+    <string name="environment_north">Northern hemisphere</string>
+    <string name="environment_south">Southern hemisphere</string>
+    <string name="environment_low_power">Low power visuals</string>
+    <string name="environment_low_power_copy">Keep the scenery still and hide particles. Your plants grow as usual.</string>
+    <string name="environment_save_error">Could not save this choice. Try again.</string>
+    <string name="environment_description">%1$s · %2$s. Decorative local scenery.</string>
+    <string name="environment_day">Day</string>
+    <string name="environment_sunset">Evening</string>
+    <string name="environment_night">Night</string>
+    <string name="environment_spring">Spring</string>
+    <string name="environment_summer">Summer</string>
+    <string name="environment_autumn">Autumn</string>
+    <string name="environment_winter">Winter</string>
+</resources>

@@ -45,8 +45,10 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.screengarden.app.R
+import com.screengarden.app.domain.garden.GardenLight
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
+import com.screengarden.app.domain.garden.Season
 import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.ui.theme.GardenNightColors
 import com.screengarden.app.ui.theme.ScreenGardenTheme
@@ -88,14 +90,45 @@ fun GardenScreen(
                     )
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MaterialTheme(colorScheme = if (state.isBedtime) GardenNightColors else MaterialTheme.colorScheme) {
+                    MaterialTheme(
+                        colorScheme = if (state.isBedtime ||
+                            state.environment.light == GardenLight.NIGHT
+                        ) {
+                            GardenNightColors
+                        } else {
+                            MaterialTheme.colorScheme
+                        }
+                    ) {
                         GardenScene(
                             plants = state.plants,
                             onPlantSelected = { selectedPlantId = it.id },
                             streakDays = state.streakDays,
-                            isBedtime = state.isBedtime
+                            isBedtime = state.isBedtime,
+                            environment = state.environment,
+                            lowPowerVisuals = state.lowPowerVisuals
                         )
                     }
+                    GardenBody(
+                        stringResource(
+                            R.string.environment_description,
+                            stringResource(
+                                when {
+                                    state.isBedtime || state.environment.light == GardenLight.NIGHT ->
+                                        R.string.environment_night
+                                    state.environment.light == GardenLight.SUNSET -> R.string.environment_sunset
+                                    else -> R.string.environment_day
+                                }
+                            ),
+                            stringResource(
+                                when (state.environment.season) {
+                                    Season.SPRING -> R.string.environment_spring
+                                    Season.SUMMER -> R.string.environment_summer
+                                    Season.AUTUMN -> R.string.environment_autumn
+                                    Season.WINTER -> R.string.environment_winter
+                                }
+                            )
+                        )
+                    )
                     if (state.plants.isNotEmpty()) GardenBody(stringResource(R.string.garden_plant_hint))
                 }
                 GardenSummary(score = state.score, streakDays = state.streakDays)

@@ -2,6 +2,7 @@
 
 package com.screengarden.app.data.settings
 
+import com.screengarden.app.domain.garden.Hemisphere
 import com.screengarden.app.domain.model.AccentColor
 import com.screengarden.app.domain.model.ThemePreference
 
@@ -49,4 +50,6 @@ object SettingsDefaults {
 
     const val KEEP_SCREEN_ON: Boolean = false
     const val COMPASSION_DAYS_PER_MONTH: Int = 3
+    val HEMISPHERE: Hemisphere = Hemisphere.NORTHERN
+    const val LOW_POWER_VISUALS: Boolean = false
 }

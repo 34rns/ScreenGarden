@@ -19,8 +19,13 @@ import com.screengarden.app.domain.focus.FocusSessionState
 import com.screengarden.app.domain.focus.FocusStatus
 import com.screengarden.app.domain.focus.FocusTag
 import com.screengarden.app.domain.garden.GardenDayRecord
+import com.screengarden.app.domain.garden.GardenEnvironment
+import com.screengarden.app.domain.garden.GardenLight
+import com.screengarden.app.domain.garden.GardenWeather
+import com.screengarden.app.domain.garden.Hemisphere
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
+import com.screengarden.app.domain.garden.Season
 import com.screengarden.app.domain.habits.BadgeKind
 import com.screengarden.app.domain.habits.EarnedBadge
 import com.screengarden.app.domain.habits.HabitsSnapshot
@@ -54,6 +59,7 @@ import com.screengarden.app.ui.screens.insights.InsightsScreen
 import com.screengarden.app.ui.screens.insights.InsightsUiState
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
 import com.screengarden.app.ui.screens.limits.AppLimitsUiState
+import com.screengarden.app.ui.screens.settings.EnvironmentControls
 import com.screengarden.app.ui.screens.settings.SettingsScreen
 import java.time.LocalDate
 import java.time.ZoneId
@@ -123,6 +129,15 @@ object DebugCatalog {
                         {}
                     )
                 }
+            }
+        }
+        if (requested == "environment_settings_demo") {
+            return DebugDestination(requested, ScreenGardenDestination.Settings) {
+                var side by remember { mutableStateOf(Hemisphere.NORTHERN) }
+                var lowPower by remember { mutableStateOf(false) }
+                SettingsScreen({ }, environmentContent = {
+                    EnvironmentControls(side, lowPower, { side = it }, { lowPower = it })
+                })
             }
         }
         if (requested in setOf(
@@ -312,7 +327,8 @@ object DebugCatalog {
                 }
             }
         }
-        if (requested in setOf(
+        if (requested?.startsWith("environment_") == true ||
+            requested in setOf(
                 "garden_demo",
                 "garden_rtl_demo",
                 "garden_empty_demo",
@@ -342,7 +358,26 @@ object DebugCatalog {
                     score = 84,
                     streakDays = 4
                 )
-            }.let { it.copy(isBedtime = requested?.startsWith("bedtime") == true) }
+            }.let {
+                val environment = when (requested) {
+                    "environment_summer_demo" -> GardenEnvironment(season = Season.SUMMER)
+                    "environment_autumn_demo" -> GardenEnvironment(season = Season.AUTUMN, weather = GardenWeather.RAIN)
+                    "environment_winter_demo" -> GardenEnvironment(season = Season.WINTER, weather = GardenWeather.SNOW)
+                    "environment_sunset_demo" -> GardenEnvironment(GardenLight.SUNSET, Season.AUTUMN)
+                    "environment_night_demo" -> GardenEnvironment(
+                        GardenLight.NIGHT,
+                        Season.SUMMER,
+                        GardenWeather.FIREFLIES
+                    )
+                    else -> GardenEnvironment()
+                }
+                it.copy(
+                    isBedtime = requested?.startsWith("bedtime") == true,
+                    environment = environment,
+                    score = if (requested == "environment_autumn_demo") 42 else it.score,
+                    lowPowerVisuals = requested == "environment_low_power_demo"
+                )
+            }
             // Pure fake presentation: never reads or writes anybody's usage or garden.
             return DebugDestination(requireNotNull(requested)) {
                 CompositionLocalProvider(

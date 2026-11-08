@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,9 +23,14 @@ import com.screengarden.app.R
 
 /** Settings entry point; other settings sections arrive in P22. */
 @Composable
-fun SettingsScreen(onAppLimits: () -> Unit, modifier: Modifier = Modifier, onMilestones: () -> Unit = { }) {
+fun SettingsScreen(
+    onAppLimits: () -> Unit,
+    modifier: Modifier = Modifier,
+    onMilestones: () -> Unit = { },
+    environmentContent: @Composable () -> Unit = { }
+) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(modifier = Modifier.padding(24.dp)) {
+        Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(24.dp)) {
             Text(
                 stringResource(R.string.tab_settings),
                 style = MaterialTheme.typography.headlineLarge,
@@ -47,6 +54,7 @@ fun SettingsScreen(onAppLimits: () -> Unit, modifier: Modifier = Modifier, onMil
                     )
                 }
             }
+            Surface(Modifier.fillMaxWidth().padding(top = 24.dp)) { environmentContent() }
         }
     }
 }

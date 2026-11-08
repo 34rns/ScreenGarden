@@ -87,6 +87,10 @@ class OnboardingCompletionTest {
         override val notificationsOn: Flow<Boolean> = flowOf(false)
         override val onboardingDone: Flow<Boolean> = flowOf(false)
         override val keepScreenOn: Flow<Boolean> = flowOf(false)
+        override val hemisphere = flowOf(com.screengarden.app.domain.garden.Hemisphere.NORTHERN)
+        override val lowPowerVisuals = flowOf(false)
+        override suspend fun setHemisphere(value: com.screengarden.app.domain.garden.Hemisphere) = Unit
+        override suspend fun setLowPowerVisuals(enabled: Boolean) = Unit
 
         override suspend fun setKeepScreenOn(enabled: Boolean) = Unit
 

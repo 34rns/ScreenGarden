@@ -87,6 +87,12 @@ Local reflections and saved gardens, shown with fake debug-only data:
 | --- | --- | --- |
 | <img src="docs/screenshots/reflection_light.png" width="220" alt="A calm local weekly reflection with measured coverage"> | <img src="docs/screenshots/history_light.png" width="220" alt="Actual saved plant stages in the garden timeline"> | <img src="docs/screenshots/history_months.png" width="220" alt="Latest stored snapshot for each month"> |
 
+Scenery follows the local clock and season. These emulator previews use fake debug-only data; weather is decorative:
+
+| Winter | Evening | Night |
+|---|---|---|
+| <img src="docs/screenshots/environment_winter.png" width="220" alt="A winter plot with decorative snow"> | <img src="docs/screenshots/environment_sunset.png" width="220" alt="Warm evening light over the garden"> | <img src="docs/screenshots/environment_night.png" width="220" alt="A moonlit garden with decorative fireflies"> |
+
 ## Privacy promise
 
 - **No internet permission.** The app cannot make a network request, even by
@@ -121,7 +127,10 @@ by intention. A pull request that adds network access or telemetry is rejected.
 - A Canvas garden with tappable plant details, today's score, streak and a Focus
   tab action. Completed days grow plants once; refreshing never duplicates rewards.
 - Gentle growth, bloom, wilt and recovery transitions. The garden's idle motion
-  stops when it is hidden or system animations are disabled.
+  stops when it is hidden, system animations are disabled or battery saver is on.
+- Day, evening and night scenery follows the local clock. Seasonal ground, snow,
+  rain, sun rays and fireflies are decorative and generated offline. Choose your
+  hemisphere or turn on low power visuals in Settings; plants grow as usual.
 - Focus duration presets and custom times, tags, a growing seed/countdown,
   gentle results, saved session totals and optional keep-screen-on behavior.
   A visible foreground timer keeps running when you leave the app.

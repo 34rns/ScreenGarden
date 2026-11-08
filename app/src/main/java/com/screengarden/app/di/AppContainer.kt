@@ -166,7 +166,9 @@ class AppContainer(context: Context) {
             dailyUsageSync.run()
             Unit
         },
-        bedtimeWindow = bedtimeWindow
+        bedtimeWindow = bedtimeWindow,
+        hemisphere = settingsRepository.hemisphere,
+        lowPowerVisuals = settingsRepository.lowPowerVisuals
     )
 
     /** Per-app screen time; written by the daily sync (P06). */

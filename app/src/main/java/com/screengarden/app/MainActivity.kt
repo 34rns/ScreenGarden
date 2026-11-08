@@ -13,7 +13,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -43,6 +46,7 @@ import com.screengarden.app.ui.screens.insights.InsightsScreen
 import com.screengarden.app.ui.screens.insights.InsightsViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
+import com.screengarden.app.ui.screens.settings.EnvironmentControls
 import com.screengarden.app.ui.theme.ScreenGardenTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
@@ -99,6 +103,40 @@ class MainActivity : ComponentActivity() {
                     settingsRepository.onboardingDone.map<Boolean, Boolean?> { done -> done }
                 }
                 val onboardingDone by onboardingDoneFlow.collectAsStateWithLifecycle(initialValue = null)
+                val environmentContent: @androidx.compose.runtime.Composable () -> Unit = {
+                    val hemisphere by settingsRepository.hemisphere.collectAsStateWithLifecycle(
+                        SettingsDefaults.HEMISPHERE
+                    )
+                    val lowPower by settingsRepository.lowPowerVisuals.collectAsStateWithLifecycle(
+                        SettingsDefaults.LOW_POWER_VISUALS
+                    )
+                    var saving by remember { mutableStateOf(false) }
+                    var error by remember { mutableStateOf(false) }
+                    val scope = rememberCoroutineScope()
+                    fun save(write: suspend () -> Unit) {
+                        if (saving) return
+                        scope.launch {
+                            saving = true
+                            error = false
+                            try {
+                                write()
+                            } catch (failure: Exception) {
+                                if (failure is kotlinx.coroutines.CancellationException) throw failure
+                                error = true
+                            } finally {
+                                saving = false
+                            }
+                        }
+                    }
+                    EnvironmentControls(
+                        hemisphere,
+                        lowPower,
+                        { save { settingsRepository.setHemisphere(it) } },
+                        { save { settingsRepository.setLowPowerVisuals(it) } },
+                        saving = saving,
+                        error = error
+                    )
+                }
                 val gardenContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { startFocus ->
                     val factory = remember(container) {
                         viewModelFactory { initializer { container.gardenViewModel() } }
@@ -199,7 +237,8 @@ class MainActivity : ComponentActivity() {
                         limitsContent = limitsContent,
                         habitsContent = habitsContent,
                         insightsContent = insightsContent,
-                        historyContent = historyContent
+                        historyContent = historyContent,
+                        environmentContent = environmentContent
                     )
                     onboardingDone == null -> Box(
                         modifier = Modifier
@@ -240,7 +279,8 @@ class MainActivity : ComponentActivity() {
                         limitsContent = limitsContent,
                         habitsContent = habitsContent,
                         insightsContent = insightsContent,
-                        historyContent = historyContent
+                        historyContent = historyContent,
+                        environmentContent = environmentContent
                     )
                 }
             }

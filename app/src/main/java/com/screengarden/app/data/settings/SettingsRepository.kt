@@ -2,6 +2,7 @@
 
 package com.screengarden.app.data.settings
 
+import com.screengarden.app.domain.garden.Hemisphere
 import com.screengarden.app.domain.model.AccentColor
 import com.screengarden.app.domain.model.ThemePreference
 import kotlinx.coroutines.flow.Flow
@@ -51,6 +52,8 @@ interface SettingsRepository {
 
     val keepScreenOn: Flow<Boolean>
     val compassionDaysPerMonth: Flow<Int>
+    val hemisphere: Flow<Hemisphere>
+    val lowPowerVisuals: Flow<Boolean>
 
     /** @throws IllegalArgumentException when [goalMs] is not positive. */
     suspend fun setDailyGoalMs(goalMs: Long)
@@ -79,4 +82,6 @@ interface SettingsRepository {
 
     suspend fun setKeepScreenOn(enabled: Boolean)
     suspend fun setCompassionDaysPerMonth(limit: Int)
+    suspend fun setHemisphere(value: Hemisphere)
+    suspend fun setLowPowerVisuals(enabled: Boolean)
 }

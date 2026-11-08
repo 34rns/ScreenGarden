@@ -8,10 +8,12 @@ import com.screengarden.app.core.time.BedtimeWindow
 import com.screengarden.app.core.time.LocalDay
 import com.screengarden.app.domain.garden.GardenDay
 import com.screengarden.app.domain.garden.GardenDayRecord
+import com.screengarden.app.domain.garden.GardenEnvironment
 import com.screengarden.app.domain.garden.GardenSnapshot
 import com.screengarden.app.domain.garden.GardenStore
 import com.screengarden.app.domain.garden.HealthScoreCalculator
 import com.screengarden.app.domain.garden.HealthScoreInputs
+import com.screengarden.app.domain.garden.Hemisphere
 import com.screengarden.app.domain.habits.HabitRules
 import java.time.Instant
 import java.time.ZoneId
@@ -41,7 +43,9 @@ class GardenViewModel(
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val zoneId: ZoneId = ZoneId.systemDefault(),
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
-    bedtimeWindow: Flow<BedtimeWindow?> = flowOf(null)
+    bedtimeWindow: Flow<BedtimeWindow?> = flowOf(null),
+    hemisphere: Flow<Hemisphere> = flowOf(Hemisphere.NORTHERN),
+    lowPowerVisuals: Flow<Boolean> = flowOf(false)
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(GardenUiState())
@@ -50,6 +54,7 @@ class GardenViewModel(
     private val permission = MutableStateFlow(false)
     private val refreshVersion = MutableStateFlow(0)
     private val moment = MutableStateFlow(nowMillis())
+    private val currentHemisphere = MutableStateFlow(Hemisphere.NORTHERN)
     private var refreshJob: kotlinx.coroutines.Job? = null
 
     init {
@@ -63,6 +68,23 @@ class GardenViewModel(
                 }
                 val goals = combine(dailyGoalMs, pickupGoal, streakThreshold) { daily, pickups, threshold ->
                     Goals((daily / 60_000L).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(), pickups, threshold)
+                }
+                launch {
+                    combine(hemisphere, lowPowerVisuals, moment) { side, lowPower, now ->
+                        Triple(side, lowPower, now)
+                    }.collect { (side, lowPower, now) ->
+                        currentHemisphere.value = side
+                        mutableState.update {
+                            it.copy(
+                                environment = GardenEnvironment.at(
+                                    Instant.ofEpochMilli(now).atZone(zoneId),
+                                    side,
+                                    it.score
+                                ),
+                                lowPowerVisuals = lowPower
+                            )
+                        }
+                    }
                 }
                 launch {
                     combine(bedtimeWindow, moment) { window, now ->
@@ -115,14 +137,21 @@ class GardenViewModel(
             else -> GardenAvailability.READY
         }
         mutableState.update { previous ->
+            val value = if (granted && current?.usageIsBounded == true) score(current, goals) else null
             GardenUiState(
                 loading = false,
                 availability = availability,
                 plants = snapshot.plants,
-                score = if (granted && current?.usageIsBounded == true) score(current, goals) else null,
+                score = value,
                 streakDays = streak(snapshot.days, LocalDay.previousDayStart(today.value, zoneId), goals.threshold),
                 error = previous.error,
-                isBedtime = previous.isBedtime
+                isBedtime = previous.isBedtime,
+                environment = GardenEnvironment.at(
+                    Instant.ofEpochMilli(moment.value).atZone(zoneId),
+                    currentHemisphere.value,
+                    value
+                ),
+                lowPowerVisuals = previous.lowPowerVisuals
             )
         }
     }

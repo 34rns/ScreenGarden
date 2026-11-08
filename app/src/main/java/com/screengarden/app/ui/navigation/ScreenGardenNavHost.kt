@@ -23,7 +23,8 @@ fun ScreenGardenNavHost(
     limitsContent: @Composable (() -> Unit) -> Unit,
     habitsContent: @Composable (() -> Unit) -> Unit = { _ -> },
     insightsContent: @Composable (() -> Unit) -> Unit = { _ -> },
-    historyContent: @Composable (() -> Unit) -> Unit = { _ -> }
+    historyContent: @Composable (() -> Unit) -> Unit = { _ -> },
+    environmentContent: @Composable () -> Unit = { }
 ) {
     NavHost(
         navController = navController,
@@ -42,7 +43,8 @@ fun ScreenGardenNavHost(
         composable(ScreenGardenDestination.Settings.route) {
             SettingsScreen(
                 onAppLimits = { navController.navigate("app_limits") { launchSingleTop = true } },
-                onMilestones = { navController.navigate("milestones") { launchSingleTop = true } }
+                onMilestones = { navController.navigate("milestones") { launchSingleTop = true } },
+                environmentContent = environmentContent
             )
         }
         composable("app_limits") {

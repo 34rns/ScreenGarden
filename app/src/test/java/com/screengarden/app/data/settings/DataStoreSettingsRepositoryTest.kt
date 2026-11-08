@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import com.screengarden.app.domain.garden.Hemisphere
 import com.screengarden.app.domain.model.AccentColor
 import com.screengarden.app.domain.model.ThemePreference
 import java.io.File
@@ -80,6 +81,8 @@ class DataStoreSettingsRepositoryTest {
             assertFalse(settings.repository.notificationsOn.first())
             assertFalse(settings.repository.onboardingDone.first())
             assertFalse(settings.repository.keepScreenOn.first())
+            assertEquals(Hemisphere.NORTHERN, settings.repository.hemisphere.first())
+            assertFalse(settings.repository.lowPowerVisuals.first())
         }
     }
 
@@ -132,12 +135,16 @@ class DataStoreSettingsRepositoryTest {
             val first = open(file)
             first.repository.setPickupGoal(42)
             first.repository.setTheme(ThemePreference.LIGHT)
+            first.repository.setHemisphere(Hemisphere.SOUTHERN)
+            first.repository.setLowPowerVisuals(true)
             closeAll()
 
             val second = open(file)
 
             assertEquals(42, second.repository.pickupGoal.first())
             assertEquals(ThemePreference.LIGHT, second.repository.theme.first())
+            assertEquals(Hemisphere.SOUTHERN, second.repository.hemisphere.first())
+            assertTrue(second.repository.lowPowerVisuals.first())
         }
     }
 
@@ -148,10 +155,12 @@ class DataStoreSettingsRepositoryTest {
             settings.dataStore.edit {
                 it[SettingsKeys.THEME] = "sepia"
                 it[SettingsKeys.ACCENT_COLOR] = "neon_pink"
+                it[SettingsKeys.HEMISPHERE] = "unknown"
             }
 
             assertEquals(ThemePreference.SYSTEM, settings.repository.theme.first())
             assertEquals(AccentColor.CALM_GREEN, settings.repository.accentColor.first())
+            assertEquals(Hemisphere.NORTHERN, settings.repository.hemisphere.first())
         }
     }
 

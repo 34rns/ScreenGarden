@@ -6,9 +6,12 @@ import com.screengarden.app.core.time.BedtimeWindow
 import com.screengarden.app.core.time.LocalDay
 import com.screengarden.app.domain.garden.GardenDay
 import com.screengarden.app.domain.garden.GardenDayRecord
+import com.screengarden.app.domain.garden.GardenLight
 import com.screengarden.app.domain.garden.GardenSnapshot
 import com.screengarden.app.domain.garden.GardenStore
+import com.screengarden.app.domain.garden.Hemisphere
 import com.screengarden.app.domain.garden.Plant
+import com.screengarden.app.domain.garden.Season
 import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +45,30 @@ class GardenViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun visualPreferencesAndClockUpdateWithoutReapplyingRewards() = runTest(dispatcher) {
+        val side = MutableStateFlow(Hemisphere.NORTHERN)
+        val lowPower = MutableStateFlow(false)
+        var now = java.time.Instant.parse("2026-01-01T12:00:00Z").toEpochMilli()
+        val store = FakeStore(emptyList())
+        val model = GardenViewModel(
+            store, flowOf(10_800_000L), flowOf(80), flowOf(60), { false }, { },
+            { now }, zone, dispatcher, hemisphere = side, lowPowerVisuals = lowPower
+        )
+        advanceUntilIdle()
+        assertEquals(Season.WINTER, model.uiState.value.environment.season)
+        side.value = Hemisphere.SOUTHERN
+        lowPower.value = true
+        now += 8 * 3_600_000L
+        model.updateTime()
+        advanceUntilIdle()
+        assertEquals(Season.SUMMER, model.uiState.value.environment.season)
+        assertEquals(GardenLight.NIGHT, model.uiState.value.environment.light)
+        assertEquals(true, model.uiState.value.lowPowerVisuals)
+        assertEquals(emptySet<Long>(), store.applied)
+        assertEquals(null, model.uiState.value.score)
     }
 
     @Test

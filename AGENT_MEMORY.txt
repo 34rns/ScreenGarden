@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 30 / P20 publication)
+Last updated: 2026-11-08 (Session 31 / P21 scenery)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         292 JVM tests; 9 migration cases green on API 35 (P20)
+  Tests         298 JVM tests; 9 migration cases green on API 35 (P20)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -257,11 +257,13 @@ SECTION 4 - FOLDER LAYOUT
           |       `-- ui/  theme/, navigation/, components/, screens/,
           |                 onboarding/ (OnboardingScreen + GoalSetup, P07),
           |                 screens/garden/ (ViewModel/state, Canvas, renderer, details)
-          |                 screens/garden/GardenMotion.kt (P11 lifecycle/motion policy)
+          |                 screens/garden/GardenMotion.kt (P11 lifecycle/motion policy),
+          |                 GardenWeatherArt.kt + domain/garden/GardenEnvironment.kt (P21)
           |                 screens/focus/ (FocusScreen + FocusViewModel, P13)
           |                 screens/limits/ (AppLimitsScreen + ViewModel, P15)
           |                 screens/habits/ (milestones, compassion controls + ViewModel, P18)
-          |                 screens/insights/ (single state, Canvas charts and labelled heatmap, P19)
+          |                 screens/insights/ (single state, Canvas charts and labelled heatmap, P19),
+          |                 screens/settings/EnvironmentControls.kt (P21)
           |-- debug/                            DEBUG-ONLY source set (P05b)
           |   |-- res/values/strings.xml        self-check strings, never shipped
           |   `-- java/com/screengarden/app/
@@ -999,6 +1001,17 @@ SECTION 6 - DECISIONS
       Calendar Monday weeks/months show the latest actual frame in each period;
       empty periods are absent and malformed frames are explicitly unavailable.
       Static history art reuses GardenPlantArt; no animation, permission or dependency.
+  D79 P21 LOCAL SCENERY AND LOW POWER VISUALS.
+      Fixed local clock bands: day 06:00-17:00, evening 17:00-20:00, night otherwise.
+      These are decorative lighting bands, never astronomical sunrise estimates.
+      Seasons use device month; southern hemisphere shifts by six months. No GPS,
+      weather service, network, new dependency, permission or Room schema.
+      Winter daytime snow; low scores add decorative rain; known good nights get
+      fireflies. Scenery never changes rewards. Existing scene clock draws at most
+      twelve particles; lowPowerVisuals stops motion and hides particles; platform
+      battery saver/reduced animations and hidden destinations also stop motion.
+      Settings stores hemisphere and lowPowerVisuals under new stable keys, with
+      labelled controls and visible write failures. Use existing Material tokens.
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
@@ -1053,7 +1066,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P18     done    Streaks + badges, compassion-day quota and Room v5 [1.5 part]
   P19     done    Insights charts, safe summaries and recent hourly evidence [2.3]
   P20     done    Local weekly reflection + actual stored garden timeline [new]
-  P21     todo    Day/night, seasons, weather visuals [new]
+  P21     done    Day/night, seasons, weather visuals [new]
   P22     todo    Themes (incl. AMOLED toggle; removes D35's hook) [3.1]
   P23     todo    Widget + Quick Settings tile [new]
   P24     todo    Snapshot export [new]
@@ -1072,8 +1085,8 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P20 are implemented and locally verified; see CURRENT STATUS for CI.
-  P04b repositories are complete, including BadgeRepository in P18. P21 is next.
+  Sequencing note: P00-P21 are implemented and locally verified; see CURRENT STATUS for CI.
+  P04b repositories are complete, including BadgeRepository in P18. P22 is next.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
 --------------------------------------------------------------------------------
@@ -1345,9 +1358,8 @@ SECTION 10 - KNOWN ISSUES
   K29 Visual coverage is one screen size only: 1080x2400 (Pixel 6 profile),
       API 35. Small phones, tablets, foldables and API 26 rendering are
       unverified; P31 owns a multi-size pass.
-  K30 Two keys listed in 16.7 are deliberately NOT stored yet: hemisphere
-      (season visuals, P21) and lowPowerVisuals (P27). Storing a value that
-      nothing maintains would let a screen read a lie.
+  K30 CLOSED in P21. hemisphere and lowPowerVisuals now persist with defaults
+      NORTHERN/false, Settings controls and live garden observation.
   K31 COLD-START THEME: MainActivity starts from ThemePreference.SYSTEM until
       DataStore emits (a few milliseconds). A user who chose LIGHT on a dark
       device can see one dark frame. Accepted; if it becomes visible, gate the
@@ -1449,13 +1461,12 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 292 JVM tests, zero failures/errors/skips. Four final P20
-  gates PASS; lint zero errors/four accepted warnings. P18's seven API 35
-  migration cases PASS through v5; P19 changes no schema. Real Insights tab,
-  day/week/month ranges and readable daily values PASS. Ten final fake-only
-  Insights captures reviewed, including 1.3x text and corrected RTL paragraphs.
-  Prior P16 reminder/P14 service/P18 migration results stay in their session logs.
-  No signed release or Pages site exists yet.
+  Current test state: 298 JVM tests, zero failures/errors/skips. Four P21 gates
+  PASS; lint zero errors/four accepted warnings. P20 nine API 35 migrations PASS
+  through v6; P21 does not change schema. Real scenery preferences survive restart;
+  moving/system-disabled/low-power frame checks PASS. Twenty-three P21 fake-only
+  captures reviewed, including updated Garden and bedtime images with large text
+  and RTL. No signed release or Pages exists yet.
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
       Physical-device periodic/reboot behavior and API 26 visuals are unverified.
@@ -1475,25 +1486,23 @@ SECTION 10 - KNOWN ISSUES
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P18 are published; P18 b082ea9 CI 42435800292 SUCCESS.
-  P19 published and verified: Canvas Insights, bounded daily summaries, top apps,
-  pickups, honest recent-hour heatmap, single ViewModel state and retry/access
-  states. Fresh four gates PASS; 281 JVM tests, zero failures/errors/skips;
-  lint zero errors/four accepted warnings. Real emulator ranges/values PASS.
-  Ten fake-only captures reviewed; RTL regression fails before and passes
-  after content-direction fix. P19 2f66282 CI 42438711900 SUCCESS.
-  P20 implements the additive v6 snapshot table; 292 JVM and 9 API 35 migration
-  tests PASS. Four gates PASS; actual reflection/history navigation PASS and 20
-  fake-only captures reviewed. Publication CI pending.
-  No signed release or Pages yet.
+  P00-P20 are published. P20 85c4de3 CI 42440690508 SUCCESS.
+  P21 local clock/season scenery, offline decorative weather, persisted hemisphere
+  and lowPowerVisuals controls are complete. Four gates PASS: 298 JVM tests,
+  zero failures/errors/skips; lint zero errors/four accepted warnings.
+  Real emulator preferences persist across restart; motion and disabled/low-power
+  frame checks PASS. Twenty-three fake-only captures reviewed; minimum seasonal
+  plant-label contrast 7.17:1. No permission, dependency or Room schema change.
+  P21 publication/CI pending. No signed release or Pages yet.
+
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Confirm P20 publication CI, then P21 day/night, seasons and weather.
-  Continue P20-P33 in order, GitHub only, until explicitly stopped by the owner.
+  Publish P21 and confirm its CI; then P22 themes and complete Settings sections.
+  Continue P22-P33 in order, GitHub only, until explicitly stopped by the owner.
   Save checkpoints and use compaction to continue; do not stop at task/context
-  milestones. Signing may require manual human setup in P33; never request,
-  print or commit secret values.
+  milestones. Never request, print or commit secret values.
+
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
 --------------------------------------------------------------------------------
@@ -2316,6 +2325,32 @@ SECTION 13 - SESSION LOG
               battery reliability remain P31; signed release and Pages remain P33.
               Optional video not available (Session 12). No new retry needed.
     Next      P20 push/CI, then P21-P33 continuously until the owner stops work.
+  SESSION 31 - 2026-11-08 - P21 local scenery and visual controls
+    Did       Confirmed P20 85c4de3 CI 42440690508 SUCCESS. Added pure clock/season
+              rules and local decorative weather, semantic scene colors, shared
+              bounded particle drawing, persisted hemisphere/low-power controls.
+              Night scenes keep plant details; bedtime stops motion. Actual battery
+              saver now stops the shared scene clock, matching the P11 convention.
+    Decided   D79. Fixed local clock bands and calendar seasons, no astronomy or
+              weather claims. No new dependency/permission/Room schema. Default
+              hemisphere NORTHERN; lowPowerVisuals false. Rewards are unchanged.
+    Verified  Four final gates PASS; 298 JVM tests, zero failures/errors/skips;
+              lint zero errors/four accepted warnings. New tests cover all months,
+              opposite hemispheres, exact local clock bands, unknown-score weather,
+              saved settings, live ViewModel updates and labelled/disabled controls.
+              Actual emulator preferences survive restart. Frame comparison: normal
+              changes; disabled system motion and low-power frames are identical.
+              Nine environment/settings and fourteen Garden/bedtime fake-only
+              captures reviewed, including themes, 1.3x text, RTL and empty/access
+              states. Seasonal label contrast minimum 7.17:1. Privacy manifest,
+              unchanged schemas, secret sweep and whitespace checks PASS.
+    Not ver.  Low-end physical-device performance, real-device battery/reboot,
+              API 26/new-size visuals remain P31; signed APK and Pages remain P33.
+              A long line was fixed before gates; local UI helper path/control-node
+              assertions and foreground waits were corrected before final checks.
+              No app defect found by those helper failures; no check weakened.
+              Optional video not available (Session 12). P21 CI pending push.
+    Next      Publish P21/check CI, then P22-P33 until the owner stops work.
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
@@ -2569,7 +2604,7 @@ SECTION 16 - CORE DESIGN
     OPT-IN, OFF by default, and must never store what an accessibility service
     sees (P29).
 
-  16.7 SETTINGS KEYS (DataStore - implemented in P04 except the last two)
+  16.7 SETTINGS KEYS (DataStore - P04 with later additions)
     dailyGoalMs       Long    screen-time goal for a day
     pickupGoal        Int     target pickups per day
     bedtimeStart      String  local time, e.g. "22:30"
@@ -2589,7 +2624,7 @@ SECTION 16 - CORE DESIGN
     accentColor CALM_GREEN, streakThreshold 60, gentleMode true,
     notificationsOn false, onboardingDone false). Storage keys live in
     SettingsKeys and are only ever added, never renamed (D40).
-    NOT STORED YET: hemisphere (P21) and lowPowerVisuals (P27) - K30.
+    P21 stores hemisphere (NORTHERN default) and lowPowerVisuals (false default).
     P04 owns the types, defaults and migration of these keys; nothing may invent
     a new key without adding it here.
 

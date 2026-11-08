@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.screengarden.app.domain.garden.Hemisphere
 import com.screengarden.app.domain.model.AccentColor
 import com.screengarden.app.domain.model.ThemePreference
 import java.io.IOException
@@ -39,6 +40,8 @@ internal object SettingsKeys {
     val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
     val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
     val COMPASSION_DAYS_PER_MONTH = intPreferencesKey("compassion_days_per_month")
+    val HEMISPHERE = stringPreferencesKey("hemisphere")
+    val LOW_POWER_VISUALS = booleanPreferencesKey("low_power_visuals")
 }
 
 /**
@@ -94,6 +97,13 @@ class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>)
             (it[SettingsKeys.COMPASSION_DAYS_PER_MONTH] ?: SettingsDefaults.COMPASSION_DAYS_PER_MONTH).coerceIn(0, 10)
         }
 
+    override val hemisphere: Flow<Hemisphere> = preferences {
+        Hemisphere.fromStorageKey(it[SettingsKeys.HEMISPHERE] ?: SettingsDefaults.HEMISPHERE.name)
+    }
+    override val lowPowerVisuals: Flow<Boolean> = preferences {
+        it[SettingsKeys.LOW_POWER_VISUALS] ?: SettingsDefaults.LOW_POWER_VISUALS
+    }
+
     override suspend fun setDailyGoalMs(goalMs: Long) {
         require(goalMs > 0L) { "dailyGoalMs must be positive, was $goalMs" }
         dataStore.edit { it[SettingsKeys.DAILY_GOAL_MS] = goalMs }
@@ -148,6 +158,14 @@ class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>)
     override suspend fun setCompassionDaysPerMonth(limit: Int) {
         require(limit in 0..10)
         dataStore.edit { it[SettingsKeys.COMPASSION_DAYS_PER_MONTH] = limit }
+    }
+
+    override suspend fun setHemisphere(value: Hemisphere) {
+        dataStore.edit { it[SettingsKeys.HEMISPHERE] = value.name }
+    }
+
+    override suspend fun setLowPowerVisuals(enabled: Boolean) {
+        dataStore.edit { it[SettingsKeys.LOW_POWER_VISUALS] = enabled }
     }
 
     /**

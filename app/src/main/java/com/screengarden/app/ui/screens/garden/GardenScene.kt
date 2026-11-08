@@ -22,9 +22,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -38,9 +40,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import com.screengarden.app.R
+import com.screengarden.app.domain.garden.GardenEnvironment
+import com.screengarden.app.domain.garden.GardenLight
+import com.screengarden.app.domain.garden.GardenWeather
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.domain.garden.PlantStage
+import com.screengarden.app.ui.theme.gardenEnvironmentColors
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -51,20 +57,33 @@ fun GardenScene(
     onPlantSelected: (Plant) -> Unit,
     modifier: Modifier = Modifier,
     streakDays: Int = 0,
-    isBedtime: Boolean = false
+    isBedtime: Boolean = false,
+    environment: GardenEnvironment = GardenEnvironment(),
+    lowPowerVisuals: Boolean = false
 ) {
     val colors = MaterialTheme.colorScheme
-    val motionEnabled = rememberGardenMotionEnabled() && !isBedtime
+    val scene = if (isBedtime) {
+        environment.copy(
+            light = GardenLight.NIGHT,
+            weather = GardenWeather.CLEAR
+        )
+    } else {
+        environment
+    }
+    val sceneColors = gardenEnvironmentColors(scene, colors)
+    val skyBrush = remember(sceneColors) { Brush.verticalGradient(listOf(sceneColors.sky, sceneColors.horizon)) }
+    val motionEnabled = rememberGardenMotionEnabled() && !isBedtime && !lowPowerVisuals
     val phase = rememberGardenPhase(motionEnabled && plants.isNotEmpty())
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        color = colors.tertiaryContainer
+        color = sceneColors.sky
     ) {
         BoxWithConstraints {
             val columns = if (maxWidth >= 340.dp) 3 else 2
             Box {
                 Canvas(modifier = Modifier.matchParentSize()) {
+                    drawRect(skyBrush)
                     val ground = Path().apply {
                         moveTo(0f, size.height * 0.45f)
                         cubicTo(
@@ -79,26 +98,29 @@ fun GardenScene(
                         lineTo(0f, size.height)
                         close()
                     }
-                    drawPath(ground, colors.secondaryContainer)
+                    drawPath(ground, sceneColors.ground)
                     drawOval(
                         colors.onTertiaryContainer.copy(alpha = 0.05f),
                         Offset(size.width * 0.62f, size.height * 0.08f),
                         Size(size.width * 0.24f, 12.dp.toPx())
                     )
-                    if (isBedtime) {
+                    if (scene.light == GardenLight.NIGHT) {
                         val moon = Offset(size.width * 0.84f, size.height * 0.11f)
                         drawCircle(colors.onTertiaryContainer, 12.dp.toPx(), moon)
-                        drawCircle(colors.tertiaryContainer, 11.dp.toPx(), moon + Offset(5.dp.toPx(), -3.dp.toPx()))
+                        drawCircle(sceneColors.sky, 11.dp.toPx(), moon + Offset(5.dp.toPx(), -3.dp.toPx()))
                     }
+                    drawGardenWeather(scene.weather, phase.value, colors.onTertiaryContainer, lowPowerVisuals)
                     if (plants.isNotEmpty()) {
                         val time = phase.value
-                        repeat(6) { index ->
-                            val x = size.width * ((index * 0.17f + time * 0.08f) % 1f)
-                            val y = size.height * (0.15f + index * 0.07f) +
-                                sin((time * 2 * PI + index).toFloat()) * 4.dp.toPx()
-                            drawCircle(colors.onTertiaryContainer.copy(alpha = 0.12f), 1.5.dp.toPx(), Offset(x, y))
+                        if (!lowPowerVisuals && scene.light != GardenLight.NIGHT) {
+                            repeat(6) { index ->
+                                val x = size.width * ((index * 0.17f + time * 0.08f) % 1f)
+                                val y = size.height * (0.15f + index * 0.07f) +
+                                    sin((time * 2 * PI + index).toFloat()) * 4.dp.toPx()
+                                drawCircle(colors.onTertiaryContainer.copy(alpha = 0.12f), 1.5.dp.toPx(), Offset(x, y))
+                            }
                         }
-                        if (streakDays >= 3 && !isBedtime) {
+                        if (streakDays >= 3 && scene.light != GardenLight.NIGHT && !lowPowerVisuals) {
                             val center = Offset(size.width * (0.18f + time * 0.6f), size.height * 0.16f)
                             val wing = 2.dp.toPx() + kotlin.math.abs(sin(time * 12 * PI).toFloat()) * 3.dp.toPx()
                             drawOval(colors.tertiary, center - Offset(wing, 3.dp.toPx()), Size(wing, 6.dp.toPx()))
