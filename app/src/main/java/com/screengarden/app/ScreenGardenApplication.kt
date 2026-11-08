@@ -25,5 +25,6 @@ class ScreenGardenApplication : Application() {
         // Scheduling only; the first sync itself happens when the app is opened or
         // when WorkManager decides to run the periodic work (UsageSyncScheduler).
         container.usageSyncScheduler.schedulePeriodicSync()
+        container.nudgeScheduler.schedule()
     }
 }

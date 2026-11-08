@@ -48,6 +48,12 @@ All current public screenshots are stored in `docs/screenshots/`.
 | --- | --- | --- | --- |
 | <img src="docs/screenshots/limits_editor.png" width="200" alt="Daily app limit editor"> | <img src="docs/screenshots/limits_empty.png" width="200" alt="App limits empty state and refresh action"> | <img src="docs/screenshots/limits_large_font.png" width="200" alt="App limits at 1.3x font scale"> | <img src="docs/screenshots/limits_rtl.png" width="200" alt="App limits with mirrored controls and correct text order"> |
 
+Optional reminders, using fake debug-only examples:
+
+| Light | Dark |
+| --- | --- |
+| <img src="docs/screenshots/nudges_light.png" width="240" alt="Gentle daily and app-limit reminders in the notification shade"> | <img src="docs/screenshots/nudges_dark.png" width="240" alt="Gentle reminders with a dark notification shade"> |
+
 ## Privacy promise
 
 - **No internet permission.** The app cannot make a network request, even by
@@ -86,9 +92,19 @@ by intention. A pull request that adds network access or telemetry is rejected.
   Detection needs Usage access and reliable screen events (Android 9+).
 - Search launchable apps and choose daily limits from Settings. Pausing a limit
   keeps its chosen time. Enabled breaches shape the score without blocking apps.
+- Optional gentle reminders at 50%, 80% and 100% of the daily goal and enabled
+  app limits. Quiet hours use your bedtime window. Separate Android notification
+  channels let you control daily and app reminders; milestones do not repeat that day.
 - Usage without reliable screen events (including Android 8.0–8.1) is shown as
   incomplete rather than given a fabricated score. Insights and the remaining
   Settings controls are still being built.
+
+Reminder checks use Android's background scheduler at a 15-minute minimum interval,
+with a battery-not-low constraint. Checks can be delayed by Doze, battery restrictions
+or manufacturer settings, so reminders are approximate. A late check shows the highest
+new milestone rather than a burst of older reminders. Disabled reminders stop before
+reading usage; missing permission or incomplete screen-state evidence produces no nudge.
+There are no exact alarms, foreground reminder services or network requests.
 
 ## Requirements
 

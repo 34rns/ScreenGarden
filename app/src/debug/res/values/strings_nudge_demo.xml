@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="debug_nudge_title">Gentle reminder preview</string>
+    <string name="debug_nudge_copy">Fake debug-only demo data. No usage is read or stored. Show two example reminders, then open the notification shade.</string>
+    <string name="debug_nudge_show">Show demo reminders</string>
+    <string name="debug_nudge_shown">Demo reminders shown</string>
+    <string name="debug_nudge_blocked">Allow app notifications in Android Settings to show this preview.</string>
+    <string name="debug_nudge_app">Reading</string>
+</resources>

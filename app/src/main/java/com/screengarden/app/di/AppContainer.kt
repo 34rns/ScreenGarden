@@ -6,9 +6,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.work.WorkManager
+import com.screengarden.app.R
+import com.screengarden.app.core.time.BedtimeWindow
 import com.screengarden.app.data.focus.FocusController
 import com.screengarden.app.data.focus.FocusUseReader
 import com.screengarden.app.data.local.ScreenGardenDatabase
+import com.screengarden.app.data.notifications.AndroidNudgePublisher
+import com.screengarden.app.data.notifications.GentleNudgeCheck
+import com.screengarden.app.data.notifications.NudgePreferences
+import com.screengarden.app.data.notifications.PreferencesNudgeLedger
 import com.screengarden.app.data.onboarding.OnboardingCompletion
 import com.screengarden.app.data.repo.AppLimitRepositoryImpl
 import com.screengarden.app.data.repo.AppUsageRepository
@@ -24,10 +30,14 @@ import com.screengarden.app.data.sync.DailyUsageSync
 import com.screengarden.app.data.usage.AndroidUsageSource
 import com.screengarden.app.data.usage.DefaultUsageRepository
 import com.screengarden.app.data.usage.LaunchableAppCatalog
+import com.screengarden.app.data.work.NudgeScheduler
 import com.screengarden.app.data.work.UsageSyncScheduler
 import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
+import java.time.LocalTime
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 
 /**
  * Manual dependency injection root, created once by [com.screengarden.app.ScreenGardenApplication].
@@ -140,5 +150,35 @@ class AppContainer(context: Context) {
         // A provider, not an instance: WorkManager.getInstance throws when the library
         // is not initialised yet (direct boot, tests), and that must not crash a launch.
         UsageSyncScheduler { WorkManager.getInstance(appContext) }
+    }
+
+    val nudgeScheduler: NudgeScheduler by lazy { NudgeScheduler { WorkManager.getInstance(appContext) } }
+
+    val nudgeCheck: GentleNudgeCheck by lazy {
+        GentleNudgeCheck(
+            preferences = {
+                combine(
+                    settingsRepository.notificationsOn,
+                    settingsRepository.dailyGoalMs,
+                    settingsRepository.bedtimeStart,
+                    settingsRepository.bedtimeEnd
+                ) { enabled, goal, start, end ->
+                    NudgePreferences(
+                        enabled,
+                        goal,
+                        runCatching {
+                            BedtimeWindow(LocalTime.parse(start), LocalTime.parse(end))
+                        }.getOrNull()
+                    )
+                }.first()
+            },
+            readUsage = { usageRepository.readDay(it) },
+            readLimits = { appLimitRepository.observeLimits().first() },
+            ledger = PreferencesNudgeLedger(appContext),
+            publisher = AndroidNudgePublisher(appContext) { name ->
+                appCatalog.installedApps().firstOrNull { it.packageName == name }?.label
+                    ?: appContext.getString(R.string.nudge_unknown_app)
+            }
+        )
     }
 }

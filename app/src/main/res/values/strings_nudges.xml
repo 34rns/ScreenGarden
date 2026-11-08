@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nudge_daily_channel">Daily goal reminders</string>
+    <string name="nudge_daily_channel_description">Gentle milestones at 50, 80 and 100 percent of your daily screen-time goal.</string>
+    <string name="nudge_app_channel">App limit reminders</string>
+    <string name="nudge_app_channel_description">Optional milestones for enabled daily app limits. No reminders during quiet hours.</string>
+    <string name="nudge_title">A little room to pause</string>
+    <string name="nudge_daily_progress">You have reached %1$d%% of your daily goal. A short pause can leave room for what matters.</string>
+    <string name="nudge_daily_reached">Your daily goal is at %1$d%%. You can choose a quieter next moment; your garden is still here.</string>
+    <string name="nudge_app_progress">%1$s is at %2$d%% of its daily limit. There is room for a gentle break.</string>
+    <string name="nudge_app_reached">%1$s is at %2$d%% of its daily limit. Take a breath and choose what comes next.</string>
+    <string name="nudge_manage">Manage reminders</string>
+    <string name="nudge_unknown_app">An app</string>
+</resources>

@@ -6,7 +6,9 @@ import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import com.screengarden.app.R
 import com.screengarden.app.ScreenGardenApplication
+import com.screengarden.app.data.notifications.AndroidNudgePublisher
 import com.screengarden.app.data.usage.AndroidUsageSource
 import com.screengarden.app.domain.focus.FocusSessionState
 import com.screengarden.app.domain.focus.FocusStatus
@@ -15,6 +17,8 @@ import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.domain.limits.AppLimitRule
 import com.screengarden.app.domain.limits.LaunchableApp
+import com.screengarden.app.domain.notifications.Nudge
+import com.screengarden.app.ui.debug.NudgeDemoScreen
 import com.screengarden.app.ui.debug.UsageSelfCheckScreen
 import com.screengarden.app.ui.navigation.DebugDestination
 import com.screengarden.app.ui.navigation.ScreenGardenDestination
@@ -44,6 +48,16 @@ object DebugCatalog {
 
     /** The requested debug destination, or null when [requested] names none. */
     fun destination(requested: String?, context: Context): DebugDestination? {
+        if (requested == "nudges_demo") {
+            val publisher = AndroidNudgePublisher(context) { context.getString(R.string.debug_nudge_app) }
+            return DebugDestination(requested, ScreenGardenDestination.Settings) {
+                NudgeDemoScreen({
+                    val daily = publisher.post(Nudge(50))
+                    val app = publisher.post(Nudge(80, "demo.reader"))
+                    daily && app
+                })
+            }
+        }
         if (requested == "settings_demo") {
             return DebugDestination(requested, ScreenGardenDestination.Settings) { SettingsScreen({ }) }
         }

@@ -69,6 +69,7 @@ class MainActivity : ComponentActivity() {
         // Fire-and-forget: the worker reports through logcat, and the UI shows stored
         // data, so a slow sync must not delay the first frame.
         container.usageSyncScheduler.syncNow()
+        container.nudgeScheduler.checkNow()
         setContent {
             // SYSTEM is only the initial value: it covers the few milliseconds
             // before DataStore emits the stored choice (K31).
