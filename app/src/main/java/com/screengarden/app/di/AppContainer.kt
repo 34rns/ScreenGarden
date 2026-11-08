@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import com.screengarden.app.R
 import com.screengarden.app.core.time.BedtimeWindow
 import com.screengarden.app.core.time.LocalDay
+import com.screengarden.app.data.backup.BackupRepository
 import com.screengarden.app.data.focus.FocusController
 import com.screengarden.app.data.focus.FocusUseReader
 import com.screengarden.app.data.local.ScreenGardenDatabase
@@ -50,6 +51,7 @@ import com.screengarden.app.ui.screens.habits.HabitsViewModel
 import com.screengarden.app.ui.screens.insights.GardenHistoryViewModel
 import com.screengarden.app.ui.screens.insights.InsightsViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
+import com.screengarden.app.ui.screens.settings.BackupViewModel
 import com.screengarden.app.ui.screens.settings.SettingsViewModel
 import java.time.Instant
 import java.time.LocalTime
@@ -91,6 +93,10 @@ class AppContainer(context: Context) {
     }
 
     fun settingsViewModel(): SettingsViewModel = SettingsViewModel(settingsRepository)
+
+    val backupRepository: BackupRepository by lazy { BackupRepository(database, appContext.settingsDataStore) }
+
+    fun backupViewModel(): BackupViewModel = BackupViewModel(backupRepository)
 
     val widgetUpdates: GardenWidgetUpdates by lazy {
         GardenWidgetUpdates(appContext, { database }, settingsRepository)

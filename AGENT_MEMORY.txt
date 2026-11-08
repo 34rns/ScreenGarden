@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 37 / P25 completion; continuous batch)
+Last updated: 2026-11-08 (Session 39 / P26; continuous batch)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -105,7 +105,7 @@ SECTION 3 - TECH STACK
   Navigation    androidx.navigation:navigation-compose 2.8.5, single NavHost
   Architecture  UI (Compose screens) -> domain -> data (local only)
   DI            Manual dependency injection (AppContainer). No Hilt.
-  Persistence   Room 2.6.1 (KSP), schema v6, 7 tables, export + migrations.
+  Persistence   Room 2.6.1 (KSP), schema v7, 7 user tables + restore receipt.
                 Preferences DataStore 1.1.2 behind SettingsRepository (P04).
   Async         Kotlin coroutines + Flow (Room DAOs expose Flow queries).
                 WorkManager 2.10.0 runs the daily usage sync (P06).
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         332 JVM tests; 9 migration cases green on API 35 (P20)
+  Tests         345 JVM tests; 11 migration cases green on API 35 (P26)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -219,7 +219,8 @@ SECTION 4 - FOLDER LAYOUT
       |       |-- 3.json (P12: tagged sessions, status and timer checkpoints)
       |       |-- 4.json (P17: nullable measured bedtime minutes)
       |       |-- 5.json (P18: compassion-day marker)
-      |       `-- 6.json (P20: actual plant snapshots)
+      |       |-- 6.json (P20: actual plant snapshots)
+      |       `-- 7.json (P26: durable pending settings restore)
       `-- src/
           |-- main/
           |   |-- AndroidManifest.xml   documented permissions, allowBackup=false
@@ -319,6 +320,13 @@ SECTION 4 - FOLDER LAYOUT
     app/src/main/assets/plants/{fern,flower,bonsai,cactus}/plant.json + four PNGs
     data/plants/PlantPackLoaderTest.kt + ui/screens/garden/PackPlantRendererTest.kt
     docs/PLANT_PACKS.md (schema, licenses, example and validator command)
+  P26 additions (backup):
+    domain/backup/BackupStore.kt (plain preview and merge/replace contract)
+    data/backup/ (strict v1 JSON, fixed columns, settings, Room store and SAF IO)
+    data/local/entity/PendingRestore.kt + dao/PendingRestoreDao.kt
+    ui/screens/settings/BackupControls.kt + BackupViewModel.kt
+    debug/ui/BackupDemoScreen.kt; data/backup tests and BackupMigrationTest
+    docs/BACKUP.md; Room MIGRATION_6_7 and immutable exported 7.json
   Layer rules
     - screens/ may depend on components/, theme/, domain/model.
     - screens/ must NOT touch data/ directly; go through a use case.
@@ -1095,6 +1103,25 @@ SECTION 6 - DECISIONS
       Fake debug-only demo_theme extra selects capture palettes without writing
       preferences; release DebugCatalog is still a stub. The old AMOLED production
       hook remains removed. Reusable local capture scripts must pass demo_theme.
+  D84 P26 USER-CONTROLLED BACKUPS.
+      JSON v1 includes all fourteen documented settings and seven user-data tables,
+      including actual garden history. No new dependency, permission or network.
+      SAF CreateDocument/OpenDocument, bounded streams, 32 MiB/100000 total rows,
+      exact table/column/type/range/enum validation, duplicate-key rejection and
+      history payload validation. Older/future versions reject safely because no
+      older backup format was published. Format upgrades need explicit tests.
+      Merge adds absent record keys and keeps existing rows/settings/daily totals.
+      Replace preserves saved totals and growth markers, with a second explicit
+      confirmation and changes seven tables in one Room transaction. Active local
+      focus refuses import; imported timers cancel. Merge marks imported past days applied; today keeps its saved marker.
+      Replacement preserves saved markers with their matching plants. Timestamp/day keys retain
+      their original UTC instants, never normalized for a traveller's new zone.
+      Room v7 adds pending_restore(slot, settingsJson) with MIGRATION_6_7; receipt
+      commits alongside replaced rows. One atomic DataStore edit finishes it, then
+      clears the receipt. Failures/restarts recover before normal UI/workers.
+      Permissions, channel choices and delivery ledgers are not exported. Files
+      contain private app usage and are not encrypted; users choose their destination.
+      Provider write failure may leave an incomplete file, explicitly reported.
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
   From P00 on, work is identified by PROMPT NUMBER. The old dotted IDs are kept
@@ -1153,7 +1180,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P23     done    Responsive Glance widget + user start/stop Quick Settings tile [new]
   P24     done    Frozen garden preview, optional caption and Android PNG save picker [new]
   P25     done    Offline validated plant packs, artwork and seed unlock integration [new]
-  P26     todo    Export/import JSON (16.6) [new]
+  P26     done   Validated JSON export/import, merge/replace, durable settings recovery [new]
   P27     todo    Battery help [new]
   P28     todo    Localization [new]
   P29     todo    Opt-in focus blocking [new]
@@ -1167,8 +1194,8 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P24 are implemented and locally verified; see CURRENT STATUS for CI.
-  P04b repositories are complete, including BadgeRepository in P18. P26 is next.
+  Sequencing note: P00-P25 are published; P26 completed locally and awaits CI. See CURRENT STATUS.
+  P04b repositories are complete, including BadgeRepository in P18.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
 --------------------------------------------------------------------------------
@@ -1191,6 +1218,7 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   Kotlin standard library.
   P09 added no dependency: the lifecycle uses plain Kotlin arithmetic and the
   existing JVM JUnit tests, with java.util.UUID as its default ID factory.
+  P26 adds no dependency: Room, DataStore, JSON, content resolver and SAF are existing/platform APIs.
   P25 adds no dependency: AssetManager, bounded BitmapFactory PNG decode, existing
   Compose graphics, JSON and Room provide the offline catalog and unlock rules.
   P24 adds no dependency: existing Compose art, Android Canvas/PNG, AtomicFile
@@ -1297,6 +1325,7 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
 --------------------------------------------------------------------------------
 SECTION 9 - PERMISSIONS
 --------------------------------------------------------------------------------
+  P26 backup uses SAF CreateDocument/OpenDocument and only the returned URI, no storage permission.
   P24 snapshot export uses Android SAF CreateDocument and only its returned URI.
   No storage-wide permission, FileProvider, automatic sharing or network is added.
 
@@ -1551,11 +1580,8 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 332 JVM tests, zero failures/errors/skips. All four P25
-  gates PASS; lint zero errors/five accepted warnings. P20 nine API 35 migrations
-  PASS through v6; P24 does not change schema. API 35 fake garden preview, caption
-  toggle, picker cancellation/reopen and actual PNG save PASS. Seven final fake-only
-  captures reviewed in light/dark/night, 1.3x text, RTL and without a caption.
+  Current test state: 345 JVM tests, zero failures/errors/skips.
+  Four final gates PASS: 345 JVM tests, zero failures/errors/skips; lint zero errors/five accepted warnings. Eleven API35 migrations PASS through v7. Native picker save/cancel/preview, merge and double-confirmed replace PASS. Disk-failure receipt recovery PASS. Old schemas unchanged; offline manifest/backup disabled; secret and whitespace checks PASS.
   No signed GitHub release or Pages exists yet.
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
@@ -1580,27 +1606,29 @@ SECTION 10 - KNOWN ISSUES
   K61 The pending snapshot is private cache. If Android evicts it while the file
       picker is open, saving reports a clear error and the user can preview again.
       Actual process-death/cache-eviction saving is unverified; no usage is exported.
+  K62 P26 backups are limited to 32 MiB/100000 total records. Export checks size
+      before assembling the entire file. A failed provider write may leave a
+      partial destination file; source data is never deleted by export. Real
+      process-death recovery, provider/OEM variations, API26/new-size backup UI
+      are unverified; repository recreation after a simulated disk failure passes.
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P24 are published and CI verified green. P24 0501563; CI 42452845414 SUCCESS.
-  Fresh baseline four task invocations PASS on unchanged P24 outputs: 320 tests,
-  lint zero errors/five accepted warnings, style/build PASS.
-  P25 complete: four strict offline packs, original stage PNGs, pure unlock
-  policy, atomic once-only seed selection and cached shared art renderer. No new
-  dependency, permission, setting or Room schema. Code, validator/docs are saved.
-  All four final gates PASS: 332 JVM tests, no failures/errors/skips; lint zero
-  errors/five accepted warnings. API 35 asset/PNG test PASS (1 case). Final garden,
-  sleep, timeline, seven seasonal scenes, both widget sizes and seven snapshot
-  captures reviewed. Actual fake PNG save/cancel/reopen PASS. Publication/CI pending.
-  No signed release or Pages yet. No P26 code started.
+  P00-P25 are published; P25 182252c and CI 42455691660 SUCCESS. P26 finished
+  locally: all fourteen settings and seven user-data tables export through SAF,
+  validated preview, safe merge, confirmed replace and durable settings recovery
+  in Room v7. Final four gates PASS with 345 JVM tests, zero
+  failures/errors/skips and five accepted lint warnings. Eleven API35 migration
+  tests PASS. Native save/cancel/preview, merge and confirmed replace PASS.
+  Fake-only screenshots reviewed and corrected preview refreshed. P26
+  publication/CI is next; no signed release or Pages yet.
+
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Publish P25/check CI, then implement P26 backup. Continue P26-P33 until explicitly
-  stopped; owner revoked the prior P24 stop request on 2026-11-08.
-  Preserve D69: free GitHub Releases and Pages only. Signing and Pages remain P33.
-  Never request/print/commit secret values. Read the full memory/check Git on resume.
+  Commit/push P26 and verify CI, then P27-P33 continuously until explicitly
+  stopped. GitHub Releases and Pages only; no F-Droid. Signing remains private
+  and must never expose or commit key material.
 
 --------------------------------------------------------------------------------SECTION 13 - SESSION LOG
 --------------------------------------------------------------------------------
@@ -2616,9 +2644,65 @@ SECTION 12 - NEXT STEP
               invocations PASS; unchanged 332-test reports, zero failures/errors,
               lint zero errors/five warnings. 34 affected public images refreshed.
               Final secret sweep, whitespace check and unchanged schemas PASS.
-    Not ver.  Push/CI pending. No signed release/Pages or P26 work. No physical device.
+    CI        P25 182252c pushed; 42455691660 SUCCESS, all four quality steps.
+    Not ver.  No signed release/Pages. No physical device; API26/new sizes remain P31.
               Video remains not available (Session 12); no inferred ideas.
     Next      Finish P25 entirely, then P26-P33 continuously until explicitly stopped.
+  SESSION 38 - 2026-11-08 - P26 backup implementation checkpoint
+    Did       P25 completed/captured/pushed, CI SUCCESS. Read full memory and Git,
+              reused saved screenshots and final tests. Implemented strict backup
+              codec, settings snapshot/apply, seven-table transaction, stopped
+              imported timers, once-only imported days and durable settings receipt.
+              Added Settings controls, file-picker wiring, previews, double replace
+              confirmation, startup/worker recovery and pure debug fake demos.
+    Decided   D84. No dependency or permission; schema v7 is an additive receipt
+              with Migration/test/export. Files stay user-controlled and unencrypted.
+    Verified  P25 fresh four tasks PASS; 332 reports, no failures/errors, five lint
+              warnings. 34 refreshed images reviewed; actual fake PNG save/cancel PASS.
+              P26 parser four tests PASS after implementation. Missing-class red run
+              recorded; expanded tests initially had a LocalDay test-call type typo,
+              corrected using the existing epoch-millis helper signature.
+    Verified  Ten backup parser/repository/Compose tests PASS; full 342 JVM suite
+              PASS, no failures/errors/skips. Four gates PASS, zero lint errors/five
+              warnings. Eleven API35 migration cases PASS through v7. Actual native
+              Android picker cancels/reopens, saves JSON, previews it and cancels
+              preview. Seven fake-only captures reviewed. Export now checks total
+              rows and size before assembling the full JSON file. Updated README
+              privacy wording to describe voluntary exports accurately.
+    Found     Native helper used PowerShell's per-property Count values instead of
+              an array count; the saved document had exactly seven tables. Corrected
+              the helper count assertion; full picker rerun PASS. No check weakened.
+    Not ver.  Final debug Settings Data capture/resumed gates/publication/CI pending.
+              Actual process death, API26/new sizes and physical-device provider
+              behavior unverified. No signed APK/Pages yet.
+    Next      Finish P26 entirely, then P27-P33 continuously until explicitly stopped.
+  SESSION 39 - 2026-11-08 - P26 completion
+    Did       Completed the recovered backup implementation, corrected restore
+              markers and saved focus totals, updated docs and preview copy. Added
+              regressions for today/past-day merge and preservation of legacy
+              daily totals. Refreshed changed fake-only preview and reviewed all
+              eight backup/Settings captures.
+    Decided   Replacement restores matching plants, saved daily totals and growth
+              markers exactly. Merge keeps existing records/totals/settings; only
+              newly imported past-day markers are consumed. Imported timers cancel
+              without rewards. No extra dependency/permission. Room v7 receipt and
+              migration remain additive.
+    Verified  Four final gates PASS: 345 JVM tests, zero failures/errors/skips;
+              lint zero errors/five accepted warnings. Eleven API35 migrations
+              PASS through v7. Native picker save/cancel/preview, merge and
+              double-confirmed replace PASS. Disk-failure receipt recovery PASS.
+              Old schemas unchanged; offline manifest/backup disabled; secret and
+              whitespace checks PASS.
+    Not ver.  Physical-device/OEM provider behavior, actual process death,
+              API26/new-size backup visuals remain unverified. Signed GitHub
+              release and Pages remain P33. Video not available. Earlier 342-test
+              claim was superseded by three observed regression failures; final
+              345-test rerun passes without weakening checks.
+    Next      Commit/push P26 and verify CI, then P27-P33 continuously until
+              explicitly stopped. GitHub Releases and Pages only; no F-Droid.
+              Signing remains private and must never expose or commit key
+              material.
+
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
   No open questions. All four were answered in P00; the decisions live in
@@ -2640,7 +2724,7 @@ SECTION 14 - OPEN QUESTIONS
 
 
 --------------------------------------------------------------------------------
-SECTION 15 - DATA MODEL (Room schema, version 6)
+SECTION 15 - DATA MODEL (Room schema, version 7)
 --------------------------------------------------------------------------------
   Source of truth: app/src/main/java/com/screengarden/app/data/local/.
   Every timestamp is epoch millis UTC (D20). Every `dayStartUtcMillis` value is
@@ -2707,6 +2791,10 @@ SECTION 15 - DATA MODEL (Room schema, version 6)
     is backfilled; weekly/monthly views use the latest actual frame in each period.
     Snapshot payload preserves identity, species, growth, health, condition and
     UTC planted/focus timestamps. Corrupt/future payloads are reported unavailable.
+  pending_restore (P26/v7)                      PK: slot (single row = 1)
+    settingsJson           String validated desired preferences after a committed replace
+    Internal recovery receipt only, excluded from backup exports. Clear only once
+    DataStore confirms its atomic settings edit. No new user-data table.
   Rules for changing the schema
     1. Bump DATABASE_VERSION in ScreenGardenDatabase.kt.
     2. Add a Migration object to ScreenGardenDatabase.MIGRATIONS (never edit an

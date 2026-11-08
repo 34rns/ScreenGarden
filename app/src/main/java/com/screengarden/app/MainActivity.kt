@@ -17,8 +17,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -28,6 +33,8 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
@@ -40,6 +47,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.screengarden.app.data.backup.BackupDocuments
 import com.screengarden.app.data.settings.SettingsDefaults
 import com.screengarden.app.data.usage.UsageAccess
 import com.screengarden.app.debug.DebugCatalog
@@ -63,10 +71,13 @@ import com.screengarden.app.ui.screens.insights.InsightsScreen
 import com.screengarden.app.ui.screens.insights.InsightsViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
+import com.screengarden.app.ui.screens.settings.BackupControls
+import com.screengarden.app.ui.screens.settings.BackupViewModel
 import com.screengarden.app.ui.screens.settings.SettingsActions
 import com.screengarden.app.ui.screens.settings.SettingsScreen
 import com.screengarden.app.ui.screens.settings.SettingsViewModel
 import com.screengarden.app.ui.theme.ScreenGardenTheme
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -104,6 +115,21 @@ class MainActivity : ComponentActivity() {
         container.usageSyncScheduler.syncNow()
         container.nudgeScheduler.checkNow()
         setContent {
+            var recoveryDone by remember { mutableStateOf(debugDestination != null) }
+            var recoveryError by remember { mutableStateOf(false) }
+            var recoveryAttempt by remember { mutableStateOf(0) }
+            LaunchedEffect(container, recoveryAttempt) {
+                if (!recoveryDone) {
+                    recoveryError = false
+                    try {
+                        container.backupRepository.recoverPendingSettings()
+                        recoveryDone = true
+                    } catch (failure: Exception) {
+                        if (failure is CancellationException) throw failure
+                        recoveryError = true
+                    }
+                }
+            }
             val saveSnapshot = rememberSnapshotSaveAction()
             val plantRenderer by produceState<PlantRenderer>(VectorPlantRenderer, container) {
                 value = PackPlantRenderer(container.plantPacks().packs.associate { it.metadata.id to it.images })
@@ -126,6 +152,17 @@ class MainActivity : ComponentActivity() {
                 themePreference = displayedTheme,
                 accentColor = accentColor
             ) {
+                if (!recoveryDone) {
+                    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(32.dp)) {
+                        if (recoveryError) {
+                            Text(stringResource(R.string.backup_recovery_error))
+                            Button({ recoveryAttempt++ }) { Text(stringResource(R.string.backup_retry)) }
+                        } else {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    return@ScreenGardenTheme
+                }
                 CompositionLocalProvider(LocalPlantRenderer provides plantRenderer) {
                     // null means DataStore has not answered yet. Drawing nothing for that
                     // single frame is deliberate: starting at `false` would flash the
@@ -144,6 +181,21 @@ class MainActivity : ComponentActivity() {
                             remember(container) { viewModelFactory { initializer { container.settingsViewModel() } } }
                         val settings: SettingsViewModel = viewModel(factory = factory)
                         val state by settings.uiState.collectAsStateWithLifecycle()
+                        val backupFactory = remember(container) {
+                            viewModelFactory { initializer { container.backupViewModel() } }
+                        }
+                        val backup: BackupViewModel = viewModel(factory = backupFactory)
+                        val backupState by backup.uiState.collectAsStateWithLifecycle()
+                        val documents = remember { BackupDocuments(contentResolver) }
+                        val saveBackup = rememberLauncherForActivityResult(
+                            ActivityResultContracts.CreateDocument("application/json")
+                        ) { uri ->
+                            if (uri == null) backup.cancelExport() else backup.save { documents.write(uri, it) }
+                        }
+                        val loadBackup =
+                            rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                                if (uri != null) backup.load { documents.read(uri) }
+                            }
                         var allowed by remember {
                             mutableStateOf(NotificationManagerCompat.from(appContext).areNotificationsEnabled())
                         }
@@ -193,7 +245,20 @@ class MainActivity : ComponentActivity() {
                                     ).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
                                 )
                             },
-                            versionName = packageManager.getPackageInfo(packageName, 0).versionName.orEmpty()
+                            versionName = packageManager.getPackageInfo(packageName, 0).versionName.orEmpty(),
+                            backupContent = {
+                                BackupControls(
+                                    backupState,
+                                    { backup.prepareExport { saveBackup.launch("ScreenGarden-backup.json") } },
+                                    {
+                                        loadBackup.launch(
+                                            arrayOf("application/json", "text/plain", "application/octet-stream")
+                                        )
+                                    },
+                                    backup::restore,
+                                    backup::cancelPreview
+                                )
+                            }
                         )
                     }
                     val gardenContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { startFocus ->

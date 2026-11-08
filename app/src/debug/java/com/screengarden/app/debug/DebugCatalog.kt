@@ -43,6 +43,7 @@ import com.screengarden.app.domain.limits.AppLimitRule
 import com.screengarden.app.domain.limits.LaunchableApp
 import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.domain.notifications.Nudge
+import com.screengarden.app.ui.debug.BackupDemoScreen
 import com.screengarden.app.ui.debug.NudgeDemoScreen
 import com.screengarden.app.ui.debug.UsageSelfCheckScreen
 import com.screengarden.app.ui.navigation.DebugDestination
@@ -60,6 +61,8 @@ import com.screengarden.app.ui.screens.insights.InsightsScreen
 import com.screengarden.app.ui.screens.insights.InsightsUiState
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
 import com.screengarden.app.ui.screens.limits.AppLimitsUiState
+import com.screengarden.app.ui.screens.settings.BackupControls
+import com.screengarden.app.ui.screens.settings.BackupUiState
 import com.screengarden.app.ui.screens.settings.EnvironmentControls
 import com.screengarden.app.ui.screens.settings.SettingsActions
 import com.screengarden.app.ui.screens.settings.SettingsScreen
@@ -99,6 +102,16 @@ object DebugCatalog {
     }
 
     private fun resolveDestination(requested: String?, context: Context): DebugDestination? {
+        if (requested in setOf("backup_demo", "backup_preview_demo", "backup_rtl_demo")) {
+            return DebugDestination(requireNotNull(requested), ScreenGardenDestination.Settings) {
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides
+                        if (requested == "backup_rtl_demo") LayoutDirection.Rtl else LayoutDirection.Ltr
+                ) {
+                    BackupDemoScreen(openPreview = requested == "backup_preview_demo")
+                }
+            }
+        }
         if (requested == "widget_demo") {
             return DebugDestination(requested, ScreenGardenDestination.Garden) { DemoWidgetScreen() }
         }
@@ -305,6 +318,7 @@ object DebugCatalog {
                             {},
                             state = state,
                             versionName = "0.1.0",
+                            backupContent = { BackupControls(BackupUiState(), {}, {}, {}, {}) },
                             actions = SettingsActions(
                                 saveGoals = { state = state.copy(goals = it, saved = true) },
                                 setTheme = { state = state.copy(theme = it) },

@@ -108,6 +108,12 @@ Garden pictures can be previewed and saved with an optional date and streak capt
 |---|---|---|
 | <img src="docs/screenshots/snapshot_light.png" width="220" alt="Garden picture preview with an optional date and streak caption"> | <img src="docs/screenshots/snapshot_night.png" width="220" alt="A moonlit garden picture using the shared plant art"> | <img src="docs/screenshots/snapshot_without_caption.png" width="220" alt="A garden picture without its caption"> |
 
+Backups use Android's file picker and show a preview before restoring:
+
+| Backup controls | Review records | Confirm replacement |
+|---|---|---|
+| <img src="docs/screenshots/backup_light.png" width="220" alt="User-controlled local backup save and restore controls"> | <img src="docs/screenshots/backup_preview.png" width="220" alt="Fake backup date and counts with merge and replace choices"> | <img src="docs/screenshots/backup_replace.png" width="220" alt="Second confirmation before replacing current data"> |
+
 ## Privacy promise
 
 - **No internet permission.** The app cannot make a network request, even by
@@ -116,7 +122,8 @@ Garden pictures can be previewed and saved with an optional date and streak capt
   account, no identifier.
 - **No cloud backup.** `android:allowBackup` is `false`, so your history does not
   leave the device through backup or device transfer.
-- **Local only.** Everything you record stays in app-private storage.
+- **Local by default.** Measurements stay in app-private storage. A backup or garden
+  picture leaves that storage only when you choose to save it through Android's file picker.
 
 These are enforced by the build and by the rules in `AGENT_MEMORY.txt`, not just
 by intention. A pull request that adds network access or telemetry is rejected.
@@ -137,6 +144,10 @@ by intention. A pull request that adds network access or telemetry is rejected.
 - Preview and save a garden picture as PNG through Android's file picker, with
   an optional date and streak caption. The image includes no app list or usage
   history and needs no storage-wide permission.
+- Save or restore a private JSON backup through Android's file picker. Review record
+  counts, merge missing records or confirm a complete replacement. Imported timers
+  stay stopped and past garden rewards never repeat. See [backup details](docs/BACKUP.md)
+  for privacy, recovery, conflicts and document limits.
 - First-run privacy and permission explanations, goal setup and optional
   notifications permission.
 - Preferences DataStore for goals and light/dark/AMOLED theme selection.

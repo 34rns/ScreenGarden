@@ -14,7 +14,9 @@ import kotlinx.coroutines.withContext
 class NudgeWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result = try {
         withContext(Dispatchers.IO) {
-            (applicationContext as ScreenGardenApplication).container.nudgeCheck.run()
+            val container = (applicationContext as ScreenGardenApplication).container
+            container.backupRepository.recoverPendingSettings()
+            container.nudgeCheck.run()
         }
         Result.success()
     } catch (failure: Exception) {

@@ -14,6 +14,7 @@ import com.screengarden.app.data.local.dao.BadgeDao
 import com.screengarden.app.data.local.dao.DailyStatDao
 import com.screengarden.app.data.local.dao.FocusSessionDao
 import com.screengarden.app.data.local.dao.GardenHistoryDao
+import com.screengarden.app.data.local.dao.PendingRestoreDao
 import com.screengarden.app.data.local.dao.PlantDao
 import com.screengarden.app.data.local.entity.AppLimit
 import com.screengarden.app.data.local.entity.AppUsageDaily
@@ -21,10 +22,11 @@ import com.screengarden.app.data.local.entity.Badge
 import com.screengarden.app.data.local.entity.DailyStat
 import com.screengarden.app.data.local.entity.FocusSession
 import com.screengarden.app.data.local.entity.GardenHistory
+import com.screengarden.app.data.local.entity.PendingRestore
 import com.screengarden.app.data.local.entity.Plant
 
 /** Bumped together with [DATABASE_VERSION] when the schema changes (D22). */
-private const val DATABASE_VERSION = 6
+private const val DATABASE_VERSION = 7
 
 /**
  * The app's single Room database: everything ScreenGarden knows, stored on device.
@@ -46,7 +48,8 @@ private const val DATABASE_VERSION = 6
         Plant::class,
         FocusSession::class,
         Badge::class,
-        GardenHistory::class
+        GardenHistory::class,
+        PendingRestore::class
     ],
     version = DATABASE_VERSION,
     exportSchema = true
@@ -66,6 +69,8 @@ abstract class ScreenGardenDatabase : RoomDatabase() {
     abstract fun badgeDao(): BadgeDao
 
     abstract fun gardenHistoryDao(): GardenHistoryDao
+
+    abstract fun pendingRestoreDao(): PendingRestoreDao
 
     companion object {
         /** Mirrors [DATABASE_VERSION]; Room reads the literal, tests read this. */
@@ -135,12 +140,23 @@ abstract class ScreenGardenDatabase : RoomDatabase() {
             }
         }
 
+        /** Receipt commits with imported rows; no user data is altered by this migration. */
+        val MIGRATION_6_7: Migration = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS pending_restore (slot INTEGER NOT NULL, settingsJson TEXT NOT NULL, " +
+                        "PRIMARY KEY(slot))"
+                )
+            }
+        }
+
         private val MIGRATIONS: Array<Migration> = arrayOf(
             MIGRATION_1_2,
             MIGRATION_2_3,
             MIGRATION_3_4,
             MIGRATION_4_5,
-            MIGRATION_5_6
+            MIGRATION_5_6,
+            MIGRATION_6_7
         )
 
         /** Builds the on-disk database. The DI container calls this lazily (D1). */

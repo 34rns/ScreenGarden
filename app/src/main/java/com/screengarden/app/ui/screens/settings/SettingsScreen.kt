@@ -56,7 +56,8 @@ fun SettingsScreen(
     notificationsAllowed: Boolean = true,
     onNotificationSettings: () -> Unit = { },
     versionName: String = "",
-    environmentContent: (@Composable () -> Unit)? = null
+    environmentContent: (@Composable () -> Unit)? = null,
+    backupContent: (@Composable () -> Unit)? = null
 ) {
     var goalsOpen by rememberSaveable { mutableStateOf(false) }
     var confirmIntro by rememberSaveable { mutableStateOf(false) }
@@ -146,6 +147,7 @@ fun SettingsScreen(
             HorizontalDivider()
             SettingsHeading(R.string.settings_data)
             SettingsBody(R.string.settings_data_copy)
+            backupContent?.invoke()
             TextButton({ confirmIntro = true }, enabled = !state.saving && !state.loading) {
                 Text(stringResource(R.string.settings_show_intro))
             }

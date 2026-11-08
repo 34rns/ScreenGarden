@@ -32,6 +32,7 @@ class UsageSyncWorker(appContext: Context, params: WorkerParameters) : Coroutine
     override suspend fun doWork(): Result {
         val container = (applicationContext as ScreenGardenApplication).container
         return try {
+            container.backupRepository.recoverPendingSettings()
             when (val result = container.dailyUsageSync.run()) {
                 is DailyUsageSyncResult.Synced -> {
                     // Logging, not telemetry (H3): visible in `adb logcat`, never sent.
