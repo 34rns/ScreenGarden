@@ -40,6 +40,18 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class DataStoreSettingsRepositoryTest {
+    @Test
+    fun compassionAllowanceHasAStableDefaultAndValidatedUpdates() = runBlocking {
+        val settings = open()
+        assertEquals(3, settings.repository.compassionDaysPerMonth.first())
+        settings.repository.setCompassionDaysPerMonth(0)
+        assertEquals(0, settings.repository.compassionDaysPerMonth.first())
+        settings.repository.setCompassionDaysPerMonth(10)
+        assertEquals(10, settings.repository.compassionDaysPerMonth.first())
+        assertTrue(runCatching { settings.repository.setCompassionDaysPerMonth(11) }.isFailure)
+        assertTrue(runCatching { settings.repository.setCompassionDaysPerMonth(-1) }.isFailure)
+        assertEquals(10, settings.repository.compassionDaysPerMonth.first())
+    }
 
     @get:Rule
     val temporaryFolder = TemporaryFolder()

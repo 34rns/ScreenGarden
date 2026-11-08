@@ -48,4 +48,5 @@ object SettingsDefaults {
     const val ONBOARDING_DONE: Boolean = false
 
     const val KEEP_SCREEN_ON: Boolean = false
+    const val COMPASSION_DAYS_PER_MONTH: Int = 3
 }

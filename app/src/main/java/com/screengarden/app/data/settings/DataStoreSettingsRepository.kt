@@ -38,6 +38,7 @@ internal object SettingsKeys {
     val NOTIFICATIONS_ON = booleanPreferencesKey("notifications_on")
     val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
     val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
+    val COMPASSION_DAYS_PER_MONTH = intPreferencesKey("compassion_days_per_month")
 }
 
 /**
@@ -88,6 +89,11 @@ class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>)
     override val keepScreenOn: Flow<Boolean> =
         preferences { it[SettingsKeys.KEEP_SCREEN_ON] ?: SettingsDefaults.KEEP_SCREEN_ON }
 
+    override val compassionDaysPerMonth: Flow<Int> =
+        preferences {
+            (it[SettingsKeys.COMPASSION_DAYS_PER_MONTH] ?: SettingsDefaults.COMPASSION_DAYS_PER_MONTH).coerceIn(0, 10)
+        }
+
     override suspend fun setDailyGoalMs(goalMs: Long) {
         require(goalMs > 0L) { "dailyGoalMs must be positive, was $goalMs" }
         dataStore.edit { it[SettingsKeys.DAILY_GOAL_MS] = goalMs }
@@ -137,6 +143,11 @@ class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>)
 
     override suspend fun setKeepScreenOn(enabled: Boolean) {
         dataStore.edit { it[SettingsKeys.KEEP_SCREEN_ON] = enabled }
+    }
+
+    override suspend fun setCompassionDaysPerMonth(limit: Int) {
+        require(limit in 0..10)
+        dataStore.edit { it[SettingsKeys.COMPASSION_DAYS_PER_MONTH] = limit }
     }
 
     /**

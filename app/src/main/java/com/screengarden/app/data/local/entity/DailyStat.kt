@@ -28,5 +28,6 @@ data class DailyStat(
     @ColumnInfo(defaultValue = "0") val usageIsBounded: Boolean = false,
     @ColumnInfo(defaultValue = "0") val gardenApplied: Boolean = false,
     /** Measured against the bedtime settings at the last sync; old history remains unknown. */
-    val bedtimeMinutes: Int? = null
+    val bedtimeMinutes: Int? = null,
+    @ColumnInfo(defaultValue = "0") val isCompassionDay: Boolean = false
 )

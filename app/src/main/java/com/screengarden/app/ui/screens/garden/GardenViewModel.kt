@@ -12,6 +12,7 @@ import com.screengarden.app.domain.garden.GardenSnapshot
 import com.screengarden.app.domain.garden.GardenStore
 import com.screengarden.app.domain.garden.HealthScoreCalculator
 import com.screengarden.app.domain.garden.HealthScoreInputs
+import com.screengarden.app.domain.habits.HabitRules
 import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.CancellationException
@@ -55,9 +56,7 @@ class GardenViewModel(
         viewModelScope.launch(dispatcher) {
             try {
                 val snapshots = combine(today, refreshVersion) { day, _ -> day }.flatMapLatest { day ->
-                    var from = day
-                    repeat(31) { from = LocalDay.previousDayStart(from, zoneId) }
-                    store.observeSnapshot(from, day).catch { failure ->
+                    store.observeSnapshot(Long.MIN_VALUE, day).catch { failure ->
                         if (failure is CancellationException) throw failure
                         mutableState.update { it.copy(loading = false, error = true) }
                     }
@@ -133,7 +132,13 @@ class GardenViewModel(
             if (day.usageIsBounded && !day.gardenApplied) day.copy(score = score(day, goals)) else day
         }
         for (day in snapshot.days.sortedBy { it.dayStartUtcMillis }) {
-            if (day.dayStartUtcMillis >= today.value || day.gardenApplied || !day.usageIsBounded) continue
+            if (day.dayStartUtcMillis >= today.value ||
+                day.gardenApplied ||
+                day.isCompassionDay ||
+                !day.usageIsBounded
+            ) {
+                continue
+            }
             val calculated = score(day, goals)
             if (day.score != calculated &&
                 !store.recordScore(day.dayStartUtcMillis, calculated, day.updatedAtUtcMillis)
@@ -164,18 +169,8 @@ class GardenViewModel(
         )
     )?.value
 
-    private fun streak(days: List<GardenDayRecord>, end: Long, threshold: Int): Int {
-        val byDay = days.associateBy { it.dayStartUtcMillis }
-        var dayKey = end
-        var count = 0
-        while (true) {
-            val day = byDay[dayKey] ?: break
-            if (!day.usageIsBounded || (day.score ?: break) < threshold) break
-            count++
-            dayKey = LocalDay.previousDayStart(dayKey, zoneId)
-        }
-        return count
-    }
+    private fun streak(days: List<GardenDayRecord>, end: Long, threshold: Int): Int =
+        HabitRules.streaks(days, end, threshold, zoneId).current
 
     private data class Goals(val dailyMinutes: Int, val pickups: Int, val threshold: Int)
 }

@@ -21,7 +21,7 @@ import com.screengarden.app.R
 
 /** Settings entry point; other settings sections arrive in P22. */
 @Composable
-fun SettingsScreen(onAppLimits: () -> Unit, modifier: Modifier = Modifier) {
+fun SettingsScreen(onAppLimits: () -> Unit, modifier: Modifier = Modifier, onMilestones: () -> Unit = { }) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(modifier = Modifier.padding(24.dp)) {
             Text(
@@ -34,6 +34,15 @@ fun SettingsScreen(onAppLimits: () -> Unit, modifier: Modifier = Modifier) {
                     Text(stringResource(R.string.limits_title), style = MaterialTheme.typography.titleMedium)
                     Text(
                         stringResource(R.string.limits_settings_copy),
+                        style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content)
+                    )
+                }
+            }
+            TextButton(onClick = onMilestones, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.habits_title), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.habits_subtitle),
                         style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content)
                     )
                 }

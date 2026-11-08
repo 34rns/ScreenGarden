@@ -95,6 +95,9 @@ interface DailyStatDao {
     @Update
     suspend fun update(stat: DailyStat): Int
 
+    @Query("UPDATE daily_stats SET isCompassionDay = :enabled WHERE dayStartUtcMillis = :day")
+    suspend fun setCompassionDay(day: Long, enabled: Boolean): Int
+
     @Query("DELETE FROM daily_stats WHERE dayStartUtcMillis = :dayStartUtcMillis")
     suspend fun deleteByDay(dayStartUtcMillis: Long): Int
 

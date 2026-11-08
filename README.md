@@ -4,7 +4,7 @@ A calm, offline garden that grows while you focus and keep your screen time in
 check.
 
 > **Status: work in progress.** Onboarding, local settings, usage collection and
-> the Garden, Focus and App limits screens are implemented. Insights and Settings controls are
+> the Garden, Focus, App limits and Milestones screens are implemented. Insights and Settings controls are
 > still being built. There is no installable signed release yet.
 
 [![CI](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml)
@@ -21,8 +21,8 @@ nothing is uploaded or sold.
 ## Screenshots
 
 Captured on an Android 15 emulator (1080 × 2400) with demo mode enabled.
-Garden, Focus and App limits images use fake debug-only demo data. Settings shows
-the App limits entry; Insights remains a placeholder. No image contains personal phone data.
+Garden, Focus, App limits and Milestones images use fake debug-only demo data. Settings shows
+the App limits and Milestones entries; Insights remains a placeholder. No image contains personal phone data.
 
 | | Light | Dark | AMOLED |
 | --- | --- | --- | --- |
@@ -31,6 +31,7 @@ the App limits entry; Insights remains a placeholder. No image contains personal
 | **Insights** | <img src="docs/screenshots/insights_light.png" width="200" alt="Insights tab, light theme"> | <img src="docs/screenshots/insights_dark.png" width="200" alt="Insights tab, dark theme"> | <img src="docs/screenshots/insights_amoled.png" width="200" alt="Insights tab, AMOLED theme"> |
 | **Settings** | <img src="docs/screenshots/settings_light.png" width="200" alt="Settings tab, light theme"> | <img src="docs/screenshots/settings_dark.png" width="200" alt="Settings tab, dark theme"> | <img src="docs/screenshots/settings_amoled.png" width="200" alt="Settings tab, AMOLED theme"> |
 | **App limits** | <img src="docs/screenshots/limits_light.png" width="200" alt="App limits, light theme"> | <img src="docs/screenshots/limits_dark.png" width="200" alt="App limits, dark theme"> | <img src="docs/screenshots/limits_amoled.png" width="200" alt="App limits, AMOLED theme"> |
+| **Milestones** | <img src="docs/screenshots/habits_light.png" width="200" alt="Counted-day streaks and earned milestones"> | <img src="docs/screenshots/habits_dark.png" width="200" alt="Milestones in dark mode"> | <img src="docs/screenshots/habits_amoled.png" width="200" alt="Milestones with true-black surfaces"> |
 
 Accessibility and layout:
 
@@ -63,6 +64,12 @@ Sleep garden during the saved wind-down window, using fake debug-only data:
 | Large text | Mirrored layout | Empty garden | Usage access missing |
 | --- | --- | --- | --- |
 | <img src="docs/screenshots/bedtime_large_font.png" width="200" alt="Sleep garden at 1.3 times font scale"> | <img src="docs/screenshots/bedtime_rtl.png" width="200" alt="Sleep garden with RTL controls and readable English copy"> | <img src="docs/screenshots/bedtime_empty.png" width="200" alt="Sleep garden waiting for data"> | <img src="docs/screenshots/bedtime_permission.png" width="200" alt="Sleep garden explaining optional Usage access"> |
+
+Compassion days and milestones, with fake data:
+
+| Compassion controls | Large text | Mirrored layout | No milestones yet |
+| --- | --- | --- | --- |
+| <img src="docs/screenshots/habits_compassion.png" width="200" alt="Mark an off day and configure the monthly allowance"> | <img src="docs/screenshots/habits_large_font.png" width="200" alt="Milestones at 1.3 times font scale"> | <img src="docs/screenshots/habits_rtl.png" width="200" alt="Mirrored milestone layout with readable text"> | <img src="docs/screenshots/habits_empty.png" width="200" alt="No counted days or earned badges yet"> |
 
 ## Privacy promise
 
@@ -112,6 +119,10 @@ by intention. A pull request that adds network access or telemetry is rejected.
 - Usage without reliable screen events (including Android 8.0–8.1) is shown as
   incomplete rather than given a fabricated score. Insights and the remaining
   Settings controls are still being built.
+- Counted-day streaks and permanent badges celebrate progress gently. Mark today
+  or a past date as a compassion day to preserve a streak and exclude it from
+  averages. The monthly allowance defaults to three and is configurable from zero
+  to ten. Rest never erases applied growth or an earned badge.
 
 Reminder checks use Android's background scheduler at a 15-minute minimum interval,
 with a battery-not-low constraint. Checks can be delayed by Doze, battery restrictions

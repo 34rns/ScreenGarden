@@ -17,12 +17,18 @@ interface BadgeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(badge: Badge)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(badge: Badge): Long
+
     @Query("SELECT * FROM badges WHERE badgeKey = :badgeKey")
     suspend fun get(badgeKey: String): Badge?
 
     /** Most recently unlocked first, which is how the list should render. */
     @Query("SELECT * FROM badges ORDER BY unlockedAtUtcMillis DESC")
     fun observeAll(): Flow<List<Badge>>
+
+    @Query("SELECT * FROM badges ORDER BY unlockedAtUtcMillis DESC")
+    suspend fun getAll(): List<Badge>
 
     @Query("SELECT COUNT(*) FROM badges")
     suspend fun count(): Int

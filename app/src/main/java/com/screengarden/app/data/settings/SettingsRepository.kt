@@ -50,6 +50,7 @@ interface SettingsRepository {
     val onboardingDone: Flow<Boolean>
 
     val keepScreenOn: Flow<Boolean>
+    val compassionDaysPerMonth: Flow<Int>
 
     /** @throws IllegalArgumentException when [goalMs] is not positive. */
     suspend fun setDailyGoalMs(goalMs: Long)
@@ -77,4 +78,5 @@ interface SettingsRepository {
     suspend fun setOnboardingDone(done: Boolean)
 
     suspend fun setKeepScreenOn(enabled: Boolean)
+    suspend fun setCompassionDaysPerMonth(limit: Int)
 }

@@ -15,6 +15,10 @@ import com.screengarden.app.domain.focus.FocusStatus
 import com.screengarden.app.domain.focus.FocusTag
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
+import com.screengarden.app.domain.habits.BadgeKind
+import com.screengarden.app.domain.habits.EarnedBadge
+import com.screengarden.app.domain.habits.HabitsSnapshot
+import com.screengarden.app.domain.habits.Streaks
 import com.screengarden.app.domain.limits.AppLimitRule
 import com.screengarden.app.domain.limits.LaunchableApp
 import com.screengarden.app.domain.notifications.Nudge
@@ -27,9 +31,12 @@ import com.screengarden.app.ui.screens.focus.FocusUiState
 import com.screengarden.app.ui.screens.garden.GardenAvailability
 import com.screengarden.app.ui.screens.garden.GardenScreen
 import com.screengarden.app.ui.screens.garden.GardenUiState
+import com.screengarden.app.ui.screens.habits.HabitsScreen
+import com.screengarden.app.ui.screens.habits.HabitsUiState
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
 import com.screengarden.app.ui.screens.limits.AppLimitsUiState
 import com.screengarden.app.ui.screens.settings.SettingsScreen
+import java.time.LocalDate
 
 /**
  * The debug-build catalogue of diagnostic screens (P05b).
@@ -48,6 +55,42 @@ object DebugCatalog {
 
     /** The requested debug destination, or null when [requested] names none. */
     fun destination(requested: String?, context: Context): DebugDestination? {
+        if (requested in setOf("habits_demo", "habits_empty_demo", "habits_rtl_demo")) {
+            val state = HabitsUiState(
+                loading = false,
+                today = LocalDate.of(2026, 11, 8),
+                streaks = if (requested == "habits_empty_demo") Streaks(0, 0) else Streaks(12, 30),
+                snapshot = HabitsSnapshot(
+                    emptyList(),
+                    emptyList(),
+                    if (requested ==
+                        "habits_empty_demo"
+                    ) {
+                        emptyList()
+                    } else {
+                        listOf(
+                            BadgeKind.STREAK_7,
+                            BadgeKind.STREAK_30,
+                            BadgeKind.FIRST_BLOOM,
+                            BadgeKind.FIRST_RECOVERY
+                        ).map {
+                            EarnedBadge(it, 1794000000000L)
+                        }
+                    }
+                )
+            )
+            return DebugDestination(requireNotNull(requested), ScreenGardenDestination.Settings) {
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides if (requested == "habits_rtl_demo") {
+                        LayoutDirection.Rtl
+                    } else {
+                        LocalLayoutDirection.current
+                    }
+                ) {
+                    HabitsScreen(state, { _, _ -> }, { }, { }, { })
+                }
+            }
+        }
         if (requested == "nudges_demo") {
             val publisher = AndroidNudgePublisher(context) { context.getString(R.string.debug_nudge_app) }
             return DebugDestination(requested, ScreenGardenDestination.Settings) {

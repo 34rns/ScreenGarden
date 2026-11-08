@@ -30,7 +30,12 @@ enum class ScreenGardenDestination(val route: String, @StringRes val labelRes: I
         val START: ScreenGardenDestination = Garden
 
         /** Maps a nav back stack route back to a tab, defaulting to [START]. */
-        fun fromRoute(route: String?): ScreenGardenDestination =
-            if (route == "app_limits") Settings else entries.firstOrNull { it.route == route } ?: START
+        fun fromRoute(route: String?): ScreenGardenDestination = if (route == "app_limits" ||
+            route == "milestones"
+        ) {
+            Settings
+        } else {
+            entries.firstOrNull { it.route == route } ?: START
+        }
     }
 }

@@ -65,6 +65,8 @@ class OnboardingCompletionTest {
      * thing this class decides beyond passing values through.
      */
     private class RecordingSettingsRepository : SettingsRepository {
+        override val compassionDaysPerMonth: Flow<Int> = flowOf(3)
+        override suspend fun setCompassionDaysPerMonth(limit: Int) { }
 
         val writes = mutableListOf<String>()
         var storedDailyGoalMs: Long? = null

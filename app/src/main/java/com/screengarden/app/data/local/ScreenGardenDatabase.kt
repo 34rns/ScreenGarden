@@ -22,7 +22,7 @@ import com.screengarden.app.data.local.entity.FocusSession
 import com.screengarden.app.data.local.entity.Plant
 
 /** Bumped together with [DATABASE_VERSION] when the schema changes (D22). */
-private const val DATABASE_VERSION = 4
+private const val DATABASE_VERSION = 5
 
 /**
  * The app's single Room database: everything ScreenGarden knows, stored on device.
@@ -113,7 +113,13 @@ abstract class ScreenGardenDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+        val MIGRATION_4_5: Migration = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE daily_stats ADD COLUMN isCompassionDay INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        private val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 
         /** Builds the on-disk database. The DI container calls this lazily (D1). */
         fun build(context: Context): ScreenGardenDatabase =

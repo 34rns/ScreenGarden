@@ -19,10 +19,12 @@ import com.screengarden.app.data.onboarding.OnboardingCompletion
 import com.screengarden.app.data.repo.AppLimitRepositoryImpl
 import com.screengarden.app.data.repo.AppUsageRepository
 import com.screengarden.app.data.repo.AppUsageRepositoryImpl
+import com.screengarden.app.data.repo.BadgeRepositoryImpl
 import com.screengarden.app.data.repo.DailyStatRepository
 import com.screengarden.app.data.repo.DailyStatRepositoryImpl
 import com.screengarden.app.data.repo.FocusSessionRepositoryImpl
 import com.screengarden.app.data.repo.GardenRepositoryImpl
+import com.screengarden.app.data.repo.HabitsRepository
 import com.screengarden.app.data.settings.DataStoreSettingsRepository
 import com.screengarden.app.data.settings.SettingsRepository
 import com.screengarden.app.data.settings.settingsDataStore
@@ -34,6 +36,7 @@ import com.screengarden.app.data.work.NudgeScheduler
 import com.screengarden.app.data.work.UsageSyncScheduler
 import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenViewModel
+import com.screengarden.app.ui.screens.habits.HabitsViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
 import java.time.LocalTime
 import kotlinx.coroutines.flow.combine
@@ -91,6 +94,16 @@ class AppContainer(context: Context) {
     }
 
     val gardenRepository: GardenRepositoryImpl by lazy { GardenRepositoryImpl(database) }
+    val badgeRepository: BadgeRepositoryImpl by lazy { BadgeRepositoryImpl(database.badgeDao()) }
+    val habitsRepository: HabitsRepository by lazy { HabitsRepository(database) }
+
+    fun habitsViewModel(): HabitsViewModel = HabitsViewModel(
+        habitsRepository,
+        settingsRepository.streakThreshold,
+        settingsRepository.compassionDaysPerMonth,
+        settingsRepository::setStreakThreshold,
+        settingsRepository::setCompassionDaysPerMonth
+    )
 
     val appLimitRepository: AppLimitRepositoryImpl by lazy { AppLimitRepositoryImpl(database.appLimitDao()) }
     private val appCatalog: LaunchableAppCatalog by lazy { LaunchableAppCatalog(appContext) }

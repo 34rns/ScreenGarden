@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 25 / P17 published; CI SUCCESS; next P18)
+Last updated: 2026-11-08 (Session 26 / P18 complete locally)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -105,7 +105,7 @@ SECTION 3 - TECH STACK
   Navigation    androidx.navigation:navigation-compose 2.8.5, single NavHost
   Architecture  UI (Compose screens) -> domain -> data (local only)
   DI            Manual dependency injection (AppContainer). No Hilt.
-  Persistence   Room 2.6.1 (KSP), schema v4, 6 tables, export + migrations.
+  Persistence   Room 2.6.1 (KSP), schema v5, 6 tables, export + migrations.
                 Preferences DataStore 1.1.2 behind SettingsRepository (P04).
   Async         Kotlin coroutines + Flow (Room DAOs expose Flow queries).
                 WorkManager 2.10.0 runs the daily usage sync (P06).
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         244 JVM tests; 5 migrations + 1 bedtime route test green on API 35 (P17)
+  Tests         263 JVM tests; 7 migration cases green on API 35 (P18)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -217,7 +217,8 @@ SECTION 4 - FOLDER LAYOUT
       |       |-- 1.json (immutable history)
       |       |-- 2.json (P10: bounded usage and persistent garden)
       |       |-- 3.json (P12: tagged sessions, status and timer checkpoints)
-      |       -- 4.json (P17: nullable measured bedtime minutes)
+      |       |-- 4.json (P17: nullable measured bedtime minutes)
+      |       `-- 5.json (P18: compassion-day marker)
       `-- src/
           |-- main/
           |   |-- AndroidManifest.xml   documented permissions, allowBackup=false
@@ -244,12 +245,16 @@ SECTION 4 - FOLDER LAYOUT
           |       |                                Plant + GardenEngine (P09)
           |       |-- domain/model/                ThemePreference, OnboardingChoices (P07)
           |       |-- domain/limits/               AppLimitStore + app/rule models (P15)
+          |       |-- domain/habits/               calendar streaks/badges/store (P18)
+          |       |-- data/repo/HabitsRepository.kt atomic rest quota and milestone reads (P18)
+          |       |-- data/repo/BadgeRepositoryImpl.kt permanent unlock timestamps (P18)
           |       `-- ui/  theme/, navigation/, components/, screens/,
           |                 onboarding/ (OnboardingScreen + GoalSetup, P07),
           |                 screens/garden/ (ViewModel/state, Canvas, renderer, details)
           |                 screens/garden/GardenMotion.kt (P11 lifecycle/motion policy)
           |                 screens/focus/ (FocusScreen + FocusViewModel, P13)
           |                 screens/limits/ (AppLimitsScreen + ViewModel, P15)
+          |                 screens/habits/ (milestones, compassion controls + ViewModel, P18)
           |-- debug/                            DEBUG-ONLY source set (P05b)
           |   |-- res/values/strings.xml        self-check strings, never shipped
           |   `-- java/com/screengarden/app/
@@ -831,7 +836,7 @@ SECTION 6 - DECISIONS
       cannot duplicate rewards. Missing features (focus before P12, limits before
       P15, bedtime before P17) contribute unknown values, not fabricated zeros.
       Saved plants remain visible after permission revocation or read failures.
-      The current query covers today plus 31 days; P18 owns full streak history.
+      P18 now queries all stored history and shares pure calendar streak rules.
 
   D65 SCREEN-OFF MEASUREMENT BOUND AND ITS LIMITS (P10).
       Replay yesterday's state, clip at LocalDay, stop time at screen-off/shutdown,
@@ -947,6 +952,20 @@ SECTION 6 - DECISIONS
       Plant details, focus and honest empty/permission states stay accessible.
       Optional evening reminder is omitted; P16 already handles quiet hours and
       P22 owns general settings controls. No new dependency or permission.
+  D76 P18 STREAKS AND COMPASSION DAYS.
+      Use all stored local days; known scores at/above the configurable threshold
+      count, missing/unbounded days break, compassion days preserve but never add
+      to streak length or averages. Default monthly allowance is 3, configurable
+      0..10 via compassionDaysPerMonth; setting 0 disables new marks, not old ones.
+      Mark today or a past local date; quota checks and marker writes share a Room
+      transaction. Unmarking returns an allowance. Existing applied garden rewards
+      and earned badges are preserved; unapplied compassion days have no daily
+      garden penalty/reward, while focus still rewards. Room v5 adds only
+      isCompassionDay=false with MIGRATION_4_5 and preservation tests.
+      Badges are permanent, insert-once: 7/30 counted-day streaks, 10 completed
+      sessions in a local Monday-Sunday week, first bloom and first recovery.
+      Garden/focus transitions record plant badges atomically; the milestone
+      screen also evaluates stored history. All data remains local and free.
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
@@ -966,8 +985,8 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
                   interfaces, time helper, 32 tests [1.1]
   P04     done    DataStore settings repository + theme wiring, 16 new
                   tests [1.2]
-  P04b    partial Five of six implementations: DailyStat/AppUsage (P06),
-                  Garden (P10), FocusSession (P12), AppLimit (P15); Badge follows P18
+  P04b    done    All six implementations: DailyStat/AppUsage (P06),
+                  Garden (P10), FocusSession (P12), AppLimit (P15), Badge (P18)
   P05     done    Usage stats repository: screen time, per-app usage,
                   pickups, unlocks, access check [2.1 part]
   P05b    done    Debug-only usage self-check; granted usage access on the
@@ -998,7 +1017,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
                   delivery ledger, channel controls; 231 JVM + 2 emulator tests [new]
   P17     done    Measured bedtime minutes, Room v4 migration, sleep garden and
                   visible-clock policy; 244 JVM tests + 6 emulator checks [new]
-  P18     todo    Streaks + badges [1.5 part]
+  P18     done    Streaks + badges, compassion-day quota and Room v5 [1.5 part]
   P19     todo    Insights charts [2.3]
   P20     todo    Weekly reflection + timeline [new]
   P21     todo    Day/night, seasons, weather visuals [new]
@@ -1020,8 +1039,8 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P17 are published and verified; P18 is next. P04b has only the
-  Badge implementation left, owned by P18.
+  Sequencing note: P00-P18 are implemented and verified; P18 publication pending.
+  P04b repositories are complete, including BadgeRepository in P18. P19 is next.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
 --------------------------------------------------------------------------------
@@ -1218,7 +1237,7 @@ SECTION 10 - KNOWN ISSUES
   K2  Garden, Focus and App limits are implemented. Settings has the limits entry;
       other Settings controls (P22) and Insights (P19) remain unfinished.
   K3  P10 GardenViewModel reads Room through GardenStore. Five repositories are
-      implemented; only Badge remains for P18.
+      implemented, including BadgeRepository in P18.
   K4  kotlinOptions { jvmTarget } is deprecated in Kotlin 2.1 (still compiles).
       Migrate to the compilerOptions DSL before AGP 9 / Kotlin 2.2.
   K5  Gradle 8.13 prints "Deprecated Gradle features ... incompatible with
@@ -1272,7 +1291,7 @@ SECTION 10 - KNOWN ISSUES
       actual process-kill/reboot behavior remains unverified (K55).
   K23 app/schemas/ is guarded only by H15 and the PR checklist; nothing stops
       someone deleting 1.json while adding 2.json.
-  K24  Room v2 contains score/pickups/unlocks/gardenApplied/usageIsBounded and plant growthPoints/condition. P12 adds focus tag/status/duration/checkpoint/bootCount in v3; P17 adds nullable bedtimeMinutes in v4; compassion day remains P18. Grid position is derived, not persisted (D63). Every future schema needs a new Migration/test/export; never modify old JSON.
+  K24  Room v2 contains score/pickups/unlocks/gardenApplied/usageIsBounded and plant growthPoints/condition. P12 adds focus tag/status/duration/checkpoint/bootCount in v3; P17 adds nullable bedtimeMinutes in v4; P18 adds isCompassionDay in v5. Grid position is derived, not persisted (D63). Every future schema needs a new Migration/test/export; never modify old JSON.
   K25 CLOSED in P08: SECTION 16.1 now specifies the implemented score formula.
   K26 COSMETIC: the status bar in every screenshot still shows the emulator's
       "no internet" wifi/mobile icons. The demo-mode `command network -e wifi
@@ -1395,10 +1414,9 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 244 JVM tests, 0 failures/errors/skips. Four final P17
-  gates PASS; lint 0 errors/4 accepted warnings. Six API 35 tests PASS: five
-  migration cases (all published versions through v4) and one real Garden route
-  test for opening within the saved window and changing back to daytime.
+  Current test state: 263 JVM tests, 0 failures/errors/skips. Four final P18
+  gates PASS; lint 0 errors/4 accepted warnings. Seven API 35 migration cases
+  PASS through v5. Real Settings route, mark/unmark and restart persistence PASS.
   P16's two native reminder tests and P14's service tests remain recorded.
   Seven final fake-only sleep-garden screenshots reviewed: light/dark/AMOLED,
   1.3x text, forced RTL, no data and no permission. No real-data screenshots.
@@ -1419,32 +1437,27 @@ SECTION 10 - KNOWN ISSUES
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P17 are published and verified; P17 86aca9a CI 42433264065 SUCCESS.
-  P17 complete and published: measured wind-down usage feeds the existing smooth score;
-  sleep garden opens within the stored window and returns to daytime outside it.
-  Static moonlit plot uses dark tokens, stops idle motion, retains plants/focus/
-  details and missing-data/access explanations. Clock updates only while visible.
-  Room v4 adds nullable bedtimeMinutes, MIGRATION_3_4 and immutable new 4.json.
-  Legacy schemas 1/2/3 unchanged. Old bedtime history remains unknown.
-  Four final local gates PASS: 244 JVM tests (13 added), 0 failures/errors/skips;
-  lint 0 errors/4 accepted warnings, style/debug build pass. Six API 35 migration/
-  real-route tests PASS. Seven fake-only screenshots reviewed and added to README.
-  Secret/manifest/schema/whitespace checks PASS; no permission/dependency added.
-  P17 code/screenshots/memory committed and pushed; GitHub CI SUCCESS. No half-done P18 files.
-  No signed APK release or Pages site. GitHub only (D69); video not available.
-  Codebuff request remains D74; no published history was rewritten.
+  P00-P17 are published and verified; P17 code and checkpoint CI SUCCESS.
+  P18 completed locally: domain/habits rules, data/repo/HabitsRepository and
+  BadgeRepositoryImpl, ui/screens/habits screen/ViewModel, Settings navigation,
+  isCompassionDay in Room v5, MIGRATION_4_5 and exported 5.json.
+  Current code preserves badge timestamps, applied rewards and rest markers
+  during usage sync; plant transitions record bloom/recovery in their transaction.
+  Fresh final four gates PASS: 263 JVM tests, zero failures/errors/skips,
+  lint zero errors/four accepted warnings. Seven emulator migration cases and
+  real milestone mark/restart/unmark checks PASS. Ten fake-only milestone and
+  settings captures reviewed. Publication/CI pending; no unfinished P18 code.
+  No paid tool/dependency/permission added. No signed release or Pages yet.
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Start P18 streaks, compassion days and badges from docs/PROMPTS.md.
-  P18 needs a new Room migration/test for compassion-day data; preserve v1-v4
-  schemas and all active focus/garden data. Complete BadgeRepository (P04b).
-  Continue remaining prompts in order with gates, memory, commit/push/CI and
-  fake emulator screenshots. Final goal remains signed GitHub release and Pages;
-  no F-Droid. P33 signing requires human-owned secrets, never their values here.
-  P17 is finished; context is long, so continue in a fresh session. That session
-  reads this file and docs/PROMPTS.md. No P18 feature has been started.
+  Finish P18 publication and CI, then implement P19 Insights
+  charts and continue P20-P33 in order, GitHub only.
+  Owner requests continuous work until explicitly stopped (2026-11-08);
+  save checkpoints but do not stop at task/context milestones. Use compaction
+  to continue the same task. Signing may require manual human setup in P33;
+  never request, print or commit secret values.
 
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
@@ -2180,6 +2193,26 @@ SECTION 13 - SESSION LOG
     CI        P17 86aca9a pushed; 42433264065 SUCCESS, all four quality steps.
               https://github.com/34rns/ScreenGarden/actions/runs/42433264065
     Next      P18 in a fresh session. Working tree has no unfinished feature work.
+  SESSION 26 - 2026-11-08 - P18 streaks, compassion days and permanent milestones
+    Did       Finished saved P18 rules, repository, UI/ViewModel, Settings route,
+              validated allowance setting and Room v5 Migration/export. Reviewed
+              production transactions, all-history streaks and earned timestamps.
+              Corrected the fake demo: its 30-day best streak now has its badge.
+              Refreshed ten fake-only emulator images and README gallery/features.
+              Fixed stale P04b, schema and test-count memory entries.
+    Decided   D76. Rest preserves streaks without counting; default allowance 3,
+              configurable 0..10, checked atomically. Badges never re-lock or change
+              earned dates. No new dependency or permission. GitHub only (D69).
+    Verified  Fresh four gates PASS: 263 JVM tests, zero failures/errors/skips;
+              lint zero errors/four accepted warnings. Seven API 35 migration
+              cases PASS through v5. Real Settings/milestone route, mark, restart
+              persistence and remove PASS. Ten captures reviewed: light/dark/AMOLED,
+              1.3x text, RTL, empty milestones and compassion controls. Old schemas
+              unchanged; no INTERNET, backup disabled, secret/whitespace sweep PASS.
+    Not ver.  Physical-device reliability, API 26/new-size milestone visuals,
+              signed APK and Pages. Video not available (Session 12). Emulator
+              capture null roots retry with unique paths; final captures verified.
+    Next      Publish P18 and verify CI, then P19-P33 continuously until stopped.
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
@@ -2202,7 +2235,7 @@ SECTION 14 - OPEN QUESTIONS
 
 
 --------------------------------------------------------------------------------
-SECTION 15 - DATA MODEL (Room schema, version 4)
+SECTION 15 - DATA MODEL (Room schema, version 5)
 --------------------------------------------------------------------------------
   Source of truth: app/src/main/java/com/screengarden/app/data/local/.
   Every timestamp is epoch millis UTC (D20). Every `dayStartUtcMillis` value is
@@ -2221,7 +2254,7 @@ SECTION 15 - DATA MODEL (Room schema, version 4)
     usageIsBounded         Boolean screen-state evidence, old rows default false
     gardenApplied          Boolean once-only completed-day reward marker
     bedtimeMinutes         Int?   bounded wind-down usage at last sync; legacy unknown
-    (Still missing: isCompassionDay, added by P18 with its own migration)
+    isCompassionDay        Boolean off day, default false; excluded from streak/averages
 
   app_usage_daily  (AppUsageDaily)                PK: dayStartUtcMillis + packageName
     (index on packageName)
@@ -2276,6 +2309,8 @@ SECTION 15 - DATA MODEL (Room schema, version 4)
   tests passed on API 35, preserving existing tables and the v1->v4 upgrade chain.
   P12 adds MIGRATION_2_3 and exported 3.json. Legacy timers close without reward;
   completed/cancelled rows keep IDs/times/plants. All three migration cases pass.
+  P18 adds MIGRATION_4_5 and immutable 5.json; compassion defaults false. Seven
+  cases passed on API 35, including preservation of all tables through v1->v5.
 
 
 --------------------------------------------------------------------------------
@@ -2407,7 +2442,7 @@ SECTION 16 - CORE DESIGN
     threshold (default 60, configurable via streakThreshold). A "compassion day"
     preserves the streak and is EXCLUDED from averages - a missed day does not
     erase progress, it just does not count. Requires DailyStat.isCompassionDay
-    (K24) when implemented.
+    (K24), implemented in P18/v5 with the rules in D76.
 
   16.5 PLANT PACKS
     Layout: assets/plants/<id>/plant.json plus one image per stage.
@@ -2437,6 +2472,7 @@ SECTION 16 - CORE DESIGN
     hemisphere        enum    drives season visuals (P21)
     lowPowerVisuals   Boolean reduces animation/particles
     keepScreenOn     Boolean optional focus-screen display setting, false (P13)
+    compassionDaysPerMonth Int monthly allowance, default 3, range 0..10 (P18)
     IMPLEMENTED in P04: the first ten keys, with the SettingsDefaults values
     (dailyGoalMs 3h, pickupGoal 80, bedtime 22:30-07:00, theme SYSTEM,
     accentColor CALM_GREEN, streakThreshold 60, gentleMode true,

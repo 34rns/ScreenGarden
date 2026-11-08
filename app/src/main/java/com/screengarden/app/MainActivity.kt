@@ -35,6 +35,8 @@ import com.screengarden.app.ui.screens.focus.FocusScreen
 import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenScreen
 import com.screengarden.app.ui.screens.garden.GardenViewModel
+import com.screengarden.app.ui.screens.habits.HabitsScreen
+import com.screengarden.app.ui.screens.habits.HabitsViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
 import com.screengarden.app.ui.theme.ScreenGardenTheme
@@ -150,6 +152,13 @@ class MainActivity : ComponentActivity() {
                     }
                     AppLimitsScreen(state, limits::save, back, limits::refresh)
                 }
+                val habitsContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { back ->
+                    val factory =
+                        remember(container) { viewModelFactory { initializer { container.habitsViewModel() } } }
+                    val habits: HabitsViewModel = viewModel(factory = factory)
+                    val state by habits.uiState.collectAsStateWithLifecycle()
+                    HabitsScreen(state, habits::setCompassionDay, habits::setThreshold, habits::setMonthlyLimit, back)
+                }
                 when {
                     // A debug build launched with a screen extra wins, so the diagnostic
                     // screens stay reachable even before onboarding was completed.
@@ -157,7 +166,8 @@ class MainActivity : ComponentActivity() {
                         debugDestination = debugDestination,
                         gardenContent = gardenContent,
                         focusContent = focusContent,
-                        limitsContent = limitsContent
+                        limitsContent = limitsContent,
+                        habitsContent = habitsContent
                     )
                     onboardingDone == null -> Box(
                         modifier = Modifier
@@ -195,7 +205,8 @@ class MainActivity : ComponentActivity() {
                     else -> ScreenGardenApp(
                         gardenContent = gardenContent,
                         focusContent = focusContent,
-                        limitsContent = limitsContent
+                        limitsContent = limitsContent,
+                        habitsContent = habitsContent
                     )
                 }
             }

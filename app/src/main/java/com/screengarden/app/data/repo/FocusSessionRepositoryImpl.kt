@@ -57,13 +57,15 @@ class FocusSessionRepositoryImpl(private val database: ScreenGardenDatabase) :
         if ((session.status == FocusStatus.COMPLETED || session.status == FocusStatus.FAILED_SOFT) && ended != null) {
             val completedEarlier = database.dailyStatDao().getByDay(LocalDay.startOfDay(ended))?.sessionsCompleted ?: 0
             val plants = database.plantDao()
+            val previousPlants = plants.getAll().map { it.toDomain() }
             val outcome = GardenEngine.applyFocus(
                 session.status,
-                plants.getAll().map { it.toDomain() },
+                previousPlants,
                 ended,
                 completedEarlier
             )
             outcome.plants.forEach { plants.upsert(it.toEntity()) }
+            database.recordPlantBadges(previousPlants, outcome.plants, ended)
         }
         if (session.status == FocusStatus.COMPLETED) {
             // Credit completion to its local day, including sessions that cross midnight.

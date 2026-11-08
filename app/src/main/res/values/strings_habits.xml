@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="habits_title">Your milestones</string>
+    <string name="habits_subtitle">Small steps leave a lasting mark. There is room here for rest, too.</string>
+    <string name="habits_back">Back</string>
+    <plurals name="habits_streak">
+        <item quantity="one">%1$d counted day</item>
+        <item quantity="other">%1$d counted days</item>
+    </plurals>
+    <plurals name="habits_longest">
+        <item quantity="one">Longest streak: %1$d counted day</item>
+        <item quantity="other">Longest streak: %1$d counted days</item>
+    </plurals>
+    <string name="habits_streak_copy">Compassion days keep the thread without adding to the count. Today has time to unfold.</string>
+    <string name="habits_badges">Growing memories</string>
+    <string name="habits_badge_waiting">Still growing. Take your time.</string>
+    <string name="habits_earned">Earned %1$s. Yours to keep.</string>
+    <string name="badge_streak_7">A steady week</string>
+    <string name="badge_streak_7_copy">Reach seven counted days in a streak.</string>
+    <string name="badge_streak_30">A patient month</string>
+    <string name="badge_streak_30_copy">Reach thirty counted days in a streak.</string>
+    <string name="badge_focus_week">Room for focus</string>
+    <string name="badge_focus_week_copy">Complete ten focus sessions in a Monday–Sunday week.</string>
+    <string name="badge_first_bloom">First bloom</string>
+    <string name="badge_first_bloom_copy">Help one of your plants reach bloom.</string>
+    <string name="badge_first_recovery">A fresh beginning</string>
+    <string name="badge_first_recovery_copy">Help a wilting plant begin to recover.</string>
+    <string name="habits_rest_title">A compassion day</string>
+    <string name="habits_rest_copy">Mark today or a past day as off. It will preserve your streak and stay out of averages. Existing growth and earned badges stay yours.</string>
+    <string name="habits_date">Local date (YYYY-MM-DD)</string>
+    <string name="habits_today">Today</string>
+    <string name="habits_mark">Mark as off</string>
+    <string name="habits_unmark">Remove off day</string>
+    <string name="habits_marked_dates">Your compassion dates</string>
+    <string name="habits_threshold">Streak score threshold: %1$d / 100</string>
+    <string name="habits_allowance">Compassion days per calendar month: %1$d</string>
+    <string name="habits_saved">Compassion day updated.</string>
+    <string name="habits_invalid_date">Enter a valid local date in YYYY-MM-DD format.</string>
+    <string name="habits_future_date">Choose today or a past date.</string>
+    <string name="habits_limit_reached">This month’s allowance is used. You can change the allowance below.</string>
+    <string name="habits_save_error">Could not save this change. Try again.</string>
+    <string name="habits_load_error">Could not read your milestones. Go back and reopen this screen to try again.</string>
+</resources>

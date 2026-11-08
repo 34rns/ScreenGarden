@@ -8,8 +8,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Earned badges.
  *
- * INTERFACE ONLY for now (Task 1.1); unlocking rules arrive with the growth use
- * cases in Phase 1.5.
+ * P18 stores each unlock once; repeated evaluations preserve the earned instant.
  */
 interface BadgeRepository {
 

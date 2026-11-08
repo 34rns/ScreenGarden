@@ -25,6 +25,68 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class ScreenGardenDatabaseMigrationTest {
+    @Test
+    fun migratingFrom4To5PreservesAllDataAndLeavesOldDaysUnmarked() {
+        helper.createDatabase(TEST_DATABASE, 4).use { old ->
+            old.execSQL(
+                "INSERT INTO daily_stats (dayStartUtcMillis, focusMinutes, screenMinutes, sessionsCompleted, plantsGrown, updatedAtUtcMillis, score, usageIsBounded, gardenApplied, bedtimeMinutes) VALUES (1700000000000, 25, 90, 1, 2, 1700000000123, 84, 1, 1, 12)"
+            )
+            old.execSQL(
+                "INSERT INTO plants (plantId, species, stage, health, plantedAtUtcMillis, growthPoints, condition) VALUES ('plant', 'fern', 3, 42, 1700000000000, 45, 'RECOVERING')"
+            )
+            old.execSQL("INSERT INTO app_usage_daily VALUES (1700000000000, 'fake.reader', 5400000, 3, 1700000000123)")
+            old.execSQL("INSERT INTO app_limits VALUES ('fake.reader', 60, 1, 1700000000123)")
+            old.execSQL(
+                "INSERT INTO focus_sessions (sessionId, dayStartUtcMillis, startedAtUtcMillis, plannedMinutes, wasCompleted, plantId, tag, status, actualDurationMs, updatedAtUtcMillis, bootCount) VALUES ('session', 1700000000000, 1700000000000, 25, 0, 'plant', 'READING', 'RUNNING', 120000, 1700000120000, 7)"
+            )
+            old.execSQL("INSERT INTO badges VALUES ('first-recovery', 1700000001000)")
+        }
+        helper.runMigrationsAndValidate(TEST_DATABASE, 5, true, ScreenGardenDatabase.MIGRATION_4_5).use { db ->
+            for (table in listOf(
+                "daily_stats",
+                "plants",
+                "app_usage_daily",
+                "app_limits",
+                "focus_sessions",
+                "badges"
+            )) {
+                db.query("SELECT COUNT(*) FROM $table").use {
+                    assertTrue(it.moveToFirst())
+                    assertEquals(1, it.getInt(0))
+                }
+            }
+            db.query("SELECT * FROM daily_stats").use {
+                assertTrue(it.moveToFirst())
+                assertEquals(0, it.getInt(it.getColumnIndexOrThrow("isCompassionDay")))
+                assertEquals(12, it.getInt(it.getColumnIndexOrThrow("bedtimeMinutes")))
+                assertEquals(84, it.getInt(it.getColumnIndexOrThrow("score")))
+                assertEquals(1, it.getInt(it.getColumnIndexOrThrow("gardenApplied")))
+            }
+            db.query("SELECT * FROM focus_sessions").use {
+                assertTrue(it.moveToFirst())
+                assertEquals("RUNNING", it.getString(it.getColumnIndexOrThrow("status")))
+                assertEquals(120000L, it.getLong(it.getColumnIndexOrThrow("actualDurationMs")))
+            }
+        }
+    }
+
+    @Test
+    fun publishedVersion1CanReach5AndKeepEarnedBadges() {
+        helper.createDatabase(TEST_DATABASE, 1).use {
+            it.execSQL("INSERT INTO badges VALUES ('first-bloom', 1700000001000)")
+        }
+        helper.runMigrationsAndValidate(
+            TEST_DATABASE,
+            5,
+            true,
+            ScreenGardenDatabase.MIGRATION_1_2,
+            ScreenGardenDatabase.MIGRATION_2_3,
+            ScreenGardenDatabase.MIGRATION_3_4,
+            ScreenGardenDatabase.MIGRATION_4_5
+        ).use { db ->
+            db.query("SELECT * FROM badges").use { assertEquals(1, it.count) }
+        }
+    }
 
     @get:Rule
     val helper: MigrationTestHelper = MigrationTestHelper(

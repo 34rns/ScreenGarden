@@ -4,6 +4,7 @@ package com.screengarden.app.data.repo
 
 import androidx.room.withTransaction
 import com.screengarden.app.data.local.ScreenGardenDatabase
+import com.screengarden.app.data.local.entity.Badge
 import com.screengarden.app.data.local.entity.DailyStat
 import com.screengarden.app.data.local.entity.Plant as PlantEntity
 import com.screengarden.app.domain.garden.GardenDay
@@ -14,6 +15,7 @@ import com.screengarden.app.domain.garden.GardenStore
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.domain.garden.PlantTuning
+import com.screengarden.app.domain.habits.BadgeKind
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -77,7 +79,11 @@ class GardenRepositoryImpl(private val database: ScreenGardenDatabase) :
         val score = day.score ?: return@withTransaction false
         if (score !in 0..100) return@withTransaction false
         val recordedDay = days.getByDay(day.dayStartUtcMillis) ?: return@withTransaction false
-        if (!recordedDay.usageIsBounded || recordedDay.gardenApplied || recordedDay.score != score) {
+        if (!recordedDay.usageIsBounded ||
+            recordedDay.gardenApplied ||
+            recordedDay.isCompassionDay ||
+            recordedDay.score != score
+        ) {
             return@withTransaction false
         }
         val previousPlants = plants.getAll().map { it.toDomain() }
@@ -87,6 +93,17 @@ class GardenRepositoryImpl(private val database: ScreenGardenDatabase) :
             previousStages[plant.id]?.let { it != plant.stage } == true
         }
         outcome.plants.forEach { plants.upsert(it.toEntity()) }
+        database.recordPlantBadges(previousPlants, outcome.plants, System.currentTimeMillis())
+        if (day.streakDays >=
+            7
+        ) {
+            database.badgeDao().insertIfAbsent(Badge(BadgeKind.STREAK_7.key, System.currentTimeMillis()))
+        }
+        if (day.streakDays >=
+            30
+        ) {
+            database.badgeDao().insertIfAbsent(Badge(BadgeKind.STREAK_30.key, System.currentTimeMillis()))
+        }
         check(days.markGardenApplied(day.dayStartUtcMillis, score, plantsGrown) == 1) {
             "Completed day changed during its garden transaction"
         }
@@ -116,7 +133,7 @@ internal fun Plant.toEntity(): PlantEntity = PlantEntity(
     condition = condition.name
 )
 
-private fun DailyStat.toDomain(): GardenDayRecord = GardenDayRecord(
+internal fun DailyStat.toDomain(): GardenDayRecord = GardenDayRecord(
     dayStartUtcMillis = dayStartUtcMillis,
     score = score,
     screenMinutes = screenMinutes,
@@ -127,5 +144,6 @@ private fun DailyStat.toDomain(): GardenDayRecord = GardenDayRecord(
     usageIsBounded = usageIsBounded,
     gardenApplied = gardenApplied,
     updatedAtUtcMillis = updatedAtUtcMillis,
-    bedtimeMinutes = bedtimeMinutes
+    bedtimeMinutes = bedtimeMinutes,
+    isCompassionDay = isCompassionDay
 )
