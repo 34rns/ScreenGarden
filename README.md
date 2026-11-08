@@ -11,6 +11,11 @@ check.
 
 ## The idea
 
+Plant artwork is bundled and loaded entirely offline. Ferns are available from
+the start; flowers unlock after five completed focus sessions, bonsai after a
+three-day streak, and cacti during summer. Existing plants always stay. See
+[the plant-pack contribution guide](docs/PLANT_PACKS.md) for the schema and validator.
+
 Screen time apps usually shout: red numbers, streaks, guilt. ScreenGarden does
 the opposite. You plant something, you sit with your work, and the garden
 responds quietly — a session that goes well lets it grow, a distracted day lets

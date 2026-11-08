@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "bonsai",
+  "name": "Bonsai",
+  "description": "A small tree for a three-day streak.",
+  "unlock": {
+    "type": "streak",
+    "days": 3
+  },
+  "stageImages": {
+    "SEED": "seed.png",
+    "SPROUT": "sprout.png",
+    "BUD": "bud.png",
+    "BLOOM": "bloom.png"
+  },
+  "license": "CC-BY-SA-4.0",
+  "author": "ScreenGarden contributors"
+}

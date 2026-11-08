@@ -204,6 +204,47 @@ class GardenRepositoryImplTest {
         assertTrue(repository.observePlants().first().isEmpty())
     }
 
+    @Test
+    fun packSelectionOnlyAppliesToOneNewSeedAndNeverReplacesExistingPlants() = runTest {
+        var selections = 0
+        repository = GardenRepositoryImpl(database) { completedDay, previous ->
+            assertEquals(DAY_ONE, completedDay.dayStartUtcMillis)
+            assertEquals("fern", previous.single().species)
+            selections++
+            "flower"
+        }
+        repository.savePlant(plant())
+        database.dailyStatDao().upsert(stat().copy(score = 100, usageIsBounded = true))
+        assertTrue(repository.advanceCompletedDay(day(100)))
+        assertFalse(repository.advanceCompletedDay(day(100)))
+        assertEquals(1, selections)
+        assertEquals("fern", repository.getPlant("plant-1")?.species)
+        assertEquals(setOf("fern", "flower"), repository.observePlants().first().map { it.species }.toSet())
+    }
+
+    @Test
+    fun focusUnlockCountUsesTerminalCompletionsBeforeTheExclusiveBoundary() = runTest {
+        val completed = com.screengarden.app.data.local.entity.FocusSession(
+            sessionId = "completed",
+            dayStartUtcMillis = DAY_ONE,
+            startedAtUtcMillis = DAY_ONE,
+            endedAtUtcMillis = DAY_ONE + 1_000,
+            plannedMinutes = 1,
+            wasCompleted = true,
+            status = "COMPLETED"
+        )
+        database.focusSessionDao().upsert(completed)
+        database.focusSessionDao().upsert(completed.copy(sessionId = "later", endedAtUtcMillis = DAY_TWO))
+        database.focusSessionDao().upsert(
+            completed.copy(sessionId = "cancelled", status = "CANCELLED", wasCompleted = false)
+        )
+        database.focusSessionDao().upsert(
+            completed.copy(sessionId = "running", status = "RUNNING", endedAtUtcMillis = null)
+        )
+        assertEquals(1, database.focusSessionDao().completedBefore(DAY_TWO))
+        assertEquals(2, database.focusSessionDao().completedBefore(DAY_TWO + 1))
+    }
+
     private fun stat(day: Long = DAY_ONE): DailyStat = DailyStat(dayStartUtcMillis = day, updatedAtUtcMillis = day)
 
     @Test

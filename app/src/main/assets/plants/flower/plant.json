@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "flower",
+  "name": "Flower",
+  "description": "A soft flower for five completed focus sessions.",
+  "unlock": {
+    "type": "focus",
+    "completions": 5
+  },
+  "stageImages": {
+    "SEED": "seed.png",
+    "SPROUT": "sprout.png",
+    "BUD": "bud.png",
+    "BLOOM": "bloom.png"
+  },
+  "license": "CC-BY-SA-4.0",
+  "author": "ScreenGarden contributors"
+}

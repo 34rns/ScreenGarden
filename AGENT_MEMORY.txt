@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 36 / P24 complete; continuous batch resumed)
+Last updated: 2026-11-08 (Session 37 / P25 completion; continuous batch)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         320 JVM tests; 9 migration cases green on API 35 (P20)
+  Tests         332 JVM tests; 9 migration cases green on API 35 (P20)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -297,7 +297,7 @@ SECTION 4 - FOLDER LAYOUT
   PLANNED (created by the prompt that needs them, never empty - D17):
     domain/model/      remaining UI models (sessions, plants, summaries)
     domain/usecase/    single-purpose operations, plain classes, unit-testable
-    assets/plants/     plant packs (plant.json + stage images)  (P25)
+    Optional SAF plant-pack importing is not implemented (P25 permits omission).
 
   RENAMES / SUPERSEDED NAMES
     util/            superseded by core/time/ (D21)
@@ -312,6 +312,13 @@ SECTION 4 - FOLDER LAYOUT
     data/export/GardenSnapshotFilesTest.kt + ui/screens/garden/GardenSnapshotImageTest.kt
     docs/screenshots/garden_snapshot_action.png + snapshot_*.png
 
+  P25 additions (offline plant packs):
+    domain/garden/PlantPack.kt (pure unlock rules and stable new-seed selection)
+    data/plants/PlantPackLoader.kt (bounded assets, strict v1 metadata, PNG decode)
+    ui/screens/garden/PackPlantRenderer.kt (cached stage art and vector fallback)
+    app/src/main/assets/plants/{fern,flower,bonsai,cactus}/plant.json + four PNGs
+    data/plants/PlantPackLoaderTest.kt + ui/screens/garden/PackPlantRendererTest.kt
+    docs/PLANT_PACKS.md (schema, licenses, example and validator command)
   Layer rules
     - screens/ may depend on components/, theme/, domain/model.
     - screens/ must NOT touch data/ directly; go through a use case.
@@ -363,7 +370,7 @@ SECTION 5 - CONVENTIONS
   Kotlin
     - Explicit types on public APIs, `val` by default, no wildcard imports.
     - KDoc on every public class/function worth explaining; comments say WHY.
-    - Android adapters may exist in data/local/, data/usage/, data/focus/, data/notifications/ and data/export/.
+    - Android adapters may exist in data/local/, data/usage/, data/focus/, data/notifications/ data/export/ and data/plants/.
       domain/core stay pure.
     - 120-column limit, 4-space indent.
   Data
@@ -1066,6 +1073,28 @@ SECTION 6 - DECISIONS
       and failure discard the pending image. Errors never claim successful saving.
       No new dependency, permission or Room schema. No sharing occurs automatically.
 --------------------------------------------------------------------------------
+  D83 P25 OFFLINE PLANT PACKS.
+      Schema v1 uses exactly id/name/description/author/license/unlock/stageImages/
+      schemaVersion. Validate strict types, safe basenames, all four stages,
+      metadata <=16 KiB, PNG <=1 MiB and <=512 pixels/axis, at most 16 packs.
+      Supported art licenses: CC0-1.0, CC-BY-4.0, CC-BY-SA-4.0. Reject missing,
+      restricted or unknown licenses and future versions with fixed diagnostics.
+      Four built-in packs use original locally rendered CC-BY-SA-4.0 vector art:
+      fern default, flower after 5 completed focus sessions, bonsai after a 3-day
+      streak, cactus in summer using the saved hemisphere. Eligible new seeds
+      rotate in stable default-first/id order using existing plant count. Count
+      persisted terminal completions before that day's LocalDay exclusive end.
+      The 3-day bonsai threshold permits a new bonsai before the five-plant cap.
+      Existing plants/history always retain their species; season changes never
+      remove them. Empty-garden focus still creates a fern. No Room schema change.
+      Decode once off-main; shared pack renderer supplies Garden, history, widget
+      and PNG export, keeping sway/growth/bloom/wilt/recovery and vector fallback.
+      Optional user SAF pack import omitted as P25 allows. No new setting, runtime
+      dependency, permission, paid service, network or account. docs/PLANT_PACKS.md
+      includes a complete example and the CI/JVM validator command.
+      Fake debug-only demo_theme extra selects capture palettes without writing
+      preferences; release DebugCatalog is still a stub. The old AMOLED production
+      hook remains removed. Reusable local capture scripts must pass demo_theme.
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
   From P00 on, work is identified by PROMPT NUMBER. The old dotted IDs are kept
@@ -1123,7 +1152,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P22     done    Six Settings sections, persisted themes/curated palettes [3.1]
   P23     done    Responsive Glance widget + user start/stop Quick Settings tile [new]
   P24     done    Frozen garden preview, optional caption and Android PNG save picker [new]
-  P25     todo    Plant packs (16.5) [new]
+  P25     done    Offline validated plant packs, artwork and seed unlock integration [new]
   P26     todo    Export/import JSON (16.6) [new]
   P27     todo    Battery help [new]
   P28     todo    Localization [new]
@@ -1139,7 +1168,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   done for screens that do not exist yet; each new screen re-verifies its own.
 
   Sequencing note: P00-P24 are implemented and locally verified; see CURRENT STATUS for CI.
-  P04b repositories are complete, including BadgeRepository in P18. P25 is next.
+  P04b repositories are complete, including BadgeRepository in P18. P26 is next.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
 --------------------------------------------------------------------------------
@@ -1162,6 +1191,8 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   Kotlin standard library.
   P09 added no dependency: the lifecycle uses plain Kotlin arithmetic and the
   existing JVM JUnit tests, with java.util.UUID as its default ID factory.
+  P25 adds no dependency: AssetManager, bounded BitmapFactory PNG decode, existing
+  Compose graphics, JSON and Room provide the offline catalog and unlock rules.
   P24 adds no dependency: existing Compose art, Android Canvas/PNG, AtomicFile
   and ActivityResultContracts.CreateDocument provide the complete local export.
   P15 adds no dependency: PackageManager, Room, Compose and Flow already exist.
@@ -1520,7 +1551,7 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 320 JVM tests, zero failures/errors/skips. All four P24
+  Current test state: 332 JVM tests, zero failures/errors/skips. All four P25
   gates PASS; lint zero errors/five accepted warnings. P20 nine API 35 migrations
   PASS through v6; P24 does not change schema. API 35 fake garden preview, caption
   toggle, picker cancellation/reopen and actual PNG save PASS. Seven final fake-only
@@ -1552,28 +1583,26 @@ SECTION 10 - KNOWN ISSUES
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P23 are published and CI verified green. P23 7ae5675; CI 42448713070 SUCCESS.
-  P24 complete locally: frozen snapshot preview, optional localized date/streak,
-  shared art/night colors, PNG encoding and Android document-picker save action.
-  All four final gates PASS: 320 JVM tests, zero failures/errors/skips; lint zero
-  errors/five accepted warnings. Existing widget ratio warning was missing from
-  P23's four-warning count; detailed report corrected in K60, no suppression.
-  API 35 fake-only preview/caption, cancel/reopen and actual PNG file save PASS.
-  Seven final fake-only captures reviewed. No permission/dependency/schema change.
-  P24 commit/push and CI are the final standing-order checks at this checkpoint.
-  No signed GitHub release or Pages yet. No P25 work started.
+  P00-P24 are published and CI verified green. P24 0501563; CI 42452845414 SUCCESS.
+  Fresh baseline four task invocations PASS on unchanged P24 outputs: 320 tests,
+  lint zero errors/five accepted warnings, style/build PASS.
+  P25 complete: four strict offline packs, original stage PNGs, pure unlock
+  policy, atomic once-only seed selection and cached shared art renderer. No new
+  dependency, permission, setting or Room schema. Code, validator/docs are saved.
+  All four final gates PASS: 332 JVM tests, no failures/errors/skips; lint zero
+  errors/five accepted warnings. API 35 asset/PNG test PASS (1 case). Final garden,
+  sleep, timeline, seven seasonal scenes, both widget sizes and seven snapshot
+  captures reviewed. Actual fake PNG save/cancel/reopen PASS. Publication/CI pending.
+  No signed release or Pages yet. No P26 code started.
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Finish P24 publication/CI, then begin P25 plant packs from docs/PROMPTS.md.
-  Owner resumed the continuous batch on 2026-11-08, revoking the P24 stop request.
-  Continue P25-P33 until explicitly stopped; save checkpoints at each prompt. No P24 feature
-  work remains unfinished. Preserve D69: free GitHub Releases and Pages only.
-  P25-P33 remain; signed release setup and Pages are P33. Never request, print
-  or commit secret values. Read this complete memory and check Git/CI on resume.
+  Publish P25/check CI, then implement P26 backup. Continue P26-P33 until explicitly
+  stopped; owner revoked the prior P24 stop request on 2026-11-08.
+  Preserve D69: free GitHub Releases and Pages only. Signing and Pages remain P33.
+  Never request/print/commit secret values. Read the full memory/check Git on resume.
 
---------------------------------------------------------------------------------
-SECTION 13 - SESSION LOG
+--------------------------------------------------------------------------------SECTION 13 - SESSION LOG
 --------------------------------------------------------------------------------
   SESSION 1 - 2026-11-02 - Task 0.1 + 0.2 (project skeleton + nav shell)
     Did       Gradle 8.13 + version catalog + one :app module; Compose shell;
@@ -2532,7 +2561,8 @@ SECTION 13 - SESSION LOG
               PNG save through Android picker PASS; decoded PNG is 1024x768.
               Seven final emulator fake-only captures reviewed, including dark/night,
               large text and RTL. Old schemas, offline/backup-disabled manifest,
-              secret sweep and whitespace check PASS. P24 publication/CI follows.
+              secret sweep and whitespace check PASS. P24 0501563 published; CI
+              42452845414 SUCCESS, all four checks.
     Found     Replacement regression initially failed: framework and AndroidX
               AtomicFile both rename over an existing file, unsupported on Windows.
               Clear the abandoned pending image before preparing a new snapshot;
@@ -2552,6 +2582,43 @@ SECTION 13 - SESSION LOG
     Next      Final P24 push/CI, then P25-P33 continuously until explicitly stopped.
 
 --------------------------------------------------------------------------------
+  SESSION 37 - 2026-11-08 - P25 offline plant-pack implementation checkpoint
+    Did       Read complete memory and restored prompt pack; checked Git status,
+              20 commits and fetched origin, no divergence. P24 CI SUCCESS.
+              Implemented four bounded offline packs and original stage art,
+              pure unlock/rotation rules, new-seed transaction wiring, shared
+              decoded renderer, failure fallback and contributor validator/docs.
+    Decided   D83. Optional user imports omitted as P25 allows. No dependency,
+              permission, setting or schema change. Fixed debug-only capture
+              palette control so current saved preferences cannot invalidate
+              light/dark/AMOLED capture evidence.
+    Verified  Initial four P24 tasks PASS; 320 tests/five lint warnings. New
+              validator red: 6 tests, 3 fail because stage art was absent;
+              metadata/path/license cases passed. Original art rendered locally
+              from VectorPlantRenderer, not captured from a device. Sixteen PNGs
+              saved; temporary generator moved to ignored .tools/ after use.
+    Found     Full asset test exposed Robolectric nested asset listing; normalize
+              directory prefixes and retain strict path validation. Strengthened
+              renderer test to require four loaded packs, excluding false fallback.
+              Dark captures showed low-contrast packed art; verified pinned ColorMatrix
+              APIs and adapted original colors to the theme/accent, with visible seed
+              ink. Added color regression test. Bonsai threshold is 3 so it is reachable
+              before the five-plant cap. No gate was weakened.
+    Verified  Final four gates PASS (p25-complete-gates): 332 JVM tests, no failures,
+              errors/skips; lint zero errors/five warnings. API 35 pack loading and
+              all sixteen PNGs PASS (one Android test). Garden/sleep/history final
+              captures complete. Unchanged reflection capture helper failed because
+              it expected below-fold content; excluded unaffected reflection shots
+              from P25 scope. Final seasonal/widget/snapshot captures completed and
+              reviewed. An unaffected Settings helper expected below-fold controls;
+              existing Settings images are retained, all seven affected scenes verified.
+              Actual fake PNG save/cancel/reopen passes. Fresh resumed four gate
+              invocations PASS; unchanged 332-test reports, zero failures/errors,
+              lint zero errors/five warnings. 34 affected public images refreshed.
+              Final secret sweep, whitespace check and unchanged schemas PASS.
+    Not ver.  Push/CI pending. No signed release/Pages or P26 work. No physical device.
+              Video remains not available (Session 12); no inferred ideas.
+    Next      Finish P25 entirely, then P26-P33 continuously until explicitly stopped.
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
   No open questions. All four were answered in P00; the decisions live in
@@ -2791,12 +2858,20 @@ SECTION 16 - CORE DESIGN
     (K24), implemented in P18/v5 with the rules in D76.
 
   16.5 PLANT PACKS
-    Layout: assets/plants/<id>/plant.json plus one image per stage.
-    Fields: id, name, description, unlock rule, stage images, license, author,
-    schemaVersion. The schema is VERSIONED and the loader validates safely:
-    unknown or future schemaVersion, missing fields, unreadable images or a pack
-    with no license are skipped with a logged reason, never a crash (P25).
-
+    Implemented P25/D83: app/src/main/assets/plants/<id>/plant.json plus
+    seed.png/sprout.png/bud.png/bloom.png. Schema v1 requires schemaVersion=1,
+    id (folder-matching lowercase basename), name, description, author, explicit
+    supported license, unlock object and all four uppercase stageImages keys.
+    Unknown fields/types/schema versions, unsafe paths, unavailable or oversized
+    PNGs and absent/restricted licenses are isolated and skipped, never a crash.
+    Unlock forms: default; streak with days=1..365; focus with completions=1..10000;
+    season with SPRING/SUMMER/AUTUMN/WINTER. Default fern, focus-5 flower,
+    streak-3 bonsai and summer cactus. New good-day seeds rotate among eligible
+    packs; prior plants stay and keep their art after season/streak changes.
+    Focus-created first seed stays fern. Five-plant cap/growth/health rules stay.
+    No schema/preference change. Shared cached renderer and safe vector fallback.
+    Bounds, contributor example and validator are in docs/PLANT_PACKS.md.
+    Optional user-imported packs are not implemented; no misleading import UI.
   16.6 PRIVACY
     Export and import everything as ONE user-controlled JSON file (P26). Nothing
     leaves the device unless the user manually shares that file - no sync, no

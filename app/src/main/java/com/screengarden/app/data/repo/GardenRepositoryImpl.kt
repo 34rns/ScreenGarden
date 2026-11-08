@@ -11,8 +11,10 @@ import com.screengarden.app.data.local.entity.Plant as PlantEntity
 import com.screengarden.app.domain.garden.GardenDay
 import com.screengarden.app.domain.garden.GardenDayRecord
 import com.screengarden.app.domain.garden.GardenEngine
+import com.screengarden.app.domain.garden.GardenRules
 import com.screengarden.app.domain.garden.GardenSnapshot
 import com.screengarden.app.domain.garden.GardenStore
+import com.screengarden.app.domain.garden.GardenTuning
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.domain.garden.PlantTuning
@@ -23,8 +25,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 /** Room-backed garden with atomic snapshots and once-only completed-day rewards. */
-class GardenRepositoryImpl(private val database: ScreenGardenDatabase) :
-    GardenRepository,
+class GardenRepositoryImpl(
+    private val database: ScreenGardenDatabase,
+    private val seedSpecies: suspend (GardenDay, List<Plant>) -> String = { _, _ -> GardenTuning.DEFAULT_SPECIES }
+) : GardenRepository,
     GardenStore {
 
     private val plants = database.plantDao()
@@ -88,7 +92,12 @@ class GardenRepositoryImpl(private val database: ScreenGardenDatabase) :
             return@withTransaction false
         }
         val previousPlants = plants.getAll().map { it.toDomain() }
-        val outcome = GardenEngine.advance(day, previousPlants)
+        val species = if (score >= GardenTuning.GOOD_DAY_SCORE && previousPlants.size < GardenTuning.MAX_PLANTS) {
+            seedSpecies(day, previousPlants)
+        } else {
+            GardenTuning.DEFAULT_SPECIES
+        }
+        val outcome = GardenEngine.advance(day, previousPlants, GardenRules(species = species))
         val previousStages = previousPlants.associate { it.id to it.stage }
         val plantsGrown = outcome.plants.count { plant ->
             previousStages[plant.id]?.let { it != plant.stage } == true

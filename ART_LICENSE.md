@@ -25,6 +25,11 @@ or an unreadable one, is rejected by the loader rather than silently assumed.
 
 ## Attribution
 
+The bundled fern, flower, bonsai and cactus packs were rendered locally from
+ScreenGarden's original vector drawings by ScreenGarden contributors. Their
+four stage PNGs and metadata are in `app/src/main/assets/plants/`, under
+CC BY-SA 4.0. No third-party artwork or paid generator was used.
+
 Attribution lives in the app (About section, planned with the release work) and
 in the per-pack `author` field. If you redistribute the artwork standalone, keep
 the author name and a link to this file.

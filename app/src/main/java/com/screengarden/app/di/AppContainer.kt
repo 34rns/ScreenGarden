@@ -5,9 +5,11 @@ package com.screengarden.app.di
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.work.WorkManager
 import com.screengarden.app.R
 import com.screengarden.app.core.time.BedtimeWindow
+import com.screengarden.app.core.time.LocalDay
 import com.screengarden.app.data.focus.FocusController
 import com.screengarden.app.data.focus.FocusUseReader
 import com.screengarden.app.data.local.ScreenGardenDatabase
@@ -16,6 +18,9 @@ import com.screengarden.app.data.notifications.GentleNudgeCheck
 import com.screengarden.app.data.notifications.NudgePreferences
 import com.screengarden.app.data.notifications.PreferencesNudgeLedger
 import com.screengarden.app.data.onboarding.OnboardingCompletion
+import com.screengarden.app.data.plants.AssetPlantPackSource
+import com.screengarden.app.data.plants.PlantPackCatalog
+import com.screengarden.app.data.plants.PlantPackLoader
 import com.screengarden.app.data.repo.AppLimitRepositoryImpl
 import com.screengarden.app.data.repo.AppUsageRepository
 import com.screengarden.app.data.repo.AppUsageRepositoryImpl
@@ -36,6 +41,8 @@ import com.screengarden.app.data.usage.LaunchableAppCatalog
 import com.screengarden.app.data.widgets.GardenWidgetUpdates
 import com.screengarden.app.data.work.NudgeScheduler
 import com.screengarden.app.data.work.UsageSyncScheduler
+import com.screengarden.app.domain.garden.GardenEnvironment
+import com.screengarden.app.domain.garden.chooseSeedSpecies
 import com.screengarden.app.domain.settings.SettingsRepository
 import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenViewModel
@@ -44,9 +51,15 @@ import com.screengarden.app.ui.screens.insights.GardenHistoryViewModel
 import com.screengarden.app.ui.screens.insights.InsightsViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
 import com.screengarden.app.ui.screens.settings.SettingsViewModel
+import java.time.Instant
 import java.time.LocalTime
+import java.time.ZoneId
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Manual dependency injection root, created once by [com.screengarden.app.ScreenGardenApplication].
@@ -105,7 +118,36 @@ class AppContainer(context: Context) {
         DailyStatRepositoryImpl(database.dailyStatDao())
     }
 
-    val gardenRepository: GardenRepositoryImpl by lazy { GardenRepositoryImpl(database) }
+    private val packMutex = Mutex()
+    private var packCatalog: PlantPackCatalog? = null
+
+    /** Bounded decoding once per process, shared by the garden, widget and exports. */
+    suspend fun plantPacks(): PlantPackCatalog = packMutex.withLock {
+        packCatalog ?: withContext(Dispatchers.IO) {
+            PlantPackLoader(AssetPlantPackSource(appContext.assets)).load().also { catalog ->
+                catalog.rejected.forEach { (_, reason) -> Log.w("PlantPacks", reason) }
+                packCatalog = catalog
+            }
+        }
+    }
+
+    val gardenRepository: GardenRepositoryImpl by lazy {
+        GardenRepositoryImpl(database) { day, plants ->
+            val zone = ZoneId.systemDefault()
+            val season = GardenEnvironment.at(
+                Instant.ofEpochMilli(day.dayStartUtcMillis).atZone(zone),
+                settingsRepository.hemisphere.first(),
+                day.score
+            ).season
+            chooseSeedSpecies(
+                plantPacks().packs.map { it.metadata },
+                plants.size,
+                day.streakDays,
+                database.focusSessionDao().completedBefore(LocalDay.nextDayStart(day.dayStartUtcMillis, zone)),
+                season
+            )
+        }
+    }
     val gardenHistoryRepository: GardenHistoryRepository by lazy {
         GardenHistoryRepository(database.gardenHistoryDao())
     }

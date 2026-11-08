@@ -48,6 +48,13 @@ interface FocusSessionDao {
     )
     suspend fun activeSession(): FocusSession?
 
+    /** Count only actual terminal completions before this local day's exclusive end. */
+    @Query(
+        "SELECT COUNT(*) FROM focus_sessions WHERE status = 'COMPLETED' AND wasCompleted = 1 " +
+            "AND endedAtUtcMillis < :exclusiveEndUtcMillis"
+    )
+    suspend fun completedBefore(exclusiveEndUtcMillis: Long): Int
+
     @Query(
         "SELECT * FROM focus_sessions WHERE dayStartUtcMillis BETWEEN :fromDayUtcMillis AND :toDayUtcMillis " +
             "ORDER BY startedAtUtcMillis DESC"

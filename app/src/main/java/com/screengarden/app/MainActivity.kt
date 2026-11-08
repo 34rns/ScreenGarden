@@ -19,10 +19,12 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -49,6 +51,10 @@ import com.screengarden.app.ui.screens.focus.FocusScreen
 import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenScreen
 import com.screengarden.app.ui.screens.garden.GardenViewModel
+import com.screengarden.app.ui.screens.garden.LocalPlantRenderer
+import com.screengarden.app.ui.screens.garden.PackPlantRenderer
+import com.screengarden.app.ui.screens.garden.PlantRenderer
+import com.screengarden.app.ui.screens.garden.VectorPlantRenderer
 import com.screengarden.app.ui.screens.habits.HabitsScreen
 import com.screengarden.app.ui.screens.habits.HabitsViewModel
 import com.screengarden.app.ui.screens.insights.GardenHistoryScreen
@@ -99,12 +105,16 @@ class MainActivity : ComponentActivity() {
         container.nudgeScheduler.checkNow()
         setContent {
             val saveSnapshot = rememberSnapshotSaveAction()
+            val plantRenderer by produceState<PlantRenderer>(VectorPlantRenderer, container) {
+                value = PackPlantRenderer(container.plantPacks().packs.associate { it.metadata.id to it.images })
+            }
             // SYSTEM is only the initial value: it covers the few milliseconds
             // before DataStore emits the stored choice (K31).
             val themePreference by settingsRepository.theme
                 .collectAsStateWithLifecycle(initialValue = ThemePreference.SYSTEM)
             val accentColor by settingsRepository.accentColor.collectAsStateWithLifecycle(SettingsDefaults.ACCENT_COLOR)
-            val darkBars = themePreference.prefersDark(isSystemInDarkTheme())
+            val displayedTheme = debugDestination?.themeOverride ?: themePreference
+            val darkBars = displayedTheme.prefersDark(isSystemInDarkTheme())
             SideEffect {
                 // App-selected dark themes can differ from the device's system theme.
                 WindowCompat.getInsetsController(window, window.decorView).apply {
@@ -113,222 +123,232 @@ class MainActivity : ComponentActivity() {
                 }
             }
             ScreenGardenTheme(
-                themePreference = themePreference,
+                themePreference = displayedTheme,
                 accentColor = accentColor
             ) {
-                // null means DataStore has not answered yet. Drawing nothing for that
-                // single frame is deliberate: starting at `false` would flash the
-                // first-run flow at every returning user (D53).
-                // The map is hoisted into remember: a Flow operator inside composition
-                // builds a new Flow on every recomposition and restarts the collector.
-                val onboardingDoneFlow = remember(settingsRepository) {
-                    settingsRepository.onboardingDone.map<Boolean, Boolean?> { done -> done }
-                }
-                val onboardingDone by onboardingDoneFlow.collectAsStateWithLifecycle(initialValue = null)
-                val settingsContent: @androidx.compose.runtime.Composable (
-                    () -> Unit,
-                    () -> Unit
-                ) -> Unit = { limits, habits ->
-                    val factory =
-                        remember(container) { viewModelFactory { initializer { container.settingsViewModel() } } }
-                    val settings: SettingsViewModel = viewModel(factory = factory)
-                    val state by settings.uiState.collectAsStateWithLifecycle()
-                    var allowed by remember {
-                        mutableStateOf(NotificationManagerCompat.from(appContext).areNotificationsEnabled())
+                CompositionLocalProvider(LocalPlantRenderer provides plantRenderer) {
+                    // null means DataStore has not answered yet. Drawing nothing for that
+                    // single frame is deliberate: starting at `false` would flash the
+                    // first-run flow at every returning user (D53).
+                    // The map is hoisted into remember: a Flow operator inside composition
+                    // builds a new Flow on every recomposition and restarts the collector.
+                    val onboardingDoneFlow = remember(settingsRepository) {
+                        settingsRepository.onboardingDone.map<Boolean, Boolean?> { done -> done }
                     }
-                    val permission =
-                        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-                            allowed = granted && NotificationManagerCompat.from(appContext).areNotificationsEnabled()
-                            settings.setNotifications(granted)
+                    val onboardingDone by onboardingDoneFlow.collectAsStateWithLifecycle(initialValue = null)
+                    val settingsContent: @androidx.compose.runtime.Composable (
+                        () -> Unit,
+                        () -> Unit
+                    ) -> Unit = { limits, habits ->
+                        val factory =
+                            remember(container) { viewModelFactory { initializer { container.settingsViewModel() } } }
+                        val settings: SettingsViewModel = viewModel(factory = factory)
+                        val state by settings.uiState.collectAsStateWithLifecycle()
+                        var allowed by remember {
+                            mutableStateOf(NotificationManagerCompat.from(appContext).areNotificationsEnabled())
                         }
-                    LifecycleResumeEffect(settings) {
-                        allowed = NotificationManagerCompat.from(appContext).areNotificationsEnabled()
-                        onPauseOrDispose { }
-                    }
-                    SettingsScreen(
-                        limits,
-                        onMilestones = habits,
-                        state = state,
-                        actions = SettingsActions(
-                            saveGoals = settings::saveGoals,
-                            setTheme = settings::setTheme,
-                            setAccent = settings::setAccent,
-                            setNotifications = { enabled ->
-                                if (enabled &&
-                                    Build.VERSION.SDK_INT >= 33 &&
-                                    ContextCompat.checkSelfPermission(
-                                        appContext,
-                                        Manifest.permission.POST_NOTIFICATIONS
-                                    ) !=
-                                    PackageManager.PERMISSION_GRANTED
-                                ) {
-                                    permission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                } else {
-                                    settings.setNotifications(enabled)
-                                }
-                            },
-                            setKeepScreenOn = settings::setKeepScreenOn,
-                            setHemisphere = settings::setHemisphere,
-                            setLowPower = settings::setLowPower,
-                            showIntroduction = settings::showIntroduction
-                        ),
-                        notificationsAllowed = allowed,
-                        onNotificationSettings = {
-                            startActivity(
-                                Intent(
-                                    Settings.ACTION_APP_NOTIFICATION_SETTINGS
-                                ).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-                            )
-                        },
-                        versionName = packageManager.getPackageInfo(packageName, 0).versionName.orEmpty()
-                    )
-                }
-                val gardenContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { startFocus ->
-                    val factory = remember(container) {
-                        viewModelFactory { initializer { container.gardenViewModel() } }
-                    }
-                    val garden: GardenViewModel = viewModel(factory = factory)
-                    val state by garden.uiState.collectAsStateWithLifecycle()
-                    val gardenLifecycle = LocalLifecycleOwner.current.lifecycle
-                    LaunchedEffect(garden, gardenLifecycle) {
-                        gardenLifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                            while (true) {
-                                garden.updateTime()
-                                delay(60_000)
+                        val permission =
+                            rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                                allowed =
+                                    granted &&
+                                    NotificationManagerCompat.from(appContext).areNotificationsEnabled()
+                                settings.setNotifications(granted)
                             }
+                        LifecycleResumeEffect(settings) {
+                            allowed = NotificationManagerCompat.from(appContext).areNotificationsEnabled()
+                            onPauseOrDispose { }
                         }
-                    }
-                    LifecycleResumeEffect(garden) {
-                        garden.refresh()
-                        onPauseOrDispose { }
-                    }
-                    GardenScreen(
-                        state = state,
-                        onStartFocus = startFocus,
-                        onGrantUsage = { startActivity(UsageAccess.settingsIntent()) },
-                        onRetry = garden::refresh,
-                        onSaveSnapshot = saveSnapshot
-                    )
-                }
-                val focusContent: @androidx.compose.runtime.Composable () -> Unit = {
-                    val factory = remember(container) {
-                        viewModelFactory { initializer { container.focusViewModel() } }
-                    }
-                    val focus: FocusViewModel = viewModel(factory = factory)
-                    val state by focus.uiState.collectAsStateWithLifecycle()
-                    LifecycleResumeEffect(focus) {
-                        focus.refresh()
-                        onPauseOrDispose { }
-                    }
-                    FocusScreen(
-                        state,
-                        focus::start,
-                        focus::stop,
-                        focus::setKeepScreenOn,
-                        focus::dismissResult,
-                        focus::refresh
-                    )
-                }
-                val limitsContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { back ->
-                    val factory = remember(container) {
-                        viewModelFactory { initializer { container.appLimitsViewModel() } }
-                    }
-                    val limits: AppLimitsViewModel = viewModel(factory = factory)
-                    val state by limits.uiState.collectAsStateWithLifecycle()
-                    LifecycleResumeEffect(limits) {
-                        limits.refresh()
-                        onPauseOrDispose { }
-                    }
-                    AppLimitsScreen(state, limits::save, back, limits::refresh)
-                }
-                val habitsContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { back ->
-                    val factory =
-                        remember(container) { viewModelFactory { initializer { container.habitsViewModel() } } }
-                    val habits: HabitsViewModel = viewModel(factory = factory)
-                    val state by habits.uiState.collectAsStateWithLifecycle()
-                    HabitsScreen(state, habits::setCompassionDay, habits::setThreshold, habits::setMonthlyLimit, back)
-                }
-                val historyContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { back ->
-                    val factory = remember(container) {
-                        viewModelFactory { initializer { container.gardenHistoryViewModel() } }
-                    }
-                    val history: GardenHistoryViewModel = viewModel(factory = factory)
-                    val state by history.uiState.collectAsStateWithLifecycle()
-                    GardenHistoryScreen(state, history::setPeriod, history::refresh, back)
-                }
-                val insightsContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { history ->
-                    val factory = remember(container) {
-                        viewModelFactory { initializer { container.insightsViewModel() } }
-                    }
-                    val insights: InsightsViewModel = viewModel(factory = factory)
-                    val state by insights.uiState.collectAsStateWithLifecycle()
-                    LifecycleResumeEffect(insights) {
-                        insights.refresh()
-                        onPauseOrDispose { }
-                    }
-                    InsightsScreen(
-                        state,
-                        insights::setPeriod,
-                        insights::refresh,
-                        { startActivity(UsageAccess.settingsIntent()) },
-                        onHistory = history
-                    )
-                }
-                when {
-                    // A debug build launched with a screen extra wins, so the diagnostic
-                    // screens stay reachable even before onboarding was completed.
-                    debugDestination != null -> ScreenGardenApp(
-                        debugDestination = debugDestination,
-                        gardenContent = gardenContent,
-                        focusContent = focusContent,
-                        limitsContent = limitsContent,
-                        habitsContent = habitsContent,
-                        insightsContent = insightsContent,
-                        historyContent = historyContent,
-                        settingsContent = settingsContent
-                    )
-                    onboardingDone == null -> Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background)
-                    )
-                    onboardingDone == false -> {
-                        // The flow starts from what is already stored, so the sliders
-                        // open on the user's real values rather than on hardcoded ones.
-                        val dailyGoalMs by settingsRepository.dailyGoalMs
-                            .collectAsStateWithLifecycle(initialValue = SettingsDefaults.DAILY_GOAL_MS)
-                        val pickupGoal by settingsRepository.pickupGoal
-                            .collectAsStateWithLifecycle(initialValue = SettingsDefaults.PICKUP_GOAL)
-                        val bedtimeStart by settingsRepository.bedtimeStart
-                            .collectAsStateWithLifecycle(initialValue = SettingsDefaults.BEDTIME_START)
-                        val bedtimeEnd by settingsRepository.bedtimeEnd
-                            .collectAsStateWithLifecycle(initialValue = SettingsDefaults.BEDTIME_END)
-                        OnboardingScreen(
-                            initialChoices = OnboardingChoices.fromStored(
-                                dailyGoalMs = dailyGoalMs,
-                                pickupGoal = pickupGoal,
-                                bedtimeStart = bedtimeStart,
-                                bedtimeEnd = bedtimeEnd
+                        SettingsScreen(
+                            limits,
+                            onMilestones = habits,
+                            state = state,
+                            actions = SettingsActions(
+                                saveGoals = settings::saveGoals,
+                                setTheme = settings::setTheme,
+                                setAccent = settings::setAccent,
+                                setNotifications = { enabled ->
+                                    if (enabled &&
+                                        Build.VERSION.SDK_INT >= 33 &&
+                                        ContextCompat.checkSelfPermission(
+                                            appContext,
+                                            Manifest.permission.POST_NOTIFICATIONS
+                                        ) !=
+                                        PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    } else {
+                                        settings.setNotifications(enabled)
+                                    }
+                                },
+                                setKeepScreenOn = settings::setKeepScreenOn,
+                                setHemisphere = settings::setHemisphere,
+                                setLowPower = settings::setLowPower,
+                                showIntroduction = settings::showIntroduction
                             ),
-                            isUsageAccessGranted = { UsageAccess.isGranted(appContext) },
-                            onOpenUsageAccessSettings = { startActivity(UsageAccess.settingsIntent()) },
-                            onNotificationsChosen = { allowed ->
-                                lifecycleScope.launch { onboardingCompletion.rememberNotifications(allowed) }
+                            notificationsAllowed = allowed,
+                            onNotificationSettings = {
+                                startActivity(
+                                    Intent(
+                                        Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                                    ).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                                )
                             },
-                            onComplete = { choices ->
-                                lifecycleScope.launch { onboardingCompletion.complete(choices) }
-                            }
+                            versionName = packageManager.getPackageInfo(packageName, 0).versionName.orEmpty()
                         )
                     }
-                    else -> ScreenGardenApp(
-                        gardenContent = gardenContent,
-                        focusContent = focusContent,
-                        limitsContent = limitsContent,
-                        habitsContent = habitsContent,
-                        insightsContent = insightsContent,
-                        historyContent = historyContent,
-                        settingsContent = settingsContent
-                    )
+                    val gardenContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { startFocus ->
+                        val factory = remember(container) {
+                            viewModelFactory { initializer { container.gardenViewModel() } }
+                        }
+                        val garden: GardenViewModel = viewModel(factory = factory)
+                        val state by garden.uiState.collectAsStateWithLifecycle()
+                        val gardenLifecycle = LocalLifecycleOwner.current.lifecycle
+                        LaunchedEffect(garden, gardenLifecycle) {
+                            gardenLifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                                while (true) {
+                                    garden.updateTime()
+                                    delay(60_000)
+                                }
+                            }
+                        }
+                        LifecycleResumeEffect(garden) {
+                            garden.refresh()
+                            onPauseOrDispose { }
+                        }
+                        GardenScreen(
+                            state = state,
+                            onStartFocus = startFocus,
+                            onGrantUsage = { startActivity(UsageAccess.settingsIntent()) },
+                            onRetry = garden::refresh,
+                            onSaveSnapshot = saveSnapshot
+                        )
+                    }
+                    val focusContent: @androidx.compose.runtime.Composable () -> Unit = {
+                        val factory = remember(container) {
+                            viewModelFactory { initializer { container.focusViewModel() } }
+                        }
+                        val focus: FocusViewModel = viewModel(factory = factory)
+                        val state by focus.uiState.collectAsStateWithLifecycle()
+                        LifecycleResumeEffect(focus) {
+                            focus.refresh()
+                            onPauseOrDispose { }
+                        }
+                        FocusScreen(
+                            state,
+                            focus::start,
+                            focus::stop,
+                            focus::setKeepScreenOn,
+                            focus::dismissResult,
+                            focus::refresh
+                        )
+                    }
+                    val limitsContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { back ->
+                        val factory = remember(container) {
+                            viewModelFactory { initializer { container.appLimitsViewModel() } }
+                        }
+                        val limits: AppLimitsViewModel = viewModel(factory = factory)
+                        val state by limits.uiState.collectAsStateWithLifecycle()
+                        LifecycleResumeEffect(limits) {
+                            limits.refresh()
+                            onPauseOrDispose { }
+                        }
+                        AppLimitsScreen(state, limits::save, back, limits::refresh)
+                    }
+                    val habitsContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { back ->
+                        val factory =
+                            remember(container) { viewModelFactory { initializer { container.habitsViewModel() } } }
+                        val habits: HabitsViewModel = viewModel(factory = factory)
+                        val state by habits.uiState.collectAsStateWithLifecycle()
+                        HabitsScreen(
+                            state,
+                            habits::setCompassionDay,
+                            habits::setThreshold,
+                            habits::setMonthlyLimit,
+                            back
+                        )
+                    }
+                    val historyContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { back ->
+                        val factory = remember(container) {
+                            viewModelFactory { initializer { container.gardenHistoryViewModel() } }
+                        }
+                        val history: GardenHistoryViewModel = viewModel(factory = factory)
+                        val state by history.uiState.collectAsStateWithLifecycle()
+                        GardenHistoryScreen(state, history::setPeriod, history::refresh, back)
+                    }
+                    val insightsContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { history ->
+                        val factory = remember(container) {
+                            viewModelFactory { initializer { container.insightsViewModel() } }
+                        }
+                        val insights: InsightsViewModel = viewModel(factory = factory)
+                        val state by insights.uiState.collectAsStateWithLifecycle()
+                        LifecycleResumeEffect(insights) {
+                            insights.refresh()
+                            onPauseOrDispose { }
+                        }
+                        InsightsScreen(
+                            state,
+                            insights::setPeriod,
+                            insights::refresh,
+                            { startActivity(UsageAccess.settingsIntent()) },
+                            onHistory = history
+                        )
+                    }
+                    when {
+                        // A debug build launched with a screen extra wins, so the diagnostic
+                        // screens stay reachable even before onboarding was completed.
+                        debugDestination != null -> ScreenGardenApp(
+                            debugDestination = debugDestination,
+                            gardenContent = gardenContent,
+                            focusContent = focusContent,
+                            limitsContent = limitsContent,
+                            habitsContent = habitsContent,
+                            insightsContent = insightsContent,
+                            historyContent = historyContent,
+                            settingsContent = settingsContent
+                        )
+                        onboardingDone == null -> Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background)
+                        )
+                        onboardingDone == false -> {
+                            // The flow starts from what is already stored, so the sliders
+                            // open on the user's real values rather than on hardcoded ones.
+                            val dailyGoalMs by settingsRepository.dailyGoalMs
+                                .collectAsStateWithLifecycle(initialValue = SettingsDefaults.DAILY_GOAL_MS)
+                            val pickupGoal by settingsRepository.pickupGoal
+                                .collectAsStateWithLifecycle(initialValue = SettingsDefaults.PICKUP_GOAL)
+                            val bedtimeStart by settingsRepository.bedtimeStart
+                                .collectAsStateWithLifecycle(initialValue = SettingsDefaults.BEDTIME_START)
+                            val bedtimeEnd by settingsRepository.bedtimeEnd
+                                .collectAsStateWithLifecycle(initialValue = SettingsDefaults.BEDTIME_END)
+                            OnboardingScreen(
+                                initialChoices = OnboardingChoices.fromStored(
+                                    dailyGoalMs = dailyGoalMs,
+                                    pickupGoal = pickupGoal,
+                                    bedtimeStart = bedtimeStart,
+                                    bedtimeEnd = bedtimeEnd
+                                ),
+                                isUsageAccessGranted = { UsageAccess.isGranted(appContext) },
+                                onOpenUsageAccessSettings = { startActivity(UsageAccess.settingsIntent()) },
+                                onNotificationsChosen = { allowed ->
+                                    lifecycleScope.launch { onboardingCompletion.rememberNotifications(allowed) }
+                                },
+                                onComplete = { choices ->
+                                    lifecycleScope.launch { onboardingCompletion.complete(choices) }
+                                }
+                            )
+                        }
+                        else -> ScreenGardenApp(
+                            gardenContent = gardenContent,
+                            focusContent = focusContent,
+                            limitsContent = limitsContent,
+                            habitsContent = habitsContent,
+                            insightsContent = insightsContent,
+                            historyContent = historyContent,
+                            settingsContent = settingsContent
+                        )
+                    }
                 }
             }
         }

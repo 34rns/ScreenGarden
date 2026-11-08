@@ -47,7 +47,9 @@ import com.screengarden.app.domain.garden.GardenStatus
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantStage
 import com.screengarden.app.domain.garden.summarizeGardenStatus
+import com.screengarden.app.ui.screens.garden.PackPlantRenderer
 import com.screengarden.app.ui.screens.garden.PlantPalette
+import com.screengarden.app.ui.screens.garden.PlantRenderer
 import com.screengarden.app.ui.screens.garden.PlantVisuals
 import com.screengarden.app.ui.screens.garden.VectorPlantRenderer
 import com.screengarden.app.ui.theme.LightBackground
@@ -67,8 +69,12 @@ open class GardenWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Responsive(setOf(DpSize(120.dp, 180.dp), DpSize(260.dp, 180.dp)))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val status = withContext(Dispatchers.IO) { loadStatus(context) }
-        val bitmap = status.plant?.let(::widgetPlantBitmap)
+        val (status, bitmap) = withContext(Dispatchers.IO) {
+            val status = loadStatus(context)
+            val container = (context.applicationContext as ScreenGardenApplication).container
+            val renderer = PackPlantRenderer(container.plantPacks().packs.associate { it.metadata.id to it.images })
+            status to status.plant?.let { widgetPlantBitmap(it, renderer) }
+        }
         provideContent { WidgetContent(context, status, bitmap) }
     }
 
@@ -159,7 +165,7 @@ private fun coverageLabel(coverage: GardenCoverage): Int = when (coverage) {
 }
 
 /** Same original Canvas plant as the app, rendered once per update without animations. */
-internal fun widgetPlantBitmap(plant: Plant): android.graphics.Bitmap {
+internal fun widgetPlantBitmap(plant: Plant, renderer: PlantRenderer = VectorPlantRenderer): android.graphics.Bitmap {
     val image = ImageBitmap(192, 192)
     val palette = PlantPalette(
         LightPrimary,
@@ -176,7 +182,7 @@ internal fun widgetPlantBitmap(plant: Plant): android.graphics.Bitmap {
         PlantStage.BLOOM -> 1f
     }
     CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(image), Size(192f, 192f)) {
-        VectorPlantRenderer.draw(
+        renderer.draw(
             this,
             plant,
             palette,

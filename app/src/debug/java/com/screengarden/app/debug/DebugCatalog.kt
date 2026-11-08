@@ -85,6 +85,20 @@ object DebugCatalog {
 
     /** The requested debug destination, or null when [requested] names none. */
     fun destination(requested: String?, context: Context): DebugDestination? {
+        val destination = resolveDestination(requested, context) ?: return null
+        val theme = when ((context as? android.app.Activity)?.intent?.getStringExtra("demo_theme")) {
+            "Light" -> ThemePreference.LIGHT
+            "Dark" -> ThemePreference.DARK
+            "AMOLED" -> ThemePreference.AMOLED
+            else -> return destination
+        }
+        // Only fake, variant-scoped captures use this; no real preference is changed.
+        return DebugDestination(destination.route, destination.selectedTab, theme) {
+            destination.content()
+        }
+    }
+
+    private fun resolveDestination(requested: String?, context: Context): DebugDestination? {
         if (requested == "widget_demo") {
             return DebugDestination(requested, ScreenGardenDestination.Garden) { DemoWidgetScreen() }
         }

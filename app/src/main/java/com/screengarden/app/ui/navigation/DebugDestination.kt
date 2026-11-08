@@ -3,6 +3,7 @@
 package com.screengarden.app.ui.navigation
 
 import androidx.compose.runtime.Composable
+import com.screengarden.app.domain.model.ThemePreference
 
 /**
  * A destination that exists only in debug builds (P05b).
@@ -18,5 +19,6 @@ import androidx.compose.runtime.Composable
 class DebugDestination(
     val route: String,
     val selectedTab: ScreenGardenDestination = ScreenGardenDestination.START,
+    val themeOverride: ThemePreference? = null,
     val content: @Composable () -> Unit
 )

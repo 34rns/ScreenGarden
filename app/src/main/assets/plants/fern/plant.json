@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "fern",
+  "name": "Fern",
+  "description": "A quiet fern with paired leaves.",
+  "unlock": {
+    "type": "default"
+  },
+  "stageImages": {
+    "SEED": "seed.png",
+    "SPROUT": "sprout.png",
+    "BUD": "bud.png",
+    "BLOOM": "bloom.png"
+  },
+  "license": "CC-BY-SA-4.0",
+  "author": "ScreenGarden contributors"
+}
