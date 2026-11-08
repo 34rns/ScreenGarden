@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 47 / P30 completion)
+Last updated: 2026-11-08 (Session 48 / P31 quality pass)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -1180,6 +1180,16 @@ SECTION 6 - DECISIONS
       No new dependency, key or Room schema. Fake data exists only in debug preview.
       P29 4a91d14 CI 42464826243 SUCCESS; seven fake-only captures reviewed.
 
+  D89 P31 QUALITY PASS.
+      Test fixtures grant and restore emulator Usage access; no retained manual grant.
+      CI checks offline/backup manifest, immutable schema SHA-256 hashes and file hygiene.
+      Node24 CI actions use verified release commit SHAs; JVM target remains 17 via
+      compilerOptions. Dependencies, permissions, data schema and app behavior unchanged.
+      Small/tablet/landscape fake-only views at 1.3x text; scrolling reaches focus controls.
+      Full 20-case API35 native suite green, including all migrations to v7.
+      docs/QUALITY.md separates verified checks from OEM/physical-device limitations.
+      New layout screenshots and scripts/{Check-Repository.ps1,schema-hashes.json}.
+
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
   From P00 on, work is identified by PROMPT NUMBER. The old dotted IDs are kept
@@ -1243,7 +1253,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P28     done    Spanish, app-locale formatting, wrapping labels and translation guide [new]
   P29     done   Opt-in focus blocking [new]
   P30     done    Live wallpaper [new]
-  P31     todo    Quality pass: accessibility, perf, more screen sizes
+  P31     done    Quality pass: accessibility, perf, more screen sizes
                   [0.4 DONE in P00b; 3.3 remains]
   P32     todo    Docs + release assets [3.4 part]
   P33     todo    GitHub signed release automation + Pages/screenshots (D34/D69)
@@ -1478,8 +1488,7 @@ SECTION 10 - KNOWN ISSUES
   K2  Garden, Focus, App limits, Milestones, Insights and six Settings sections are implemented.
   K3  P10 GardenViewModel reads Room through GardenStore. Five repositories are
       implemented, including BadgeRepository in P18.
-  K4  kotlinOptions { jvmTarget } is deprecated in Kotlin 2.1 (still compiles).
-      Migrate to the compilerOptions DSL before AGP 9 / Kotlin 2.2.
+  K4  CLOSED in P31. compilerOptions preserves JVM 17; all four gates pass.
   K5  Gradle 8.13 prints "Deprecated Gradle features ... incompatible with
       Gradle 9.0". Harmless; handle it during the next AGP/Gradle upgrade.
   K6  No dynamic (Material You) colour by design - see D6.
@@ -1528,8 +1537,7 @@ SECTION 10 - KNOWN ISSUES
       START_STICKY recovers short same-boot process gaps; reboot, backward clock
       or overdue unknown gaps cancel without fabricated rewards. Domain tested;
       actual process-kill/reboot behavior remains unverified (K55).
-  K23 app/schemas/ is guarded only by H15 and the PR checklist; nothing stops
-      someone deleting 1.json while adding 2.json.
+  K23 CLOSED in P31. scripts/Check-Repository.ps1 verifies immutable SHA-256 schema hashes in CI.
   K24  Room v2 contains score/pickups/unlocks/gardenApplied/usageIsBounded and plant growthPoints/condition. P12 adds focus tag/status/duration/checkpoint/bootCount in v3; P17 adds nullable bedtimeMinutes in v4; P18 adds isCompassionDay in v5. Grid position is derived, not persisted (D63). Every future schema needs a new Migration/test/export; never modify old JSON.
   K25 CLOSED in P08: SECTION 16.1 now specifies the implemented score formula.
   K26 COSMETIC: the status bar in every screenshot still shows the emulator's
@@ -1544,9 +1552,7 @@ SECTION 10 - KNOWN ISSUES
       wrong. P00b hit this once. Always reinstall (`adb install -r`) and verify
       `mCurrentFocus` contains screengarden before capturing.
   K28 CLOSED in P22. Temporary debug AMOLED intent extra removed; one theme resolver remains.
-  K29 Visual coverage is one screen size only: 1080x2400 (Pixel 6 profile),
-      API 35. Small phones, tablets, foldables and API 26 rendering are
-      unverified; P31 owns a multi-size pass.
+  K29 P31 adds API35 small-phone, tablet and landscape fake-only captures at 1.3x text. Foldable transitions and the complete current API26 UI remain unverified.
   K30 CLOSED in P21. hemisphere and lowPowerVisuals now persist with defaults
       NORTHERN/false, Settings controls and live garden observation.
   K31 COLD-START THEME: MainActivity starts from ThemePreference.SYSTEM until
@@ -1647,7 +1653,7 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 360 JVM tests, zero failures/errors/skips.
+  Current test state: 362 JVM tests, zero failures/errors/skips.
   Final four gates PASS; 360 JVM tests, zero failures/errors/skips; lint zero errors/six accepted warnings. Native API35 permission/redirect/allow/disable/end checks PASS. Fake-only screenshots reviewed. Offline manifest, unchanged schemas, secret and whitespace checks PASS.
   No signed GitHub release or Pages exists yet.
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
@@ -1690,12 +1696,12 @@ SECTION 10 - KNOWN ISSUES
 
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P30 complete locally; P30 publication/CI in progress. Four gates PASS, 362 JVM tests, no failures/errors/skips; lint zero errors/six warnings. Fake-only wallpaper preview and cancel PASS; four fresh captures reviewed. P31-P33 remain; no signed release or Pages yet.
+  P00-P31 complete locally. P30 4639276 CI 42466891783 SUCCESS. P31 four gates PASS; 362 JVM and 20 API35 integration tests, no failures/errors/skips. 14 fake-only layout captures reviewed. P31 publication/CI pending; P32 docs and P33 release/Pages remain.
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Verify P30 CI, then P31 quality pass, P32 docs, P33 signed GitHub Release and Pages continuously until stopped.
+  Verify P31 CI; finish P32 documentation, then P33 private signing, verified GitHub Release and Pages. Continue until explicitly stopped.
 
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
@@ -2893,6 +2899,13 @@ SECTION 13 - SESSION LOG
     Verified  Four gates PASS; 362 JVM tests green. Current footer regression and fresh native preview/cancel PASS. Manifest offline/backup disabled, schemas unchanged, secret sweep and whitespace PASS.
     Not ver.  Physical-device battery/launcher behavior, API26 wallpaper and signed release/Pages. Overlapping retry hit a Windows locked output file from the preceding active test run; that sequential 362-test run passed. Capture foreground guard retried after transient recreation; final complete set verified.
     Next      Verify P30 CI, then P31 quality pass, P32 docs, P33 signed GitHub Release and Pages continuously until stopped.
+
+  SESSION 48 - 2026-11-08 - P31 quality pass
+    Did       Fixed native usage-grant fixture, added manifest/schema/file guard and immutable CI action pins, migrated compilerOptions and documented quality/limitations. Added 14 small/tablet/landscape 1.3x emulator captures.
+    Decided   D89; unchanged dependencies/permissions/schema. Node24 action commits verified via GitHub refs. P30 CI successful.
+    Verified  Four final gates PASS; 362 JVM tests and full 20-case native rerun green. CI guard rejects deliberate INTERNET probe and accepts actual merged manifest. All 14 fake-only captures reviewed; small and landscape focus controls reachable. Schemas unchanged, source text/architecture audit and secret/whitespace sweeps clean.
+    Not ver.  Physical-device/OEM reliability, low-end performance, full current API26 UI, TalkBack listening, actual reboot/process death and Spanish native review. Capture helpers initially expected below-fold text and swiped outside the landscape content; corrected using actual scroll bounds, without changing or weakening app checks. No signed release/Pages yet.
+    Next      Verify P31 CI; finish P32 documentation, then P33 private signing, verified GitHub Release and Pages. Continue until explicitly stopped.
 
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------

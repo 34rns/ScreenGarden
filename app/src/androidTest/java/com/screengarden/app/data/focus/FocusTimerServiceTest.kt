@@ -14,16 +14,42 @@ import com.screengarden.app.ScreenGardenApplication
 import com.screengarden.app.data.usage.UsageAccess
 import com.screengarden.app.domain.focus.FocusStatus
 import com.screengarden.app.domain.focus.FocusTag
+import java.io.FileInputStream
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /** Runs on the dedicated emulator; all session inputs are fake. */
 @RunWith(AndroidJUnit4::class)
 class FocusTimerServiceTest {
+    private var previousUsageMode: String? = null
+
+    @Before
+    fun prepareUsageAccess() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        check(shell("getprop ro.boot.qemu") == "1") { "Dedicated emulator required" }
+        previousUsageMode = Regex("GET_USAGE_STATS: (allow|ignore|deny|default|foreground)")
+            .find(shell("appops get ${context.packageName} GET_USAGE_STATS"))?.groupValues?.get(1) ?: "default"
+        shell("appops set ${context.packageName} GET_USAGE_STATS allow")
+        assertTrue("Test setup must grant usage access", UsageAccess.isGranted(context))
+    }
+
+    @After
+    fun restoreUsageAccess() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        previousUsageMode?.let { shell("appops set ${context.packageName} GET_USAGE_STATS $it") }
+    }
+
+    private fun shell(command: String): String =
+        InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command).use {
+            FileInputStream(it.fileDescriptor).bufferedReader().readText().trim()
+        }
+
     @Test
     fun completedTimerPlantsAndRewardsOnlyOnce() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext

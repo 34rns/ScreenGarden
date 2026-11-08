@@ -41,10 +41,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     lint {
         abortOnError = true
         warningsAsErrors = false
@@ -64,6 +60,12 @@ android {
         // MigrationTestHelper reads the exported schemas from the test APK assets
         // (DECISION D22). Without this the helper cannot find them.
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
