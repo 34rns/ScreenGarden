@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -43,7 +44,8 @@ fun InsightsCharts(state: InsightsUiState, modifier: Modifier = Modifier) {
         goalTime
     )
     val scoreDescription = stringResource(R.string.insights_score_description)
-    val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
+    val locale = LocalConfiguration.current.locales[0]
+    val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(

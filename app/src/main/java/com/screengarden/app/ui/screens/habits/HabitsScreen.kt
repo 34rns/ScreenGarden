@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -57,6 +58,7 @@ fun HabitsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalConfiguration.current.locales[0]
     var date by rememberSaveable(state.today) { mutableStateOf(state.today.toString()) }
     var threshold by remember(state.threshold) { mutableStateOf(state.threshold.toFloat()) }
     var limit by remember(state.monthlyLimit) { mutableStateOf(state.monthlyLimit.toFloat()) }
@@ -126,7 +128,9 @@ fun HabitsScreen(
                                     Instant.ofEpochMilli(earned.unlockedAtUtcMillis)
                                         .atZone(
                                             ZoneId.systemDefault()
-                                        ).toLocalDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
+                                        ).toLocalDate().format(
+                                            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
+                                        )
                                 )
                             }
                         )

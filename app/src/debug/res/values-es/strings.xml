@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug diagnostics only; never included in a release. -->
+<resources>
+    <string name="usage_self_check_title">Comprobación del uso</string>
+    <string name="usage_self_check_subtitle">Solo depuración. Valores directos del repositorio de uso P05.</string>
+    <string name="usage_self_check_refresh">Actualizar</string>
+    <string name="usage_self_check_loading">Leyendo estadísticas de uso…</string>
+    <string name="usage_self_check_day">Inicio del día</string>
+    <string name="usage_self_check_granted">Acceso de uso</string>
+    <string name="usage_self_check_yes">permitido</string>
+    <string name="usage_self_check_no">no permitido</string>
+    <string name="usage_self_check_method">Método de comprobación</string>
+    <string name="usage_self_check_api">Nivel de API</string>
+    <string name="usage_self_check_launchable">Paquetes que se pueden abrir</string>
+    <string name="usage_self_check_screen_time">Tiempo de pantalla hoy</string>
+    <string name="usage_self_check_pickups">Consultas hoy</string>
+    <string name="usage_self_check_unlocks">Desbloqueos hoy</string>
+    <string name="usage_self_check_unlocks_unsupported">no compatible (sin evento de bloqueo antes de API 28)</string>
+    <string name="usage_self_check_total_apps">Aplicaciones con uso</string>
+    <string name="usage_self_check_top_apps">Aplicaciones más usadas</string>
+    <string name="usage_self_check_none">sin registros</string>
+    <string name="usage_self_check_missing">Sin datos: no se ha permitido el acceso de uso.</string>
+    <string name="usage_self_check_error">Error</string>
+    <string name="debug_nudge_title">Vista previa del recordatorio</string>
+    <string name="debug_nudge_copy">Datos ficticios de depuración. No se lee ni guarda uso. Muestra dos ejemplos y abre el panel de notificaciones.</string>
+    <string name="debug_nudge_show">Mostrar recordatorios de ejemplo</string>
+    <string name="debug_nudge_shown">Recordatorios de ejemplo mostrados</string>
+    <string name="debug_nudge_blocked">Permite las notificaciones en los ajustes de Android para mostrar esta vista.</string>
+    <string name="debug_nudge_app">Lectura</string>
+    <string name="widget_preview">Vista previa del widget</string>
+    <string name="widget_small_preview">Pequeño</string>
+    <string name="widget_medium_preview">Mediano</string>
+    <string name="widget_preview_setup">Activa el anfitrión de widgets del emulador antes de la vista previa.</string>
+</resources>

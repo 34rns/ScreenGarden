@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -53,8 +54,9 @@ fun InsightsScreen(
 ) {
     var valuesVisible by rememberSaveable(state.period) { mutableStateOf(false) }
     val unknown = stringResource(R.string.insights_unknown)
-    val number = NumberFormat.getIntegerInstance()
-    val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+    val locale = LocalConfiguration.current.locales[0]
+    val number = NumberFormat.getIntegerInstance(locale)
+    val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
     CompositionLocalProvider(
         LocalTextStyle provides
             MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.Content)
@@ -210,7 +212,9 @@ private fun HourTiles(state: InsightsUiState) {
     }
     val bins = List(24) { hour -> days.sumOf { it.usageMillis[hour].coerceAtLeast(0) } / 60_000 }
     val peak = bins.indices.maxBy { bins[it] }
-    val timeFormat = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
+    val timeFormat = DateTimeFormatter.ofLocalizedTime(
+        FormatStyle.SHORT
+    ).withLocale(LocalConfiguration.current.locales[0])
     if (bins[peak] == 0L) {
         Text(stringResource(R.string.insights_hours_zero))
     } else {
@@ -228,7 +232,10 @@ private fun HourTiles(state: InsightsUiState) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 repeat(6) { column ->
                     val hour = row * 6 + column
-                    val clock = LocalTime.of(hour, 0).format(DateTimeFormatter.ofPattern("HH:mm"))
+                    val clock = LocalTime.of(
+                        hour,
+                        0
+                    ).format(DateTimeFormatter.ofPattern("HH:mm", LocalConfiguration.current.locales[0]))
                     val description = pluralStringResource(
                         R.plurals.insights_hour_value,
                         bins[hour].coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),

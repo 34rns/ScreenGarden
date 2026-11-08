@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -41,6 +42,7 @@ fun BackupControls(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val locale = LocalConfiguration.current.locales[0]
     var replaceConfirm by rememberSaveable { mutableStateOf(false) }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         BackupText(R.string.backup_privacy)
@@ -72,7 +74,11 @@ fun BackupControls(
                     Text(
                         stringResource(
                             R.string.backup_created,
-                            DateFormat.getDateTimeInstance().format(Date(preview.createdAtUtcMillis))
+                            DateFormat.getDateTimeInstance(
+                                DateFormat.MEDIUM,
+                                DateFormat.SHORT,
+                                locale
+                            ).format(Date(preview.createdAtUtcMillis))
                         ),
                         style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content)
                     )

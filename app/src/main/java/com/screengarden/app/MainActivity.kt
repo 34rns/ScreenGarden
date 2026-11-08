@@ -368,6 +368,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     when {
+                        debugDestination?.route == "onboarding_demo" -> debugDestination.content()
                         // A debug build launched with a screen extra wins, so the diagnostic
                         // screens stay reachable even before onboarding was completed.
                         debugDestination != null -> ScreenGardenApp(

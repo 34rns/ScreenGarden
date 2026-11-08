@@ -21,7 +21,7 @@
     <string name="onboarding_garden_body">ScreenGarden turns the time you spend away from your phone into a small garden. Focus sessions and quiet days help it grow, and nothing here rushes you.</string>
 
     <string name="onboarding_privacy_title">Nothing leaves your phone</string>
-    <string name="onboarding_privacy_body">No account, no cloud, no internet permission. Your screen time is read on this device, stored on this device, and stays yours to delete.</string>
+    <string name="onboarding_privacy_body">No account, no cloud, no internet permission. Your data is read and stored on this device. It leaves only when you choose to save a backup or a picture.</string>
 
     <string name="onboarding_usage_title">One permission, one purpose</string>
     <string name="onboarding_usage_body">Android only shares screen time through Usage access. ScreenGarden reads it to draw your day and water your plants, and nothing is uploaded or shared.</string>
@@ -29,10 +29,10 @@
     <string name="onboarding_usage_granted">Usage access is on. Thank you.</string>
     <string name="onboarding_usage_not_granted">Usage access is off.</string>
     <string name="onboarding_usage_skip">Skip for now</string>
-    <string name="onboarding_usage_skip_explanation">Without it your garden stays empty: no screen time, no gentle limits and no plants. You can grant it later in Settings.</string>
+    <string name="onboarding_usage_skip_explanation">Without it screen time and your daily score are unavailable. You can still grow plants through focus sessions and grant access later.</string>
 
     <string name="onboarding_notifications_title">A gentle nudge, if you want one</string>
-    <string name="onboarding_notifications_body">Reminders stay off by default. Allowing notifications lets ScreenGarden quietly tell you when a focus session ends. Nothing else is ever sent.</string>
+    <string name="onboarding_notifications_body">Reminders stay off by default. You can allow gentle nudges about your goals and app limits. Active focus sessions show a countdown with a stop action.</string>
     <string name="onboarding_notifications_allow">Allow notifications</string>
     <string name="onboarding_notifications_not_now">Not now</string>
 

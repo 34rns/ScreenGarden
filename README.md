@@ -11,6 +11,11 @@ check.
 
 ## The idea
 
+English and a Spanish sample are bundled locally. On Android 13+, choose the
+language in Android's app settings; older versions follow the device language.
+Spanish covers the current resources and is awaiting native-speaker review.
+See [translation instructions](CONTRIBUTING.md#translations).
+
 Battery help is available in Settings → About, with offline guides for seven device brands.
 Menu paths may vary by version. See [battery help](docs/BATTERY_HELP.md).
 
@@ -46,6 +51,14 @@ Accessibility and layout:
 | <img src="docs/screenshots/garden_large_font.png" width="240" alt="Garden tab at 1.3x font scale"> | <img src="docs/screenshots/garden_rtl.png" width="240" alt="Garden tab with a forced Compose right-to-left layout"> |
 
 All current public screenshots are stored in `docs/screenshots/`.
+
+| Spanish Garden | Spanish Focus | Large translated text |
+| --- | --- | --- |
+| <img src="docs/screenshots/language_es_garden.png" width="220" alt="Spanish Garden with localized labels"> | <img src="docs/screenshots/language_es_focus.png" width="220" alt="Spanish Focus with wrapping choices"> | <img src="docs/screenshots/language_es_large_text.png" width="220" alt="Spanish goal editor at 1.3 times font scale"> |
+
+| Privacy introduction | Optional Usage access | Initial goals |
+| --- | --- | --- |
+| <img src="docs/screenshots/intro_privacy.png" width="220" alt="Introduction explaining local storage and voluntary exports"> | <img src="docs/screenshots/intro_usage.png" width="220" alt="Optional Usage access with an explanation of focus without it"> | <img src="docs/screenshots/intro_goals.png" width="220" alt="Initial screen-time, pickup and bedtime goals"> |
 
 | Focusing | Completed session | Large text | Right-to-left layout |
 | --- | --- | --- | --- |

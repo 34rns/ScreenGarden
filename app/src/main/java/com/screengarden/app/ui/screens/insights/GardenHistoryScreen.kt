@@ -22,6 +22,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -49,8 +50,9 @@ fun GardenHistoryScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val format = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-    val capturedFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+    val locale = LocalConfiguration.current.locales[0]
+    val format = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
+    val capturedFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(locale)
     CompositionLocalProvider(
         LocalTextStyle provides MaterialTheme.typography.bodyLarge.copy(
             textDirection = TextDirection.Content

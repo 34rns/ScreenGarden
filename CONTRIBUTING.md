@@ -69,13 +69,38 @@ takes `modifier: Modifier = Modifier` first, user-visible text comes from
 - Update `AGENT_MEMORY.txt` in the same pull request — tick the checklist item,
   record new decisions, and add a session log entry. This is not optional; a
   reviewer will ask for it.
-- Screenshots for anything visual, on a device or emulator.
+- Screenshots for anything visual, from the emulator with fake debug-only demo data.
 
 ## Tests
 
 Please add unit tests for logic that can be tested without Android (use cases,
 growth rules, time maths) under `app/src/test/`. New behaviour without tests is
 acceptable only when it is purely visual and you say so in the pull request.
+
+## Translations
+
+English in `app/src/main/res/values/strings*.xml` is the fallback. Spanish in
+`values-es/` is a sample language covering the current app. It needs native-speaker
+review; translation coverage is not proof of linguistic quality.
+
+To add a language, create `app/src/main/res/values-<language>/` and translate all
+string and plural resources. Keep names and numbered arguments such as `%1$d`
+and `%2$s` unchanged. Keep `%%` as a literal percent and `\n` as a line break.
+Use the plural categories required by the language, including `other`. Escape XML
+characters and Android string apostrophes correctly. Brand names and licenses
+should retain their official spelling.
+
+Add the language tag to `res/xml/locale_config.xml`. Android 13+ then offers the
+language in **Settings → Apps → ScreenGarden → Language**; older Android versions
+follow the device language. There is no translation service or account.
+
+Run all four quality checks and the localization test. Review the app on the
+emulator using fake debug-only demos with large text and, for RTL languages,
+mirrored layout. Check buttons, field labels, dates, plurals, charts and empty/error
+states. Prefer start/end alignment and wrapping; avoid fixed text widths. Numeric
+editors use their documented input format; saved UTC timestamps and stable enum
+keys are never translated. Submit screenshots and note any wording not reviewed
+by a fluent speaker.
 
 ## Licensing
 

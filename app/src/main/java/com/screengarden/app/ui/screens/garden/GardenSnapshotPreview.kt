@@ -52,7 +52,6 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -67,8 +66,9 @@ internal fun GardenSnapshotPreview(
     modifier: Modifier = Modifier
 ) {
     val snapshot = remember { state.copy(plants = state.plants.toList()) }
-    val date = remember {
-        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.getDefault())
+    val locale = LocalConfiguration.current.locales[0]
+    val date = remember(locale) {
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
             .format(Instant.now().atZone(ZoneId.systemDefault()))
     }
     var includeCaption by rememberSaveable { mutableStateOf(true) }

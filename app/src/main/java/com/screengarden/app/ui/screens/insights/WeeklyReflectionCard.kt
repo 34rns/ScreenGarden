@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -27,6 +28,7 @@ import kotlin.math.abs
 /** Calm local templates. Focus totals remain known even when usage is not measured. */
 @Composable
 fun WeeklyReflectionCard(reflection: WeeklyReflection, onHistory: () -> Unit, modifier: Modifier = Modifier) {
+    val locale = LocalConfiguration.current.locales[0]
     Surface(modifier, shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
@@ -58,7 +60,7 @@ fun WeeklyReflectionCard(reflection: WeeklyReflection, onHistory: () -> Unit, mo
                 Text(
                     stringResource(
                         R.string.reflection_best,
-                        best.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+                        best.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)),
                         reflection.bestScore ?: 0
                     )
                 )

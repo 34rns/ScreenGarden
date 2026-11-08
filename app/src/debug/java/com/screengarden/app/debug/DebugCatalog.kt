@@ -41,6 +41,7 @@ import com.screengarden.app.domain.insights.InsightsSummary
 import com.screengarden.app.domain.insights.Reflections
 import com.screengarden.app.domain.limits.AppLimitRule
 import com.screengarden.app.domain.limits.LaunchableApp
+import com.screengarden.app.domain.model.OnboardingChoices
 import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.domain.notifications.Nudge
 import com.screengarden.app.ui.debug.BackupDemoScreen
@@ -48,6 +49,7 @@ import com.screengarden.app.ui.debug.NudgeDemoScreen
 import com.screengarden.app.ui.debug.UsageSelfCheckScreen
 import com.screengarden.app.ui.navigation.DebugDestination
 import com.screengarden.app.ui.navigation.ScreenGardenDestination
+import com.screengarden.app.ui.onboarding.OnboardingScreen
 import com.screengarden.app.ui.screens.focus.FocusScreen
 import com.screengarden.app.ui.screens.focus.FocusUiState
 import com.screengarden.app.ui.screens.garden.GardenAvailability
@@ -103,6 +105,11 @@ object DebugCatalog {
     }
 
     private fun resolveDestination(requested: String?, context: Context): DebugDestination? {
+        if (requested == "onboarding_demo") {
+            return DebugDestination(requested, ScreenGardenDestination.Garden) {
+                OnboardingScreen(OnboardingChoices(), { false }, {}, {}, {})
+            }
+        }
         if (requested == "battery_demo") {
             return DebugDestination(requested, ScreenGardenDestination.Settings) {
                 BatteryHelpScreen("Samsung", {}, {})
