@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 33 / P22 completion)
+Last updated: 2026-11-08 (Session 35 / P23 verification)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         309 JVM tests; 9 migration cases green on API 35 (P20)
+  Tests         312 JVM tests; 9 migration cases green on API 35 (P20)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -235,6 +235,8 @@ SECTION 4 - FOLDER LAYOUT
           |       |-- di/AppContainer.kt           manual DI root + database
           |       |-- data/local/                  DB, entity/, dao/
           |       |-- data/focus/                  timer service, controller, boot recovery (P12)
+          |       |-- data/focus/FocusTileService.kt user start/stop Quick Settings binding (P23)
+          |       |-- data/widgets/GardenWidgetUpdates.kt installed-widget-only updates (P23)
           |       |-- domain/focus/                pure session state machine (P12)
           |       |-- data/onboarding/             first-run writes (P07)
           |       |-- data/repo/                   6 repository interfaces, 2 impls (P06)
@@ -265,6 +267,8 @@ SECTION 4 - FOLDER LAYOUT
           |                 screens/insights/ (single state, Canvas charts and labelled heatmap, P19),
           |                 screens/settings/EnvironmentControls.kt (P21), SettingsScreen/ViewModel (P22)
           |                 domain/settings/SettingsRepository.kt (P22 contract)
+          |                 widgets/GardenWidget.kt Glance small/medium status and shared plant bitmap (P23)
+          |                 domain/garden/GardenStatus.kt pure widget score/streak/coverage (P23)
           |-- debug/                            DEBUG-ONLY source set (P05b)
           |   |-- res/values/strings.xml        self-check strings, never shipped
           |   `-- java/com/screengarden/app/
@@ -1026,6 +1030,20 @@ SECTION 6 - DECISIONS
       hold fake state only and use the same labelled controls as production.
       RTL scenery paragraphs explicitly resolve content direction, preserving punctuation
       while controls mirror. No new dependency, permission or Room schema.
+  D81 P23 GARDEN WIDGET AND FOCUS TILE.
+      Glance appwidget 1.1.1 (Apache-2.0) adds the requested Compose widget host.
+      Small/medium responsive layouts read existing Room history/settings and the
+      existing score/streak rules; static plant bitmap reuses VectorPlantRenderer.
+      Widget metadata XML configures Android's host, never an XML screen layout.
+      System refresh period is 30 minutes, approximate under Doze; saved changes
+      trigger debounced updates only while widgets are installed. No usage polling.
+      Quick Settings binding is protected by BIND_QUICK_SETTINGS_TILE on the
+      service, not a runtime permission. User tap/unlock starts a 25-minute STUDY
+      session through the existing controller, or stops the active session.
+      Official Android Glance/tile documentation checked; no new Room schema.
+      Compact layout shows the score number with an accessible out-of-100
+      description; medium shows score/streak beside the plant. Both fit 1.3x text.
+      Debug host reports API 31+ widget sizes explicitly and has no default padding.
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
@@ -1082,7 +1100,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P20     done    Local weekly reflection + actual stored garden timeline [new]
   P21     done    Day/night, seasons, weather visuals [new]
   P22     done    Six Settings sections, persisted themes/curated palettes [3.1]
-  P23     todo    Widget + Quick Settings tile [new]
+  P23     done    Responsive Glance widget + user start/stop Quick Settings tile [new]
   P24     todo    Snapshot export [new]
   P25     todo    Plant packs (16.5) [new]
   P26     todo    Export/import JSON (16.6) [new]
@@ -1099,16 +1117,16 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P22 are implemented and locally verified; see CURRENT STATUS for CI.
-  P04b repositories are complete, including BadgeRepository in P18. P23 is next.
+  Sequencing note: P00-P23 are implemented and locally verified; see CURRENT STATUS for CI.
+  P04b repositories are complete, including BadgeRepository in P18. P24 is next.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
 --------------------------------------------------------------------------------
 SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
 --------------------------------------------------------------------------------
   Everything below is declared in gradle/libs.versions.toml. The license column
-  matters for distribution: everything shipped in the APK is Apache-2.0, and
-  the two non-Apache-2.0 artifacts are test-only, so they never ship.
+  matters for distribution: runtime libraries are Apache-2.0 except Glance’s
+  shaded protobuf (BSD-3-Clause, GPLv3 compatible). MIT/EPL test tools do not ship.
   P00b added no dependency (screenshots used only adb and the emulator). P04
   added androidx.datastore:datastore-preferences 1.1.2 (Apache-2.0). P05 added
   no dependency: usage stats come from the platform (UsageStatsManager,
@@ -1126,6 +1144,12 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   P15 adds no dependency: PackageManager, Room, Compose and Flow already exist.
   P19 adds no dependency: native Compose Canvas renders charts; original code is
   GPL-3.0-or-later and uses the existing Apache-2.0 Compose artifacts. No Vico.
+
+  androidx.glance:glance-appwidget 1.1.1 (Apache-2.0) supplies P23 Compose
+  RemoteViews widgets. New catalog entry; no network capability. Its glance
+  and appwidget-proto artifacts are Apache-2.0; appwidget-external-protobuf
+  is BSD-3-Clause (verified from the installed 1.1.1 POMs), GPLv3 compatible.
+  Keep its upstream notice with binary release attribution (P32).
 
   Name / version                    License       Why / scope
   ---------------------------------------------------------------------------
@@ -1219,6 +1243,9 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
 --------------------------------------------------------------------------------
 SECTION 9 - PERMISSIONS
 --------------------------------------------------------------------------------
+  P23 service binding: BIND_QUICK_SETTINGS_TILE protects the exported tile
+  service so only Android can bind. Not a uses-permission or user grant.
+
   DECLARED BY THIS APP:
     FOREGROUND_SERVICE    P12 focus timer survives leaving the UI with a visible
                           ongoing notification and a stop action. Every start is
@@ -1467,11 +1494,11 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 309 JVM tests, zero failures/errors/skips. Four P22 gates
+  Current test state: 312 JVM tests, zero failures/errors/skips. Four P23 gates
   PASS; lint zero errors/four accepted warnings. P20 nine API 35 migrations PASS
-  through v6; P22 does not change schema. Real emulator theme/accent preferences
-  survive restart, introduction cancel and notification settings opening PASS.
-  Eleven P22 fake-only captures reviewed, including themes, 1.3x text and RTL.
+  through v6; P23 does not change schema. API 35 production tile start/stop test
+  PASS. Both actual Glance layouts and unclipped plant images at 1.0/1.3x text
+  PASS; four final fake-only widget/tile images reviewed.
   No signed GitHub release or Pages exists yet.
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
@@ -1492,19 +1519,19 @@ SECTION 10 - KNOWN ISSUES
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P21 are published; P21 e1454cd CI 42442493453 SUCCESS.
-  P22 is complete locally: six Settings sections, stored themes/three palettes,
-  atomic goals, optional notification and focus controls, introduction restart.
-  Four gates PASS; 309 JVM tests, zero failures/errors/skips; lint zero errors
-  and four accepted warnings. Real emulator theme/accent restart persistence,
-  intro cancel and Android notification controls PASS. Eleven fake-only captures
-  reviewed, including large text and RTL. No new dependency/permission/schema.
-  P22 commit/push/CI pending after final resumed verification. No signed GitHub release or Pages yet.
+  P00-P22 are published and CI verified green.
+  P22 10b0160 published; CI 42446118343 SUCCESS.
+  P23 complete locally: Glance widget, shared plant art, installed-widget-only
+  updates, user start/stop Focus tile. Final four gates PASS; 312 JVM tests,
+  lint zero errors/four accepted warnings. One actual API 35 tile test PASS.
+  Four fake-only captures reviewed; compact/medium layouts and plant bounds
+  pass at 1.0/1.3x text. No new Room schema or user permission. Publication/CI next.
+  No signed GitHub release or Pages yet.
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Publish P22 and confirm GitHub CI, then P23 widget and Quick Settings tile.
-  Continue P22-P33 in order, GitHub only, until explicitly stopped by the owner.
+  Publish P23/check CI, then P24 snapshot export and P25-P33 in order.
+  Continue P23-P33 in order, GitHub only, until explicitly stopped by the owner.
   Save checkpoints and use compaction to continue; do not stop at task/context
   milestones. Never request, print or commit secret values.
 
@@ -2399,7 +2426,51 @@ SECTION 13 - SESSION LOG
     Not ver.  Physical-device reliability, API 26/new-size Settings rendering,
               complete real introduction restart flow, signed release and Pages.
               Video not available (Session 12). P22 CI pending publication.
-    Next      Publish P22, verify CI, then P23-P33 continuously until stopped.
+    CI        P22 10b0160 pushed; 42446118343 SUCCESS, all four quality steps.
+    Next      P23-P33 continuously until stopped.
+  SESSION 34 - 2026-11-08 - P23 widget/tile implementation checkpoint
+    Did       P22 CI confirmed success. Added Glance 1.1.1, responsive static
+              garden status and shared Canvas plant bitmap, installed-widget-only
+              debounced Room/settings updates, Android host metadata and a user
+              start/stop Quick Settings tile. Added fake-only debug widget host
+              and tile receivers for screenshots, plus an emulator tile test.
+    Decided   D81. Widget host XML is metadata, not an app screen layout. Use
+              Android's approximate 30-minute host refresh; no extra polling or
+              usage reads. Missing coverage stays unknown. No schema change.
+    Verified  Three GardenStatus JVM tests PASS. First compiler pass exposed
+              version differences: inspected actual pinned Room/Glance class APIs;
+              corrected invalidationTrackerFlow, updateAll and action imports.
+              Official Glance/tile setup and scheduling pages HTTP 200.
+    Not ver.  Full gates running. Actual widget/tile rendering, emulator tile
+              interaction, screenshots, publication and CI pending. Release/Pages
+              pending; physical-device behavior unverified. No screenshot yet.
+    Next      Finish P23 gates/emulator/captures/review/memory/push/CI; then P24.
+  SESSION 35 - 2026-11-08 - P23 resumed verification checkpoint
+    Did       Read complete memory; checked 20 commits/status and fetched origin,
+              main matches 10b0160. Kept saved P23 work and the two lint fixes:
+              public Glance ID lookup, explicit existing timer type in debug manifest.
+              Added widget/tile usage and refresh limits to README.
+    Verified  Initial fresh four gates PASS: 312 JVM tests, zero failures/errors/
+              skips, lint zero errors/four accepted warnings. One API 35 native
+              production tile test PASS: starts 25 minutes and stops the same ID.
+              Secret sweep/whitespace check PASS. P22 CI remains SUCCESS.
+    Found     Fake widget images revealed large-text plant clipping and medium
+              host choosing compact size. Saved compact score/accessible full
+              description and spacing fix; debug host reports API 31+ sizes and
+              removes default padding. Actual pinned public APIs checked.
+              Capture helper now uses numeric Android user ID, collapses the
+              shade before launch, and navigates to the demo tile's normal page.
+              No release code failure in the helper setup; Android's current-user
+              widget command crashed for user -2, and SystemUI restored default tiles.
+    Verified  Final amended four gates PASS; 312 JVM tests, zero failures/errors/
+              skips; lint zero errors/four warnings. Both Glance sizes now render
+              correctly; capture assertions prove two full plant images at 1.0/
+              1.3x text. Four final fake-only images reviewed. Old schemas unchanged,
+              no INTERNET/allowBackup=false; final secret/whitespace sweep PASS.
+    Not ver.  P23 publication/CI pending. Signed release/Pages, API 26/new sizes,
+              long-running widget refresh, physical-device reliability remain
+              unverified. Video not available; no new inference.
+    Next      Finish P23, publish and check CI, then P24-P33 without stopping.
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------

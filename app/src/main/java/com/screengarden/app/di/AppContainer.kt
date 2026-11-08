@@ -33,6 +33,7 @@ import com.screengarden.app.data.sync.DailyUsageSync
 import com.screengarden.app.data.usage.AndroidUsageSource
 import com.screengarden.app.data.usage.DefaultUsageRepository
 import com.screengarden.app.data.usage.LaunchableAppCatalog
+import com.screengarden.app.data.widgets.GardenWidgetUpdates
 import com.screengarden.app.data.work.NudgeScheduler
 import com.screengarden.app.data.work.UsageSyncScheduler
 import com.screengarden.app.domain.settings.SettingsRepository
@@ -77,6 +78,10 @@ class AppContainer(context: Context) {
     }
 
     fun settingsViewModel(): SettingsViewModel = SettingsViewModel(settingsRepository)
+
+    val widgetUpdates: GardenWidgetUpdates by lazy {
+        GardenWidgetUpdates(appContext, { database }, settingsRepository)
+    }
 
     /**
      * Persists the first-run answers (P07). Built here rather than in the Activity so

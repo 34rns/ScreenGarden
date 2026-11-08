@@ -85,6 +85,9 @@ object DebugCatalog {
 
     /** The requested debug destination, or null when [requested] names none. */
     fun destination(requested: String?, context: Context): DebugDestination? {
+        if (requested == "widget_demo") {
+            return DebugDestination(requested, ScreenGardenDestination.Garden) { DemoWidgetScreen() }
+        }
         if (requested in setOf("history_demo", "history_months_demo", "history_empty_demo", "history_rtl_demo")) {
             val zone = ZoneId.systemDefault()
             val dates = listOf("2026-09-25", "2026-10-12", "2026-10-19", "2026-10-27", "2026-11-02", "2026-11-07")

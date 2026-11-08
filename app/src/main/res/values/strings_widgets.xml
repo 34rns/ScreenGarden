@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Today’s garden score, counted-day streak and a plant. Tap to open ScreenGarden.</string>
+    <string name="widget_score">%1$d / 100</string>
+    <string name="widget_score_description">Garden score: %1$d out of 100</string>
+    <string name="widget_plant">Your garden plant</string>
+    <string name="widget_permission">Usage access is off</string>
+    <string name="widget_no_data">Waiting for today’s data</string>
+    <string name="widget_incomplete">Usage is incomplete</string>
+    <plurals name="widget_streak">
+        <item quantity="one">%1$d counted day</item>
+        <item quantity="other">%1$d counted days</item>
+    </plurals>
+    <string name="tile_focus">Focus</string>
+    <string name="tile_start">Start 25 minutes</string>
+    <string name="tile_stop">Stop focus</string>
+</resources>

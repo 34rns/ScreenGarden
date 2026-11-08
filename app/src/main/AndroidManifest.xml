@@ -78,6 +78,23 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ScreenGarden">
 
+        <receiver android:name=".ui.widgets.GardenWidgetReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/garden_widget" />
+        </receiver>
+        <service
+            android:name=".data.focus.FocusTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_foreground"
+            android:label="@string/tile_focus"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <service
             android:name=".data.focus.FocusTimerService"
             android:exported="false"

@@ -152,8 +152,7 @@ by intention. A pull request that adds network access or telemetry is rejected.
   grace, using the same gradual curve as the other habits. Saved plants remain
   accessible and recoverable. Old bedtime history is unknown until remeasured.
 - Usage without reliable screen events (including Android 8.0–8.1) is shown as
-  incomplete rather than given a fabricated score. The remaining Settings
-  controls are still being built.
+  incomplete rather than given a fabricated score.
 - Counted-day streaks and permanent badges celebrate progress gently. Mark today
   or a past date as a compassion day to preserve a streak and exclude it from
   averages. The monthly allowance defaults to three and is configurable from zero
@@ -174,6 +173,31 @@ or manufacturer settings, so reminders are approximate. A late check shows the h
 new milestone rather than a burst of older reminders. Disabled reminders stop before
 reading usage; missing permission or incomplete screen-state evidence produces no nudge.
 There are no exact alarms, foreground reminder services or network requests.
+
+## Garden widget and focus tile
+
+Add ScreenGarden from your launcher's widget picker to see today's score,
+counted-day streak and a plant in a small or medium widget. Tap it to open the
+garden. Missing Usage access or incomplete measurements are labelled clearly.
+Saved garden and goal changes refresh installed widgets after a short delay.
+Android also schedules a refresh about every thirty minutes; Doze and launcher
+restrictions can delay it. The widget has no animation or usage polling.
+
+Add **Focus** from the Quick Settings edit panel. Tap to start a 25-minute Study
+session, or tap again to stop the current session. Android may ask you to unlock
+first. It uses the same saved timer and notification as the Focus tab.
+
+<details>
+<summary>Widget and tile previews</summary>
+
+All images below show fake debug-only data on the Android emulator.
+
+<img src="docs/screenshots/widgets.png" alt="Small and medium garden widgets with a score, streak and flower" width="260" />
+<img src="docs/screenshots/widgets_large_text.png" alt="Garden widgets at enlarged system text size" width="260" />
+<img src="docs/screenshots/focus_tile_idle.png" alt="Quick Settings Focus tile ready to start a session" width="260" />
+<img src="docs/screenshots/focus_tile_running.png" alt="Active Quick Settings Focus tile with a stop action" width="260" />
+
+</details>
 
 ## Requirements
 
@@ -233,8 +257,8 @@ Android lint must stay at zero errors.
 
 - **Code:** [GPL-3.0-or-later](LICENSE). Strong copyleft, so a fork stays open:
   nobody can turn ScreenGarden into a closed, tracker-laden build. This is
-  compatible with every runtime dependency we ship (all
-  Apache-2.0).
+  compatible with every runtime dependency we ship (Apache-2.0 and
+  Glance's BSD-3-Clause shaded protobuf).
 - **Original artwork and plant packs:**
   [CC BY-SA 4.0](ART_LICENSE.md). A contributor may license their own plant pack
   differently in its `plant.json`.

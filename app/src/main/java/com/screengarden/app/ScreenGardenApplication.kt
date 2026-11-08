@@ -26,5 +26,6 @@ class ScreenGardenApplication : Application() {
         // when WorkManager decides to run the periodic work (UsageSyncScheduler).
         container.usageSyncScheduler.schedulePeriodicSync()
         container.nudgeScheduler.schedule()
+        container.widgetUpdates.start()
     }
 }

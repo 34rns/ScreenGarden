@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_preview">Garden widget preview</string>
+    <string name="widget_small_preview">Small</string>
+    <string name="widget_medium_preview">Medium</string>
+    <string name="widget_preview_setup">Enable the emulator widget host before previewing.</string>
+</resources>
