@@ -10,6 +10,10 @@ set gentle goals, and grow plants that can always recover. Everything works offl
 
 Android 8.0+ · No accounts · No ads · No tracking · No internet permission
 
+[Website and screenshots](https://34rns.github.io/ScreenGarden/) ·
+[GitHub releases](https://github.com/34rns/ScreenGarden/releases) ·
+[Release protocol](docs/RELEASING.md)
+
 ## A little space to grow
 
 | Garden | Focus | Insights |

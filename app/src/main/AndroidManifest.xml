@@ -86,6 +86,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ScreenGarden">
 
+        <!-- The widget only starts MainActivity directly; Glance's collection
+             callback trampolines are unused. Keep exactly one production Activity. -->
+        <activity
+            android:name="androidx.glance.appwidget.action.ActionTrampolineActivity"
+            tools:node="remove" />
+        <activity
+            android:name="androidx.glance.appwidget.action.InvisibleActionTrampolineActivity"
+            tools:node="remove" />
+
         <service android:name=".ui.wallpaper.GardenWallpaperService"
             android:exported="true"
             android:label="@string/wallpaper_name"

@@ -1,9 +1,24 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktlint)
+}
+
+val appVersion = Properties().apply {
+    rootProject.file("version.properties").inputStream().use { load(it) }
+}
+val signingValues = listOf(
+    "SG_RELEASE_STORE_FILE",
+    "SG_RELEASE_STORE_PASSWORD",
+    "SG_RELEASE_KEY_ALIAS",
+    "SG_RELEASE_KEY_PASSWORD"
+).map { providers.environmentVariable(it).orNull }
+require(signingValues.all { it == null } || signingValues.all { !it.isNullOrBlank() }) {
+    "Release signing configuration is incomplete; no secret values were displayed."
 }
 
 android {
@@ -14,9 +29,20 @@ android {
         applicationId = "com.screengarden.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersion.getProperty("versionCode").toInt()
+        versionName = appVersion.getProperty("versionName")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (signingValues.all { !it.isNullOrBlank() }) {
+            create("privateRelease") {
+                storeFile = file(requireNotNull(signingValues[0]))
+                storePassword = signingValues[1]
+                keyAlias = signingValues[2]
+                keyPassword = signingValues[3]
+            }
+        }
     }
 
     buildTypes {
@@ -26,6 +52,7 @@ android {
             isMinifyEnabled = false
         }
         release {
+            signingConfig = signingConfigs.findByName("privateRelease")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

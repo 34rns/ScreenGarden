@@ -10,7 +10,10 @@ if ($permissions -contains 'android.permission.INTERNET' -or $permissions -conta
 }
 if ($xml.manifest.application.GetAttribute('allowBackup', $ns) -ne 'false') { throw 'Backup must remain disabled' }
 if ($Release -or $Manifest -eq 'app/src/main/AndroidManifest.xml') {
-    if (@($xml.manifest.application.SelectNodes('activity')).Count -ne 1) { throw 'Exactly one production Activity required' }
+    $activities = @($xml.manifest.application.SelectNodes('activity') | Where-Object {
+        $_.GetAttribute('node', 'http://schemas.android.com/tools') -ne 'remove'
+    })
+    if ($activities.Count -ne 1) { throw 'Exactly one production Activity required' }
 }
 if ($Release -and $xml.manifest.application.GetAttribute('debuggable', $ns) -eq 'true') { throw 'Release is debuggable' }
 $hashes = Get-Content -LiteralPath "$PSScriptRoot/schema-hashes.json" -Raw | ConvertFrom-Json

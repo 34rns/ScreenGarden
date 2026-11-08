@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 49 / P32 documentation completion)
+Last updated: 2026-11-08 (Session 51 / P33 verified release readiness)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -115,9 +115,10 @@ SECTION 3 - TECH STACK
                 Kotlin DSL, version catalog
   SDK           compileSdk 35, targetSdk 35, minSdk 26
   Style         ktlint 1.5.0 via org.jlleitschuh.gradle.ktlint 12.2.0
-  CI            GitHub Actions, two workflows, both verified green (P00b):
-                  ci.yml       PR + push to main: ktlint, debug build, lint, tests
-                  release.yml  manual + weekly: unsigned R8 release build
+  CI            GitHub Actions, immutable action commits:
+                  ci.yml       PR/main: style, debug build, lint, unit tests/rules
+                  release.yml  version tag: gates, signed R8 APK and GitHub Release
+                  pages.yml    main site changes: static checks and Pages deploy
   License       GPL-3.0-or-later (code), CC BY-SA 4.0 (art)
   Distribution  GitHub Releases + GitHub Pages only (D69). No store submission.
   Testing       JVM unit tests (JUnit 4 + Robolectric + Room in-memory), plus
@@ -155,7 +156,8 @@ SECTION 3 - TECH STACK
     Lint          gradlew.bat :app:lintDebug
     Unit tests    gradlew.bat :app:testDebugUnitTest       (JVM, no device)
     Migration     gradlew.bat :app:connectedDebugAndroidTest  (emulator/device)
-    Release build gradlew.bat :app:assembleRelease   (unsigned for now)
+    Release build gradlew.bat :app:assembleRelease   (signed with private env;
+                                                        otherwise internal unsigned check)
   Android Studio: open the ScreenGarden folder, let Gradle sync, pick the
   "app" run configuration, run on an API 26+ emulator or device.
 
@@ -172,7 +174,8 @@ SECTION 3 - TECH STACK
                           -Djava.io.tmpdir=D:/FreeCodeChats/ScreenGarden/.tools/tmp
     Create these .tools directories first. Local .tools/Build-Environment.ps1
     sets the variables; dot-source it, then run the four gates with --no-daemon.
-    .tools/ is excluded in .git/info/exclude, not tracked. A new clone must create
+    .tools/ is excluded by tracked .gitignore (P33), plus the historical local
+    .git/info/exclude. A new clone must create
     the directories and exclusion. Do not copy global credentials/configuration.
     Network access for free dependency retrieval/GitHub needed command-runner
     access, not a new account. See K53 for the one aborted setup invocation.
@@ -192,6 +195,11 @@ SECTION 4 - FOLDER LAYOUT
   |-- THIRD_PARTY_NOTICES.md             upstream library attribution
   |-- docs/GALLERY.md, QUALITY.md        screenshot gallery and verified limits
   |-- scripts/Check-Repository.ps1       manifest/schema/file CI guard
+  |-- scripts/Check-Site.ps1             local links and emulator screenshot hashes
+  |-- scripts/Upload-SigningFile.ps1     private project-contained upload helper
+  |-- version.properties                sole app version name/code
+  |-- site/                             static green website, local fonts/scripts
+  |-- docs/RELEASING.md, releases/        GitHub release protocol and version notes
   |-- app/src/main/assets/notices/       bundled Apache/BSD/GPL notices
   |-- .editorconfig                     ktlint and editor settings
   |-- .gitattributes                    eol=lf so Windows clones pass ktlint
@@ -200,7 +208,8 @@ SECTION 4 - FOLDER LAYOUT
   |   |-- PULL_REQUEST_TEMPLATE.md
   |   `-- workflows/
   |       |-- ci.yml                    PR gate: ktlint, build, lint, tests
-  |       `-- release.yml               manual + weekly unsigned release build
+  |       |-- release.yml               signed tag release with mandatory gates
+  |       `-- pages.yml                 checked static site deployment
   |-- build.gradle.kts                  root: plugin aliases only (apply false)
   |-- settings.gradle.kts               repositories + include(":app")
   |-- gradle.properties                 JVM args, AndroidX, non-transitive R
@@ -477,9 +486,9 @@ SECTION 6 - DECISIONS
       Compose/Navigation/Material ship their own consumer rules, so
       proguard-rules.pro is intentionally empty apart from a note.
 
-  D11 Version numbers live inline in app/build.gradle.kts for now
-      (versionCode 1 / versionName "0.1.0"). At the first real release, move
-      them to version.properties so a release script can rewrite one file.
+  D11 Version numbers live in root version.properties (P33/D91).
+      Initial versionCode 1 / versionName 0.1.0. Release tags must match the name;
+      every future APK update must increase versionCode and keep the signing key.
 
   D12 All four tabs share ui/components/PlaceholderScreen during the skeleton
       phase, so the tabs cannot drift stylistically before real content lands.
@@ -599,10 +608,11 @@ SECTION 6 - DECISIONS
       Visual checks and the migration suite run on an emulator, so no phone,
       cloud device service or paid farm is needed. Executed in P00b.
 
-  D34 RELEASE SIGNING IS A LATER TASK (P33).
-      The keystore will be generated locally with `keytool` (free), kept out of
-      git (H8), and exposed to CI only through GitHub Secrets. Until then every
-      release artifact is explicitly unsigned.
+  D34 RELEASE SIGNING configured in P33 with explicit owner authorization.
+      Local long-lived RSA4096/PKCS12 key and Windows-DPAPI protected password
+      record live only in ignored .tools/signing/. Four GitHub Actions secrets
+      are configured privately. Never expose/recreate the key; preserve update
+      continuity. Unsigned local R8 builds remain internal checks only (D91).
 
   D35 AMOLED IS REACHABLE IN DEBUG BUILDS VIA AN INTENT EXTRA (P00b).
       The true-black scheme has no Settings toggle until P22, and screenshots
@@ -1205,6 +1215,27 @@ SECTION 6 - DECISIONS
       retrieved freely; no new SDK, permission, key, schema or user-facing screen.
       Original art remains CC BY-SA 4.0. GitHub-only release/Pages remains P33.
 
+  D91 P33 GITHUB-ONLY DISTRIBUTION.
+      Root version.properties supplies versionCode/name. Tag workflow reruns all
+      gates and production lint, checks offline/nondebuggable manifest/schemas,
+      signs through env-only credentials, verifies APK signature/alignment and
+      publishes checksummed APK, certificate evidence, mapping and source link.
+      Private key removal runs always; public artifact paths never contain it.
+      Local key generation/secret upload was explicitly authorized by the owner.
+      Preserve the ignored key and DPAPI record; private portable owner backup
+      remains a manual custody task, never a chat upload or tracked file.
+      Pages uses local CSS/JS/system fonts and byte-identical emulator demo images.
+      Green organic layout follows existing palette; no invented testimonials,
+      network font/CDN/API, paid tool, runtime dependency, permission or schema.
+      Four browser widths check render layout, themes, FAQ, keyboard and motion.
+      Development Chromium/Playwright are local ignored test tools, never shipped.
+      Release manifest check exposed two unused Glance trampoline Activities.
+      The pinned 1.1.1 official source proves our simple start-Activity widget uses
+      a direct PendingIntent. Remove unused collection/callback trampolines in the
+      manifest instead of relaxing H5; source guard ignores only removal directives.
+      Release procedure is docs/RELEASING.md; Section 17 points to it. Old unsigned
+      weekly distribution notes are historical, superseded by this decision.
+
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
   From P00 on, work is identified by PROMPT NUMBER. The old dotted IDs are kept
@@ -1271,13 +1302,13 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P31     done    Quality pass: accessibility, perf, more screen sizes
                   [0.4 DONE in P00b; 3.3 remains]
   P32     done    Docs + release assets [3.4 part]
-  P33     todo    GitHub signed release automation + Pages/screenshots (D34/D69)
+  P33     doing   GitHub signed release automation + Pages/screenshots (D34/D69)
 
   The old 0.4 (visual verification) is COMPLETE as of P00b for the current UI:
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P32 complete; P33 GitHub release and Pages next.
+  Sequencing note: P00-P32 complete; P33 GitHub release and Pages in progress.
   P04b repositories are complete, including BadgeRepository in P18.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
@@ -1397,8 +1428,9 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   detekt (D16), material-icons-extended, any paid SDK.
 
   CI actions (not Gradle dependencies, not shipped):
-    actions/checkout@v4, actions/setup-java@v4,
-    gradle/actions/setup-gradle@v4, actions/upload-artifact@v4.
+    Immutable verified release commits for checkout v6, setup-java v5,
+    setup-gradle v5, upload-artifact v6, download-artifact v7, configure-pages v5,
+    upload-pages-artifact v4 and deploy-pages v4. Standard free GitHub runners.
     android-actions/setup-android was REMOVED in P00b (D37).
 
   Gradle 8.13 + AGP 8.9.2 + Kotlin 2.1.0 + KSP 2.1.0-1.0.29 + Room 2.6.1 is the
@@ -1647,7 +1679,8 @@ SECTION 10 - KNOWN ISSUES
       one class reads. If a prompt adds a focus goal to SettingsRepository, move
       it into HealthScoreWeights at the same time or the two will disagree.
   K51  CLOSED in P10. Room v2 stores growthPoints/condition; completed-day scoring and marker/plant writes protect once-only rewards. Repository and ViewModel tests cover repeated reads, stale measurements and preserved usage/focus fields.
-  K52 RELEASE PROTOCOL GAP: SECTION 17 contains the completed first-push record,
+  K52 CLOSED in P33: docs/RELEASING.md and Section 17 define signed release steps.
+      Historical gap record: SECTION 17 contains the completed first-push record,
       not a release milestone schedule. The owner supplied docs/PROMPTS.md during
       takeover, but no additional release milestone protocol. Do not invent a
       published-release schedule or publish unsigned APKs (K7/D34). Per-prompt
@@ -1656,10 +1689,8 @@ SECTION 10 - KNOWN ISSUES
       by a briefly started Gradle invocation using the default cache. It was
       interrupted before tasks completed. Outside-project startup cache changes
       cannot be verified; all subsequent builds use project-local caches.
-  K54 CI warnings, not failures: the v4 GitHub actions target deprecated Node 20
-      (currently forced to Node 24), setup-java v4 is deprecated, and the
-      ubuntu-latest image is moving to Ubuntu 26. P09 CI remains green. Review
-      action/runtime upgrades in the quality pass; no workflow change in P09.
+  K54 CLOSED in P31/P33. Actions use verified immutable current Node24 release
+      commits; runner image changes remain an upstream compatibility concern.
 
   Current lint state: 0 errors, 6 accepted warnings (K11, K12, K46, K58, K60, K63). No baseline.
   Current ktlint state: clean (0 violations).
@@ -1711,12 +1742,12 @@ SECTION 10 - KNOWN ISSUES
 
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P32 complete. P31 bfe8b58 CI 42468119814 SUCCESS. P32 fresh four gates PASS; 362 JVM tests, zero failures/errors/skips, lint zero errors/six accepted warnings. Documentation/notices/gallery ready; P32 CI pending publication. P33 signed GitHub release and Pages remain.
+  P00-P32 complete. P33 locally verified and ready for publication: all four final gates PASS (362 JVM tests), signed optimized production APK/lint PASS, exactly one merged production Activity, signature/alignment and real emulator smoke PASS. Site browser checks PASS at 1440/768/390/320 pixels. Signing secrets configured privately. Main CI, signed GitHub preflight, tag release and Pages verification pending.
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Verify P32 CI, then implement P33 tag-based private signing and professional GitHub Pages. Configure signing secrets through the owner only; never request or print their values. Continue until explicitly stopped.
+  Push P33 readiness commit, verify main CI and Pages, dispatch signed main preflight and verify its artifacts. Only after success create new v0.1.0 tag, check signed-release workflow and download/install/check the public APK. Finish live site links and final memory; continue until stopped.
 
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
@@ -2929,6 +2960,20 @@ SECTION 13 - SESSION LOG
     Not ver.  P32 CI pending push; signed release and Pages pending P33. Physical-device/OEM behavior, real reboot/process death, complete API26 layouts and native Spanish review remain unverified.
     Next      Verify P32 CI, then implement P33 tag-based private signing and professional GitHub Pages. Configure signing secrets through the owner only; never request or print their values. Continue until explicitly stopped.
 
+  SESSION 50 - 2026-11-08 - P33 release preparation checkpoint
+    Did       Completed P32 publication and green CI. Prepared P33 signing build configuration, immutable action workflows, version.properties, Gradle distribution checksum, release notes and release protocol. Created project-local private PKCS12 signing key and Windows DPAPI password record; configured four GitHub secrets without printing values. Added static green screenshot site, theme preview and local image-hash/link guard. Enabled GitHub Actions Pages source.
+    Decided   Owner explicitly authorized agent-managed signing through existing terminal login. Preserve .tools/signing/screengarden-release.keystore and release-password.dpapi, never print, commit or replace them. Website uses unchanged fake-only emulator images, system fonts and no CDN/API. Required licenses preserved. Signed release and Pages only.
+    Verified  P32 four gates PASS; 362 JVM cases, zero failures/errors/skips; lint zero errors/six warnings. P32 CI 42468922433 SUCCESS. P33 ready four-gate report shows all four exit codes zero. Private key validates; all four signing secret names exist. Site local-link/image-hash guard PASS. Gradle SHA256 from official distribution endpoint; workflow action SHAs verified via GitHub refs.
+    Not ver.  P33 format initially failed because Gradle java accessor shadowed java.util.Properties; fixed with explicit import. The saved p33-ready gate report now shows all four PASS; local signed R8/emulator smoke, release workflow and Pages deployment pending. In-app browser preview disabled in Work settings; no browser screenshot taken. Combined site-write/Pages command was blocked by automatic approval review; smaller edits/setup succeeded. Physical-device/OEM/reboot/process-death/Spanish review remain unverified.
+    Next      Resume P33: inspect running processes and p33-ready gate logs before retrying; finish format/four gates, locally signed R8 APK, signature/manifest checks and emulator smoke test. Validate site desktop/mobile layout, commit/push/check CI and Pages, then tag v0.1.0 for signed GitHub Release and verify downloaded APK/site. Do not regenerate or expose the private key.
+
+  SESSION 51 - 2026-11-08 - P33 verified release readiness
+    Did       Finished signed tag release/preflight workflow, static professional screenshot site/Pages workflow, app version properties, official Gradle checksum and private upload/path guard. Release manifest check found unused Glance activities; verified official pinned source and removed them while keeping strict one-Activity enforcement. Added durable .tools ignore and documented key custody.
+    Decided   D91. Manual main preflight runs signed release checks without publishing. Only a version-matching tag can publish. Current screenshots are unchanged fake-only emulator originals; browser checks use headless local Chromium without web screenshots. No new runtime dependency, permission or schema.
+    Verified  Final four gates PASS; 362 JVM tests, zero failures/errors/skips. Signed R8 assembleRelease and lintRelease PASS, zero errors/six accepted warnings. Production merged manifest has MainActivity only, offline and backup disabled; immutable schemas PASS. APK signature and 16KiB ZIP alignment PASS. Actual production onboarding/skip/focus/Home/stop/restart/Insights/Settings smoke PASS. Real Glance widget click PASS after removing unused activities. Four-width browser layouts, theme toggles, FAQ, keyboard/reduced-motion and all images PASS. Site and signing-helper negative guards PASS; secret/whitespace checks clean.
+    Not ver.  Publication/main CI, signed GitHub preflight/tag release, public downloaded APK and Pages still pending. Physical-device/OEM reliability, actual reboot/process death, full current API26 UI, low-end performance, TalkBack listening, portable private-key backup and fluent Spanish review remain unverified. Native widget test first needed the emulator host grant after reinstall; corrected fixture, then PASS.
+    Next      Push P33 readiness commit, verify main CI and Pages, dispatch signed main preflight and verify its artifacts. Only after success create new v0.1.0 tag, check signed-release workflow and download/install/check the public APK. Finish live site links and final memory; continue until stopped.
+
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
   No open questions. All four were answered in P00; the decisions live in
@@ -3220,9 +3265,16 @@ SECTION 16 - CORE DESIGN
 
 
 --------------------------------------------------------------------------------
-SECTION 17 - FIRST PUSH (COMPLETED in P00b - kept as a record)
+SECTION 17 - RELEASE PROTOCOL AND HISTORICAL FIRST PUSH
 --------------------------------------------------------------------------------
-  Done by the agent, not the owner. Reproduced here so a fork can repeat it.
+  Active release protocol: docs/RELEASING.md (P33/D91). Every version must pass
+  gates, applicable emulator/migration checks, secret/privacy/schema checks and
+  main CI before its new immutable matching tag is pushed. Signed workflow must
+  pass before publication; then verify downloaded APK and public Pages links.
+  Refresh changed fake-only screenshots and update memory with actual results.
+  No extra intermediate release schedule is required. GitHub only; no store work.
+
+  Historical first push, completed in P00b, follows for forks:
 
   1. Secret sweep before the first commit:
        grep -rInE "gho_|ghp_|github_pat_|AIza[0-9A-Za-z_-]{20,}|BEGIN .*PRIVATE KEY"

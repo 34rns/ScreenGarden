@@ -7,6 +7,10 @@ That covers the launcher icon, the in-app illustration and the visual assets in
 `app/src/main/res/drawable*/` and `app/src/main/res/mipmap*/`, plus any plant pack
 shipped by the project itself under `assets/plants/`.
 
+The original website leaf icon at `site/icon.svg` is covered by the same art
+license. Site screenshot copies retain the attribution of the emulator captures
+and the underlying ScreenGarden artwork.
+
 The **code** is licensed differently: `GPL-3.0-or-later`, see [LICENSE](LICENSE).
 
 ## Why a separate license for art

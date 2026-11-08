@@ -69,6 +69,10 @@ jobs:
         shell: pwsh
         run: ./scripts/Check-Repository.ps1 -Manifest app/build/intermediates/merged_manifest/debug/processDebugMainManifest/AndroidManifest.xml
 
+      - name: Website links and emulator screenshot originals
+        shell: pwsh
+        run: ./scripts/Check-Site.ps1
+
       - name: Android lint
         run: ./gradlew :app:lintDebug --stacktrace
 

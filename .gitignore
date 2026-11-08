@@ -22,6 +22,9 @@ output.json
 keystore.properties
 signing.properties
 
+# Project-local tooling caches and private release signing material
+.tools/
+
 # OS noise
 .DS_Store
 Thumbs.db
