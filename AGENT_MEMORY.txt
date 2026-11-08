@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 25 / P17 final checks passed; CI pending)
+Last updated: 2026-11-08 (Session 25 / P17 published; CI SUCCESS; next P18)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -1020,7 +1020,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P16 are published and verified; P17 local checks pass, CI pending. P04b has only the
+  Sequencing note: P00-P17 are published and verified; P18 is next. P04b has only the
   Badge implementation left, owned by P18.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
@@ -1402,7 +1402,7 @@ SECTION 10 - KNOWN ISSUES
   P16's two native reminder tests and P14's service tests remain recorded.
   Seven final fake-only sleep-garden screenshots reviewed: light/dark/AMOLED,
   1.3x text, forced RTL, no data and no permission. No real-data screenshots.
-  CI: P16 c674f35 run 42431608307 SUCCESS; P17 pending publication.
+  CI: P17 86aca9a run 42433264065 SUCCESS; all four quality steps green.
   No signed release or Pages site exists yet.
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
@@ -1419,8 +1419,8 @@ SECTION 10 - KNOWN ISSUES
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P16 are published and verified; P16 c674f35 CI 42431608307 SUCCESS.
-  P17 completed locally: measured wind-down usage feeds the existing smooth score;
+  P00-P17 are published and verified; P17 86aca9a CI 42433264065 SUCCESS.
+  P17 complete and published: measured wind-down usage feeds the existing smooth score;
   sleep garden opens within the stored window and returns to daytime outside it.
   Static moonlit plot uses dark tokens, stops idle motion, retains plants/focus/
   details and missing-data/access explanations. Clock updates only while visible.
@@ -1430,20 +1430,20 @@ SECTION 11 - CURRENT STATUS
   lint 0 errors/4 accepted warnings, style/debug build pass. Six API 35 migration/
   real-route tests PASS. Seven fake-only screenshots reviewed and added to README.
   Secret/manifest/schema/whitespace checks PASS; no permission/dependency added.
-  P17 commit/push/CI pending at this update. No half-done P18 feature files.
+  P17 code/screenshots/memory committed and pushed; GitHub CI SUCCESS. No half-done P18 files.
   No signed APK release or Pages site. GitHub only (D69); video not available.
   Codebuff request remains D74; no published history was rewritten.
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Publish P17 and confirm CI, then start P18 streaks, compassion days and badges.
+  Start P18 streaks, compassion days and badges from docs/PROMPTS.md.
   P18 needs a new Room migration/test for compassion-day data; preserve v1-v4
   schemas and all active focus/garden data. Complete BadgeRepository (P04b).
   Continue remaining prompts in order with gates, memory, commit/push/CI and
   fake emulator screenshots. Final goal remains signed GitHub release and Pages;
   no F-Droid. P33 signing requires human-owned secrets, never their values here.
-  This session ends after P17 publication because context is long; next session
+  P17 is finished; context is long, so continue in a fresh session. That session
   reads this file and docs/PROMPTS.md. No P18 feature has been started.
 
 --------------------------------------------------------------------------------
@@ -2177,7 +2177,9 @@ SECTION 13 - SESSION LOG
     Not ver.  API 26 bedtime rendering, other device sizes, physical-device
               reliability/performance, optional evening reminder, signed release
               and Pages. No real device used. Video not available (Session 12).
-    Next      Commit/push P17, confirm CI, then P18 in a fresh session.
+    CI        P17 86aca9a pushed; 42433264065 SUCCESS, all four quality steps.
+              https://github.com/34rns/ScreenGarden/actions/runs/42433264065
+    Next      P18 in a fresh session. Working tree has no unfinished feature work.
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
