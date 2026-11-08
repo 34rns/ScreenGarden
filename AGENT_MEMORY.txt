@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 28 / P19 complete)
+Last updated: 2026-11-08 (Session 30 / P20 publication)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -105,7 +105,7 @@ SECTION 3 - TECH STACK
   Navigation    androidx.navigation:navigation-compose 2.8.5, single NavHost
   Architecture  UI (Compose screens) -> domain -> data (local only)
   DI            Manual dependency injection (AppContainer). No Hilt.
-  Persistence   Room 2.6.1 (KSP), schema v5, 6 tables, export + migrations.
+  Persistence   Room 2.6.1 (KSP), schema v6, 7 tables, export + migrations.
                 Preferences DataStore 1.1.2 behind SettingsRepository (P04).
   Async         Kotlin coroutines + Flow (Room DAOs expose Flow queries).
                 WorkManager 2.10.0 runs the daily usage sync (P06).
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         281 JVM tests; 7 migration cases green on API 35 (P18)
+  Tests         292 JVM tests; 9 migration cases green on API 35 (P20)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -218,7 +218,8 @@ SECTION 4 - FOLDER LAYOUT
       |       |-- 2.json (P10: bounded usage and persistent garden)
       |       |-- 3.json (P12: tagged sessions, status and timer checkpoints)
       |       |-- 4.json (P17: nullable measured bedtime minutes)
-      |       `-- 5.json (P18: compassion-day marker)
+      |       |-- 5.json (P18: compassion-day marker)
+      |       `-- 6.json (P20: actual plant snapshots)
       `-- src/
           |-- main/
           |   |-- AndroidManifest.xml   documented permissions, allowBackup=false
@@ -250,6 +251,8 @@ SECTION 4 - FOLDER LAYOUT
           |       |-- data/repo/HabitsRepository.kt atomic rest quota and milestone reads (P18)
           |       |-- data/repo/BadgeRepositoryImpl.kt permanent unlock timestamps (P18)
           |       |-- data/repo/InsightsRepository.kt stored totals and recent hourly reads (P19)
+          |       |-- data/repo/GardenHistoryRepository.kt actual stored snapshots + versioned payload (P20)
+          |       |-- domain/insights/WeeklyReflection.kt local seven-day templates (P20)
           |       |-- domain/insights/             honest summaries and store boundary (P19)
           |       `-- ui/  theme/, navigation/, components/, screens/,
           |                 onboarding/ (OnboardingScreen + GoalSetup, P07),
@@ -985,6 +988,17 @@ SECTION 6 - DECISIONS
       tile with minutes; readable daily values complement chart descriptions.
       Permission, empty, partial and retry states are explicit. No new schema,
       dependency or permission. Debug demos contain fake-only consistent totals.
+  D78 P20 REFLECTIONS AND GARDEN HISTORY.
+      Weekly means the last seven local days, including today, labelled explicitly.
+      Time versus the current goal and best score exclude missing/unbounded/off
+      days; known saved focus minutes still count on those days. Applied scores
+      remain frozen. Suggestions are local strings, never AI/network requests.
+      Room v6 adds only garden_history with LocalDay key, actual capture UTC,
+      score and a versioned JSON plant payload. Insert once in the completed-day
+      growth transaction, after plants update; old layouts are not reconstructed.
+      Calendar Monday weeks/months show the latest actual frame in each period;
+      empty periods are absent and malformed frames are explicitly unavailable.
+      Static history art reuses GardenPlantArt; no animation, permission or dependency.
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
@@ -1038,7 +1052,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
                   visible-clock policy; 244 JVM tests + 6 emulator checks [new]
   P18     done    Streaks + badges, compassion-day quota and Room v5 [1.5 part]
   P19     done    Insights charts, safe summaries and recent hourly evidence [2.3]
-  P20     todo    Weekly reflection + timeline [new]
+  P20     done    Local weekly reflection + actual stored garden timeline [new]
   P21     todo    Day/night, seasons, weather visuals [new]
   P22     todo    Themes (incl. AMOLED toggle; removes D35's hook) [3.1]
   P23     todo    Widget + Quick Settings tile [new]
@@ -1058,8 +1072,8 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P19 are implemented and locally verified; see CURRENT STATUS for CI.
-  P04b repositories are complete, including BadgeRepository in P18. P20 is next.
+  Sequencing note: P00-P20 are implemented and locally verified; see CURRENT STATUS for CI.
+  P04b repositories are complete, including BadgeRepository in P18. P21 is next.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
 --------------------------------------------------------------------------------
@@ -1435,7 +1449,7 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 281 JVM tests, zero failures/errors/skips. Four final P19
+  Current test state: 292 JVM tests, zero failures/errors/skips. Four final P20
   gates PASS; lint zero errors/four accepted warnings. P18's seven API 35
   migration cases PASS through v5; P19 changes no schema. Real Insights tab,
   day/week/month ranges and readable daily values PASS. Ten final fake-only
@@ -1462,17 +1476,20 @@ SECTION 10 - KNOWN ISSUES
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
   P00-P18 are published; P18 b082ea9 CI 42435800292 SUCCESS.
-  P19 complete locally: Canvas Insights, bounded daily summaries, top apps,
+  P19 published and verified: Canvas Insights, bounded daily summaries, top apps,
   pickups, honest recent-hour heatmap, single ViewModel state and retry/access
   states. Fresh four gates PASS; 281 JVM tests, zero failures/errors/skips;
   lint zero errors/four accepted warnings. Real emulator ranges/values PASS.
   Ten fake-only captures reviewed; RTL regression fails before and passes
-  after content-direction fix. P19 commit/push/CI is the immediate final step.
-  No dependency/permission/schema added. No signed release or Pages yet.
+  after content-direction fix. P19 2f66282 CI 42438711900 SUCCESS.
+  P20 implements the additive v6 snapshot table; 292 JVM and 9 API 35 migration
+  tests PASS. Four gates PASS; actual reflection/history navigation PASS and 20
+  fake-only captures reviewed. Publication CI pending.
+  No signed release or Pages yet.
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Publish P19 and confirm CI; then P20 weekly reflection and garden history.
+  Confirm P20 publication CI, then P21 day/night, seasons and weather.
   Continue P20-P33 in order, GitHub only, until explicitly stopped by the owner.
   Save checkpoints and use compaction to continue; do not stop at task/context
   milestones. Signing may require manual human setup in P33; never request,
@@ -2267,6 +2284,38 @@ SECTION 13 - SESSION LOG
               Pages. Video not available (Session 12). Null emulator UI roots
               retry with fresh dump paths; only verified final images published.
     Next      Commit/push/CI P19, then P20-P33 continuously until stopped.
+  SESSION 29 - 2026-11-08 - P20 reflection and history checkpoint
+    Did       P19 2f66282 CI 42438711900 SUCCESS. Added local weekly reflection,
+              actual insert-once snapshots, weekly/monthly timeline, single states,
+              navigation, fake demos, Room v6 Migration and immutable 6.json.
+    Decided   D78. Missing/off days do not inflate saved time; known focus counts.
+              Snapshot time is when growth is applied, not an invented past layout.
+              Existing Material palette and static plant art; no new dependency.
+    Verified  Four local gates PASS: 292 JVM tests, zero failures/errors/skips;
+              lint zero errors/four accepted warnings. Nine API 35 migration cases
+              PASS, preserving all existing tables and upgrade chains to v6.
+              Domain tests failed before implementation; snapshot test failed before
+              wiring its transaction. Constructor test typos corrected before that
+              red run. Native navigation and twenty screenshots are in progress.
+    Not ver.  Final visual/capture review and publication/CI; physical-device
+              behavior, new sizes/API 26 (P31), signed APK/Pages. No real screenshot.
+    Next      Finish P20 navigation/screenshots/memory/push/CI; then P21-P33.
+  SESSION 30 - 2026-11-08 - P20 resumed verification and publication
+    Did       Resumed the saved implementation; read complete memory and fetched
+              origin, no divergence. Reviewed snapshot transactions, migration,
+              reflection coverage, navigation evidence and final emulator images.
+    Decided   Preserve D69/D74/D78. No new dependency or permission. Existing
+              published co-author history stays intact; no current product credit.
+    Verified  Required four gate invocations PASS (unchanged outputs up-to-date).
+              Reports show 292 JVM tests, zero failures/errors/skips; lint zero
+              errors/four accepted warnings. Saved exact-source emulator evidence:
+              nine migration tests PASS; reflection/history/month/back routes PASS.
+              Twenty fake-only images reviewed; final dark reflection recapture
+              shows the whole card. No schema 1-5 edits, no real-device capture.
+    Not ver.  P20 CI pending push. API 26/new-size rendering and physical-device
+              battery reliability remain P31; signed release and Pages remain P33.
+              Optional video not available (Session 12). No new retry needed.
+    Next      P20 push/CI, then P21-P33 continuously until the owner stops work.
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
@@ -2289,7 +2338,7 @@ SECTION 14 - OPEN QUESTIONS
 
 
 --------------------------------------------------------------------------------
-SECTION 15 - DATA MODEL (Room schema, version 5)
+SECTION 15 - DATA MODEL (Room schema, version 6)
 --------------------------------------------------------------------------------
   Source of truth: app/src/main/java/com/screengarden/app/data/local/.
   Every timestamp is epoch millis UTC (D20). Every `dayStartUtcMillis` value is
@@ -2348,6 +2397,14 @@ SECTION 15 - DATA MODEL (Room schema, version 5)
   badges  (Badge)                                PK: badgeKey
     unlockedAtUtcMillis    Long    row exists only once earned
 
+  garden_history  (GardenHistory, P20/v6)         PK: dayStartUtcMillis
+    capturedAtUtcMillis    Long   actual time the completed-day growth was applied
+    score                  Int    that completed day's score
+    plantsJson             String version 1 JSON of actual plants at capture time
+    Insert once in the same transaction as plants and gardenApplied. No old frame
+    is backfilled; weekly/monthly views use the latest actual frame in each period.
+    Snapshot payload preserves identity, species, growth, health, condition and
+    UTC planted/focus timestamps. Corrupt/future payloads are reported unavailable.
   Rules for changing the schema
     1. Bump DATABASE_VERSION in ScreenGardenDatabase.kt.
     2. Add a Migration object to ScreenGardenDatabase.MIGRATIONS (never edit an

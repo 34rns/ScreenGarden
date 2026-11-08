@@ -6,6 +6,7 @@ import androidx.room.withTransaction
 import com.screengarden.app.data.local.ScreenGardenDatabase
 import com.screengarden.app.data.local.entity.Badge
 import com.screengarden.app.data.local.entity.DailyStat
+import com.screengarden.app.data.local.entity.GardenHistory
 import com.screengarden.app.data.local.entity.Plant as PlantEntity
 import com.screengarden.app.domain.garden.GardenDay
 import com.screengarden.app.domain.garden.GardenDayRecord
@@ -93,6 +94,14 @@ class GardenRepositoryImpl(private val database: ScreenGardenDatabase) :
             previousStages[plant.id]?.let { it != plant.stage } == true
         }
         outcome.plants.forEach { plants.upsert(it.toEntity()) }
+        database.gardenHistoryDao().insertIfAbsent(
+            GardenHistory(
+                day.dayStartUtcMillis,
+                System.currentTimeMillis(),
+                score,
+                GardenHistoryCodec.encode(outcome.plants)
+            )
+        )
         database.recordPlantBadges(previousPlants, outcome.plants, System.currentTimeMillis())
         if (day.streakDays >=
             7

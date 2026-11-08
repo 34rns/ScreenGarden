@@ -26,10 +26,14 @@ import com.screengarden.app.domain.habits.EarnedBadge
 import com.screengarden.app.domain.habits.HabitsSnapshot
 import com.screengarden.app.domain.habits.Streaks
 import com.screengarden.app.domain.insights.AppTime
+import com.screengarden.app.domain.insights.GardenHistory
+import com.screengarden.app.domain.insights.GardenHistoryFrame
+import com.screengarden.app.domain.insights.HistoryPeriod
 import com.screengarden.app.domain.insights.HourlyDay
 import com.screengarden.app.domain.insights.InsightsPeriod
 import com.screengarden.app.domain.insights.InsightsSnapshot
 import com.screengarden.app.domain.insights.InsightsSummary
+import com.screengarden.app.domain.insights.Reflections
 import com.screengarden.app.domain.limits.AppLimitRule
 import com.screengarden.app.domain.limits.LaunchableApp
 import com.screengarden.app.domain.notifications.Nudge
@@ -44,6 +48,8 @@ import com.screengarden.app.ui.screens.garden.GardenScreen
 import com.screengarden.app.ui.screens.garden.GardenUiState
 import com.screengarden.app.ui.screens.habits.HabitsScreen
 import com.screengarden.app.ui.screens.habits.HabitsUiState
+import com.screengarden.app.ui.screens.insights.GardenHistoryScreen
+import com.screengarden.app.ui.screens.insights.GardenHistoryUiState
 import com.screengarden.app.ui.screens.insights.InsightsScreen
 import com.screengarden.app.ui.screens.insights.InsightsUiState
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
@@ -69,6 +75,56 @@ object DebugCatalog {
 
     /** The requested debug destination, or null when [requested] names none. */
     fun destination(requested: String?, context: Context): DebugDestination? {
+        if (requested in setOf("history_demo", "history_months_demo", "history_empty_demo", "history_rtl_demo")) {
+            val zone = ZoneId.systemDefault()
+            val dates = listOf("2026-09-25", "2026-10-12", "2026-10-19", "2026-10-27", "2026-11-02", "2026-11-07")
+            val frames = if (requested == "history_empty_demo") {
+                emptyList()
+            } else {
+                dates.mapIndexed { index, date ->
+                    val day = LocalDay.startOfDay(LocalDate.parse(date), zone)
+                    GardenHistoryFrame(
+                        day,
+                        day + 86_400_000L,
+                        80 + index,
+                        listOf(
+                            Plant("demo-flower", "flower", 10 + index * 9, 80, plantedAtUtcMillis = day),
+                            Plant("demo-bonsai", "bonsai", index * 9, 72, plantedAtUtcMillis = day),
+                            Plant("demo-cactus", "cactus", index * 8, 65, plantedAtUtcMillis = day)
+                        )
+                    )
+                }
+            }
+            return DebugDestination(requireNotNull(requested), ScreenGardenDestination.Insights) {
+                var period by remember {
+                    mutableStateOf(
+                        if (requested == "history_months_demo") {
+                            HistoryPeriod.MONTH
+                        } else {
+                            HistoryPeriod.WEEK
+                        }
+                    )
+                }
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides if (requested == "history_rtl_demo") {
+                        LayoutDirection.Rtl
+                    } else {
+                        LocalLayoutDirection.current
+                    }
+                ) {
+                    GardenHistoryScreen(
+                        GardenHistoryUiState(
+                            loading = false,
+                            period = period,
+                            entries = GardenHistory.group(frames, period, zone)
+                        ),
+                        { period = it },
+                        {},
+                        {}
+                    )
+                }
+            }
+        }
         if (requested in setOf(
                 "insights_demo",
                 "insights_empty_demo",
@@ -131,7 +187,8 @@ object DebugCatalog {
                             period = period,
                             hasUsageAccess = requested != "insights_permission_demo",
                             summary = InsightsSummary.build(snapshot, period, today, 180, 80, zone),
-                            hours = hours
+                            hours = hours,
+                            reflection = Reflections.build(snapshot, today, 180, 80, zone)
                         ),
                         { period = it },
                         {},

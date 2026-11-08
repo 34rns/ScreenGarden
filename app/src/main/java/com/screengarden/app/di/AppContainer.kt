@@ -23,6 +23,7 @@ import com.screengarden.app.data.repo.BadgeRepositoryImpl
 import com.screengarden.app.data.repo.DailyStatRepository
 import com.screengarden.app.data.repo.DailyStatRepositoryImpl
 import com.screengarden.app.data.repo.FocusSessionRepositoryImpl
+import com.screengarden.app.data.repo.GardenHistoryRepository
 import com.screengarden.app.data.repo.GardenRepositoryImpl
 import com.screengarden.app.data.repo.HabitsRepository
 import com.screengarden.app.data.repo.InsightsRepository
@@ -38,6 +39,7 @@ import com.screengarden.app.data.work.UsageSyncScheduler
 import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenViewModel
 import com.screengarden.app.ui.screens.habits.HabitsViewModel
+import com.screengarden.app.ui.screens.insights.GardenHistoryViewModel
 import com.screengarden.app.ui.screens.insights.InsightsViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
 import java.time.LocalTime
@@ -96,6 +98,10 @@ class AppContainer(context: Context) {
     }
 
     val gardenRepository: GardenRepositoryImpl by lazy { GardenRepositoryImpl(database) }
+    val gardenHistoryRepository: GardenHistoryRepository by lazy {
+        GardenHistoryRepository(database.gardenHistoryDao())
+    }
+    fun gardenHistoryViewModel(): GardenHistoryViewModel = GardenHistoryViewModel(gardenHistoryRepository)
     val badgeRepository: BadgeRepositoryImpl by lazy { BadgeRepositoryImpl(database.badgeDao()) }
     val habitsRepository: HabitsRepository by lazy { HabitsRepository(database) }
     val insightsRepository: InsightsRepository by lazy {

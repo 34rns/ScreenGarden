@@ -48,7 +48,8 @@ fun InsightsScreen(
     onPeriod: (InsightsPeriod) -> Unit,
     onRefresh: () -> Unit,
     onGrantUsage: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onHistory: () -> Unit = {}
 ) {
     var valuesVisible by rememberSaveable(state.period) { mutableStateOf(false) }
     val unknown = stringResource(R.string.insights_unknown)
@@ -144,6 +145,7 @@ fun InsightsScreen(
                 )
                 Text(stringResource(R.string.insights_empty_copy))
             }
+            WeeklyReflectionCard(state.reflection, onHistory)
             InsightsCharts(state)
             TextButton({ valuesVisible = !valuesVisible }) {
                 Text(

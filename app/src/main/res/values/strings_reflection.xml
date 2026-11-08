@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reflection_title">A little reflection</string>
+    <plurals name="reflection_coverage">
+        <item quantity="one">Last seven days: %1$d day with measured usage. Off days are excluded.</item>
+        <item quantity="other">Last seven days: %1$d days with measured usage. Off days are excluded.</item>
+    </plurals>
+    <string name="reflection_saved">You spent %1$s less than your current goal across the measured days.</string>
+    <string name="reflection_over">You spent %1$s more than your current goal across the measured days. There is room to begin again.</string>
+    <string name="reflection_on_goal">Your measured time matched your current goal.</string>
+    <string name="reflection_unknown">Time saved is not known yet. Missing measurements are never counted as zero.</string>
+    <string name="reflection_best">Highest recorded score: %1$s, %2$d / 100.</string>
+    <string name="reflection_focus">Saved focus time in the last seven days: %1$s.</string>
+    <string name="reflection_begin">One small step: let a day of measurements settle here, or start a short focus session.</string>
+    <string name="reflection_wind_down">One small idea: leave a little space away from your phone before bed.</string>
+    <string name="reflection_pause">One small idea: take a quiet pause before your next phone check.</string>
+    <string name="reflection_try_focus">One small idea: try a short focus session for something you enjoy.</string>
+    <string name="reflection_keep_going">Keep the rhythm that feels comfortable. Your garden has time.</string>
+    <string name="history_title">Garden history</string>
+    <string name="history_back">Back to Insights</string>
+    <string name="history_copy">A snapshot is saved when a completed day grows your garden. Each period shows its latest saved garden. Earlier layouts were not recorded; missing snapshots stay unknown.</string>
+    <string name="history_weeks">Weeks</string>
+    <string name="history_months">Months</string>
+    <string name="history_week">Week of %1$s</string>
+    <string name="history_month">Month of %1$s</string>
+    <plurals name="history_recorded_days">
+        <item quantity="one">%1$d saved day. Latest score: %2$d / 100.</item>
+        <item quantity="other">%1$d saved days. Latest score: %2$d / 100.</item>
+    </plurals>
+    <plurals name="history_unreadable">
+        <item quantity="one">%1$d saved snapshot could not be read. Other snapshots are still here.</item>
+        <item quantity="other">%1$d saved snapshots could not be read. Other snapshots are still here.</item>
+    </plurals>
+    <string name="history_empty">Your first snapshot will appear after a measured day grows your garden. Your present garden is safe.</string>
+    <string name="history_empty_plot">This saved plot has no plants.</string>
+    <string name="history_error">Saved gardens could not be read. Try refreshing.</string>
+    <string name="history_plant">%1$s · %2$s · Health %3$d / 100</string>
+    <string name="history_captured">Captured when growth was applied: %1$s.</string>
+</resources>

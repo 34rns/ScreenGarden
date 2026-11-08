@@ -81,6 +81,12 @@ Insights, with fake debug-only data and explicit coverage:
 | --- | --- | --- |
 | <img src="docs/screenshots/insights_day.png" width="200" alt="Today's measured screen time"> | <img src="docs/screenshots/insights_empty.png" width="200" alt="An honest empty history with no invented totals"> | <img src="docs/screenshots/insights_permission.png" width="200" alt="Saved Insights remain visible after Usage access is switched off"> |
 
+Local reflections and saved gardens, shown with fake debug-only data:
+
+| Weekly reflection | Garden history | Month snapshots |
+| --- | --- | --- |
+| <img src="docs/screenshots/reflection_light.png" width="220" alt="A calm local weekly reflection with measured coverage"> | <img src="docs/screenshots/history_light.png" width="220" alt="Actual saved plant stages in the garden timeline"> | <img src="docs/screenshots/history_months.png" width="220" alt="Latest stored snapshot for each month"> |
+
 ## Privacy promise
 
 - **No internet permission.** The app cannot make a network request, even by
@@ -99,8 +105,14 @@ by intention. A pull request that adds network access or telemetry is rejected.
 - Single-activity Jetpack Compose app (Material 3) with a four-tab navigation
   shell: Garden, Focus, Insights, Settings.
 - Calm green palette with light, dark and true-black (AMOLED) schemes.
-- A local Room database (six tables for daily stats, app usage, limits, plants,
-  focus sessions and badges), covered by unit tests.
+- A local Room database (seven tables for daily stats, app usage, limits, plants,
+  focus sessions, badges and garden snapshots), covered by unit tests.
+- A reflection for the last seven days, made from local templates: time versus
+  your current goal, best score, saved focus minutes and one gentle idea.
+  Missing measurements and compassion days never inflate time saved.
+- A garden timeline with weekly/monthly views of actual saved plant snapshots.
+  A snapshot is saved once when completed-day growth is applied. Earlier layouts
+  were not recorded and are never reconstructed or guessed.
 - First-run privacy and permission explanations, goal setup and optional
   notifications permission.
 - Preferences DataStore for goals and light/dark/AMOLED theme selection.

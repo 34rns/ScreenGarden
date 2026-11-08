@@ -22,7 +22,8 @@ fun ScreenGardenNavHost(
     focusContent: @Composable () -> Unit,
     limitsContent: @Composable (() -> Unit) -> Unit,
     habitsContent: @Composable (() -> Unit) -> Unit = { _ -> },
-    insightsContent: @Composable () -> Unit = { }
+    insightsContent: @Composable (() -> Unit) -> Unit = { _ -> },
+    historyContent: @Composable (() -> Unit) -> Unit = { _ -> }
 ) {
     NavHost(
         navController = navController,
@@ -36,7 +37,7 @@ fun ScreenGardenNavHost(
             focusContent()
         }
         composable(ScreenGardenDestination.Insights.route) {
-            insightsContent()
+            insightsContent { navController.navigate("garden_history") { launchSingleTop = true } }
         }
         composable(ScreenGardenDestination.Settings.route) {
             SettingsScreen(
@@ -49,6 +50,9 @@ fun ScreenGardenNavHost(
         }
         composable("milestones") {
             habitsContent { navController.popBackStack() }
+        }
+        composable("garden_history") {
+            historyContent { navController.popBackStack() }
         }
         if (debugDestination != null) {
             composable(debugDestination.route) {

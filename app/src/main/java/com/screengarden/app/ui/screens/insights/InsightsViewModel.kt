@@ -10,6 +10,8 @@ import com.screengarden.app.domain.insights.InsightSummary
 import com.screengarden.app.domain.insights.InsightsPeriod
 import com.screengarden.app.domain.insights.InsightsStore
 import com.screengarden.app.domain.insights.InsightsSummary
+import com.screengarden.app.domain.insights.Reflections
+import com.screengarden.app.domain.insights.WeeklyReflection
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -38,7 +40,8 @@ data class InsightsUiState(
     val hours: List<HourlyDay> = emptyList(),
     val hasUsageAccess: Boolean = false,
     val error: Boolean = false,
-    val refreshError: Boolean = false
+    val refreshError: Boolean = false,
+    val reflection: WeeklyReflection = WeeklyReflection()
 )
 
 /** One observable state; range toggles reuse measurements and refresh only on explicit/visible entry. */
@@ -78,13 +81,19 @@ class InsightsViewModel(
                 }
                 combine(snapshots, dailyGoalMs, pickupGoal, period) { snapshot, goal, pickups, range ->
                     val minutes = (goal / 60_000L).coerceIn(1L, Int.MAX_VALUE.toLong()).toInt()
-                    Triple(InsightsSummary.build(snapshot, range, today.value, minutes, pickups, zone), minutes, range)
-                }.collect { (summary, goal, range) ->
+                    Triple(
+                        InsightsSummary.build(snapshot, range, today.value, minutes, pickups, zone) to
+                            Reflections.build(snapshot, today.value, minutes, pickups, zone),
+                        minutes,
+                        range
+                    )
+                }.collect { (data, goal, range) ->
                     state.update {
                         it.copy(
                             loading = false,
                             error = false,
-                            summary = summary,
+                            summary = data.first,
+                            reflection = data.second,
                             goalMinutes = goal,
                             period = range
                         )

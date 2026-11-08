@@ -37,6 +37,8 @@ import com.screengarden.app.ui.screens.garden.GardenScreen
 import com.screengarden.app.ui.screens.garden.GardenViewModel
 import com.screengarden.app.ui.screens.habits.HabitsScreen
 import com.screengarden.app.ui.screens.habits.HabitsViewModel
+import com.screengarden.app.ui.screens.insights.GardenHistoryScreen
+import com.screengarden.app.ui.screens.insights.GardenHistoryViewModel
 import com.screengarden.app.ui.screens.insights.InsightsScreen
 import com.screengarden.app.ui.screens.insights.InsightsViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
@@ -161,7 +163,15 @@ class MainActivity : ComponentActivity() {
                     val state by habits.uiState.collectAsStateWithLifecycle()
                     HabitsScreen(state, habits::setCompassionDay, habits::setThreshold, habits::setMonthlyLimit, back)
                 }
-                val insightsContent: @androidx.compose.runtime.Composable () -> Unit = {
+                val historyContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { back ->
+                    val factory = remember(container) {
+                        viewModelFactory { initializer { container.gardenHistoryViewModel() } }
+                    }
+                    val history: GardenHistoryViewModel = viewModel(factory = factory)
+                    val state by history.uiState.collectAsStateWithLifecycle()
+                    GardenHistoryScreen(state, history::setPeriod, history::refresh, back)
+                }
+                val insightsContent: @androidx.compose.runtime.Composable (() -> Unit) -> Unit = { history ->
                     val factory = remember(container) {
                         viewModelFactory { initializer { container.insightsViewModel() } }
                     }
@@ -175,7 +185,8 @@ class MainActivity : ComponentActivity() {
                         state,
                         insights::setPeriod,
                         insights::refresh,
-                        { startActivity(UsageAccess.settingsIntent()) }
+                        { startActivity(UsageAccess.settingsIntent()) },
+                        onHistory = history
                     )
                 }
                 when {
@@ -187,7 +198,8 @@ class MainActivity : ComponentActivity() {
                         focusContent = focusContent,
                         limitsContent = limitsContent,
                         habitsContent = habitsContent,
-                        insightsContent = insightsContent
+                        insightsContent = insightsContent,
+                        historyContent = historyContent
                     )
                     onboardingDone == null -> Box(
                         modifier = Modifier
@@ -227,7 +239,8 @@ class MainActivity : ComponentActivity() {
                         focusContent = focusContent,
                         limitsContent = limitsContent,
                         habitsContent = habitsContent,
-                        insightsContent = insightsContent
+                        insightsContent = insightsContent,
+                        historyContent = historyContent
                     )
                 }
             }
