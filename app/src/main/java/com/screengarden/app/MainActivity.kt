@@ -49,6 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.screengarden.app.data.backup.BackupDocuments
+import com.screengarden.app.data.focus.isFocusBlockingGranted
 import com.screengarden.app.data.settings.SettingsDefaults
 import com.screengarden.app.data.usage.UsageAccess
 import com.screengarden.app.debug.DebugCatalog
@@ -56,6 +57,8 @@ import com.screengarden.app.domain.model.OnboardingChoices
 import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.ui.navigation.ScreenGardenApp
 import com.screengarden.app.ui.onboarding.OnboardingScreen
+import com.screengarden.app.ui.screens.focus.FocusBlockingScreen
+import com.screengarden.app.ui.screens.focus.FocusBlockingViewModel
 import com.screengarden.app.ui.screens.focus.FocusScreen
 import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenScreen
@@ -253,6 +256,26 @@ class MainActivity : ComponentActivity() {
                                         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                                         "package:$packageName".toUri()
                                     )
+                                )
+                            },
+                            blockingContent = { back ->
+                                val blockFactory = remember(container) {
+                                    viewModelFactory { initializer { container.focusBlockingViewModel() } }
+                                }
+                                val blocking: FocusBlockingViewModel = viewModel(factory = blockFactory)
+                                val blockState by blocking.uiState.collectAsStateWithLifecycle()
+                                var blockGranted by remember { mutableStateOf(isFocusBlockingGranted(appContext)) }
+                                LifecycleResumeEffect(blocking) {
+                                    blockGranted = isFocusBlockingGranted(appContext)
+                                    onPauseOrDispose { }
+                                }
+                                FocusBlockingScreen(
+                                    blockState,
+                                    blockGranted,
+                                    blocking::save,
+                                    { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
+                                    blocking::refresh,
+                                    back
                                 )
                             },
                             backupContent = {

@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 43 / P28; continuous batch)
+Last updated: 2026-11-08 (Session 45 / P29; continuous batch)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         349 JVM tests; 11 migration cases green on API 35 (P26)
+  Tests         360 JVM tests; 11 migration cases green on API 35 (P26)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -1148,6 +1148,29 @@ SECTION 6 - DECISIONS
       New files: res/values-es/{strings,strings_features}.xml, res/xml/locale_config.xml,
       debug/res/values-es/strings.xml and ui/LocalizationTest.kt. Debug onboarding_demo
       has fake choices and no persistence, and uses the first-launch layout. CONTRIBUTING explains translation checks.
+  D87 P29 OPTIONAL BLOCKING (implemented and verified on the emulator).
+      Optional package-only accessibility events redirect blocked launchable apps
+      to Home during a fresh active focus session. Content retrieval stays false:
+      never read text/window trees, persist events, log packages or collect what
+      the service sees. Own app, Home, Settings, system UI and calling handlers
+      always pass; an explicit allow list overrides the block list. Off by default.
+      Polling retains existing gentle detection but cannot reliably redirect under
+      Android background launch restrictions. An overlay needs another broad grant
+      and continuous polling; choose no overlay and the restricted event service.
+      Permission explanation precedes Android Settings; the owner opts in separately.
+      One stable DataStore string key focus_blocking stores validated enabled/blocked/
+      allowed policy through FocusBlockStore, in the existing process-wide store.
+      Enabling also sets gentle_mode=false, disabling true. Backup v2 includes the
+      policy; v1 imports add defaults and restored policies stay off until re-enabled.
+      No Room schema, paid tool, runtime dependency, account or internet. Official
+      AccessibilityService APIs and canRetrieveWindowContent checked in Android docs.
+      Google Play non-accessibility-service policy risk is documented; GitHub only.
+  P29 additions: domain/focus/FocusBlockStore.kt; data/focus/FocusBlockPreferences.kt
+    and FocusBlockingService.kt; ui/screens/focus/FocusBlockingScreen/ViewModel;
+    res/xml/focus_blocking_service.xml; values + values-es/strings_blocking.xml;
+    debug FocusBlockingDemoScreen, four JVM test files and native service test.
+    docs/FOCUS_BLOCKING.md and seven fake-only emulator screenshots.
+
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
   From P00 on, work is identified by PROMPT NUMBER. The old dotted IDs are kept
@@ -1209,7 +1232,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P26     done   Validated JSON export/import, merge/replace, durable settings recovery [new]
   P27     done    Local manufacturer-first battery help and app-settings action [new]
   P28     done    Spanish, app-locale formatting, wrapping labels and translation guide [new]
-  P29     todo    Opt-in focus blocking [new]
+  P29     done   Opt-in focus blocking [new]
   P30     todo    Live wallpaper [new]
   P31     todo    Quality pass: accessibility, perf, more screen sizes
                   [0.4 DONE in P00b; 3.3 remains]
@@ -1220,7 +1243,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P26 are published; P26 1951ab3 CI 42458504391 SUCCESS. P27 7007e10 CI 42459850865 SUCCESS; P28 final local gates/captures PASS; publish next.
+  Sequencing note: P00-P26 are published; P26 1951ab3 CI 42458504391 SUCCESS. P27 7007e10 CI 42459850865 SUCCESS; P28 7d327d6 CI 42462470291 SUCCESS. P29 started.
   P04b repositories are complete, including BadgeRepository in P18.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
@@ -1351,6 +1374,11 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
 --------------------------------------------------------------------------------
 SECTION 9 - PERMISSIONS
 --------------------------------------------------------------------------------
+  P29 BIND_ACCESSIBILITY_SERVICE protects the optional exported service so only
+  Android can bind; it is not a uses-permission or automatic user grant.
+  Request only typeWindowStateChanged with canRetrieveWindowContent=false.
+  Narrow DIAL visibility identifies calling apps to keep them available.
+
   P26 backup uses SAF CreateDocument/OpenDocument and only the returned URI, no storage permission.
   P24 snapshot export uses Android SAF CreateDocument and only its returned URI.
   No storage-wide permission, FileProvider, automatic sharing or network is added.
@@ -1605,8 +1633,8 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 349 JVM tests, zero failures/errors/skips.
-  Four final gates PASS: 349 JVM tests, zero failures/errors/skips; lint zero errors/five accepted warnings. Eleven API35 migrations PASS through v7. Native picker save/cancel/preview, merge and double-confirmed replace PASS. Disk-failure receipt recovery PASS. Old schemas unchanged; offline manifest/backup disabled; secret and whitespace checks PASS.
+  Current test state: 360 JVM tests, zero failures/errors/skips.
+  Final four gates PASS; 360 JVM tests, zero failures/errors/skips; lint zero errors/six accepted warnings. Native API35 permission/redirect/allow/disable/end checks PASS. Fake-only screenshots reviewed. Offline manifest, unchanged schemas, secret and whitespace checks PASS.
   No signed GitHub release or Pages exists yet.
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
@@ -1642,22 +1670,21 @@ SECTION 10 - KNOWN ISSUES
   K64 Spanish resource coverage/formatting is verified, but native-speaker review
       and manufacturer-specific language menus are unverified. Further languages
       fall back to English; forced RTL demonstrates layout, not Arabic translation.
+  K65 Optional blocking is a voluntary aid; Android/OEM event delays and real
+      physical-device service reliability remain unverified. Lists cap at 256
+      entries each. The same emulator verifies redirect, allow, disable and end.
+
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P27 published; P27 7007e10 CI 42459850865 SUCCESS. P28 complete locally:
-  Spanish for all 363 current main and 30 debug resources, required plural forms,
-  Android en/es language metadata, configuration-aware dates/numbers, wrapping
-  goal labels and contributor instructions. Four final gates PASS: 349 JVM tests,
-  zero failures/errors/skips; lint zero errors/six accepted warnings. Native
-  language changes and fake-only captures reviewed, including large text/RTL and
-  updated introduction. P28 publication/CI next. No signed release or Pages yet.
+  P00-P29 implemented. P29 final publication and CI verification pending.
+  Optional blocking is off by default, package-only, and protected by an
+  explicit Android grant. GitHub-only release and Pages remain P33.
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Publish P28/check CI, then P29-P33 until explicitly
-  stopped. GitHub Releases and Pages only; no F-Droid. Signing remains private
-  and must never expose or commit key material.
+  Publish P29 and check CI, then P30-P33 continuously until explicitly stopped.
+  GitHub Releases and Pages only. Keep signing material private and outside Git.
 
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
@@ -2801,6 +2828,41 @@ SECTION 13 - SESSION LOG
               multi-size language rendering; signed release/Pages. Video not available.
               P28 CI pending publication.
     Next      Commit/push/check P28 CI, then P29-P33 continuously until stopped.
+  SESSION 44 - 2026-11-08 - P29 started
+    Did       Confirmed P28 commit/push and CI success; preserved its tested source
+              and reviewed screenshots. Planned optional package-only focus redirect,
+              existing DataStore storage and explicit backup v1-to-v2 compatibility.
+    Decided   D87. Narrow service event type, no screen-content retrieval/logging,
+              no overlay. Protect calling apps, Settings and Home. GitHub only.
+    Verified  P28 CI 42462470291 SUCCESS for 7d327d6; clean Git working tree.
+              Android docs confirm performGlobalAction, GLOBAL_ACTION_HOME,
+              onAccessibilityEvent and the content-retrieval configuration flag.
+    Not ver.  P29 source, tests, native redirect, captures and CI not complete.
+              No signed GitHub release or Pages yet. Video not available.
+    Next      Implement and finish P29, then P30-P33 continuously until stopped.
+  SESSION 45 - 2026-11-08 - P29 completion
+    Did       Finished recovered optional blocking, restricted accessibility
+              service, editable block/allow lists, explicit permission
+              explanation, safe read/write errors, backup v1-to-v2 compatibility
+              and native emulator checks. Saved fake-only captures and updated the
+              gallery.
+    Decided   D87. No Room schema or new runtime dependency. Off by default; allow
+              and escape routes win. Stored package lists are user choices only.
+              Accessibility nodes/text/events are never read, logged or persisted.
+              Restore always leaves blocking off. Honor gentle mode during timer
+              distraction checks.
+    Verified  Final four gates PASS; 360 JVM tests, zero failures/errors/skips;
+              lint zero errors/six accepted warnings. Native API35
+              permission/redirect/allow/disable/end checks PASS. Fake-only
+              screenshots reviewed. Offline manifest, unchanged schemas, secret
+              and whitespace checks PASS.
+    Not ver.  Physical-device/OEM blocking behavior, actual process death and
+              long-term battery use. Signed GitHub APK and Pages remain P33. Video
+              not available (Session 12).
+    Next      Publish P29 and check CI, then P30-P33 continuously until explicitly
+              stopped. GitHub Releases and Pages only. Keep signing material
+              private and outside Git.
+
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
   No open questions. All four were answered in P00; the decisions live in
@@ -3073,6 +3135,7 @@ SECTION 16 - CORE DESIGN
     theme             enum    system | light | dark | amoled
     accentColor       enum    calm_green | soft_blue | heather (P22)
     streakThreshold   Int     default 60
+    focusBlocking     String  validated local policy, default disabled/empty (P29)
     gentleMode        Boolean default true
     notificationsOn   Boolean default false
     onboardingDone    Boolean default false

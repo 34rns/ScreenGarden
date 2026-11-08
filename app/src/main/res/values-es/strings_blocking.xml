@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blocking_title">Bloqueo durante el enfoque</string>
+    <string name="blocking_intro">Opcional y desactivado por defecto. Durante una sesión en curso, las aplicaciones elegidas te devuelven a Inicio. Tu jardín nunca se pierde.</string>
+    <string name="blocking_escapes">ScreenGarden, Inicio, Ajustes y las llamadas siguen disponibles. Puedes detener la sesión o desactivar el bloqueo cuando quieras.</string>
+    <string name="blocking_back">Volver a Ajustes</string>
+    <string name="blocking_granted">El permiso de Android está activado. Decide abajo si quieres activar el bloqueo.</string>
+    <string name="blocking_not_granted">El permiso de Android está desactivado. No se bloquearán aplicaciones.</string>
+    <string name="blocking_review">Revisar el permiso de Android</string>
+    <string name="blocking_enable">Bloquear las aplicaciones elegidas durante el enfoque</string>
+    <string name="blocking_lists">Elige Bloquear, Permitir siempre o Normal. Permitir siempre tiene prioridad. Los cambios afectan a la sesión actual.</string>
+    <string name="blocking_search">Buscar una aplicación</string>
+    <string name="blocking_normal">Normal</string>
+    <string name="blocking_block">Bloquear</string>
+    <string name="blocking_allow">Permitir siempre</string>
+    <string name="blocking_choice">%1$s: %2$s</string>
+    <string name="blocking_empty">No hay coincidencias. Las llamadas y las opciones de salida no aparecen en esta lista.</string>
+    <string name="blocking_limits">Android puede retrasar los eventos. El bloqueo es una ayuda voluntaria, no una barrera de seguridad. Termina con el temporizador o al retirar el permiso de Android.</string>
+    <string name="blocking_permission_description">Android puede mostrar advertencias amplias de accesibilidad. ScreenGarden solicita solo eventos de apertura para devolver las aplicaciones bloqueadas a Inicio durante el enfoque. La recuperación del contenido está desactivada. El servicio no lee textos, vistas ni contraseñas. Los eventos y nombres observados nunca se guardan, registran ni suben. El permiso no activa el bloqueo hasta que actives su interruptor independiente.</string>
+    <string name="blocking_open_settings">Abrir los ajustes de accesibilidad de Android</string>
+    <string name="blocking_error">No se pudieron leer o guardar tus elecciones. Inténtalo de nuevo. Un fallo al guardar no activa el bloqueo.</string>
+    <string name="blocking_retry">Intentar de nuevo</string>
+</resources>

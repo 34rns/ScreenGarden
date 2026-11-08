@@ -45,6 +45,7 @@ import com.screengarden.app.domain.model.OnboardingChoices
 import com.screengarden.app.domain.model.ThemePreference
 import com.screengarden.app.domain.notifications.Nudge
 import com.screengarden.app.ui.debug.BackupDemoScreen
+import com.screengarden.app.ui.debug.FocusBlockingDemoScreen
 import com.screengarden.app.ui.debug.NudgeDemoScreen
 import com.screengarden.app.ui.debug.UsageSelfCheckScreen
 import com.screengarden.app.ui.navigation.DebugDestination
@@ -105,6 +106,14 @@ object DebugCatalog {
     }
 
     private fun resolveDestination(requested: String?, context: Context): DebugDestination? {
+        if (requested in setOf("blocking_demo", "blocking_rtl_demo")) {
+            return DebugDestination(requireNotNull(requested), ScreenGardenDestination.Settings) {
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides
+                        if (requested == "blocking_rtl_demo") LayoutDirection.Rtl else LocalLayoutDirection.current
+                ) { FocusBlockingDemoScreen() }
+            }
+        }
         if (requested == "onboarding_demo") {
             return DebugDestination(requested, ScreenGardenDestination.Garden) {
                 OnboardingScreen(OnboardingChoices(), { false }, {}, {}, {})
@@ -332,6 +341,7 @@ object DebugCatalog {
                             state = state,
                             versionName = "0.1.0",
                             backupContent = { BackupControls(BackupUiState(), {}, {}, {}, {}) },
+                            blockingContent = { back -> FocusBlockingDemoScreen(back) },
                             actions = SettingsActions(
                                 saveGoals = { state = state.copy(goals = it, saved = true) },
                                 setTheme = { state = state.copy(theme = it) },

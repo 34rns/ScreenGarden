@@ -2,8 +2,11 @@
 
 package com.screengarden.app.data.backup
 
+import com.screengarden.app.data.focus.FocusBlockCodec
+import com.screengarden.app.data.focus.FocusBlockPreferences
 import com.screengarden.app.data.repo.GardenHistoryCodec
 import com.screengarden.app.domain.backup.BackupPreview
+import com.screengarden.app.domain.focus.FocusBlockPolicy
 import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
 import org.json.JSONArray
@@ -16,13 +19,13 @@ internal data class BackupDocument(
     val tables: Map<String, List<JSONObject>>
 ) {
     fun preview(): BackupPreview = BackupPreview(createdAtUtcMillis, tables.mapValues { it.value.size })
-    fun encode(): ByteArray = JSONObject().put("format", "ScreenGarden").put("schemaVersion", 1)
+    fun encode(): ByteArray = JSONObject().put("format", "ScreenGarden").put("schemaVersion", 2)
         .put("createdAtUtcMillis", createdAtUtcMillis).put("settings", settings)
         .put("tables", JSONObject().apply { tables.forEach { (name, rows) -> put(name, JSONArray(rows)) } })
         .toString().toByteArray(Charsets.UTF_8)
 }
 
-/** Schema v1 has no older published format. Unknown versions fail before a write. */
+/** Backup v2 adds opt-in policy; v1 remains readable. Unknown versions fail before a write. */
 internal object BackupCodec {
     const val MAX_BYTES: Int = 32 * 1024 * 1024
     const val MAX_ROWS: Int = 100_000
@@ -44,9 +47,14 @@ internal object BackupCodec {
             )
         )
         require(root.get("format") == "ScreenGarden")
-        require(integer(root.get("schemaVersion"), 1, 1) == 1L)
+        val version = integer(root.get("schemaVersion"), 1, 2)
         val created = integer(root.get("createdAtUtcMillis"), 0, Long.MAX_VALUE)
-        val settings = root.getJSONObject("settings").also { BackupPreferences.validate(it) }
+        val settings = root.getJSONObject("settings")
+        if (version == 1L) {
+            require(!settings.has(FocusBlockPreferences.KEY_NAME))
+            settings.put(FocusBlockPreferences.KEY_NAME, FocusBlockCodec.encode(FocusBlockPolicy()))
+        }
+        BackupPreferences.validate(settings)
         val source = root.getJSONObject("tables")
         require(source.keys().asSequence().toSet() == BackupSchema.tables.keys)
         var count = 0

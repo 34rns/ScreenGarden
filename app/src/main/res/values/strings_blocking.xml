@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blocking_title">Focus app blocking</string>
+    <string name="blocking_intro">Optional and off by default. During a running focus session, selected apps return you to Home. Your garden is never lost.</string>
+    <string name="blocking_escapes">ScreenGarden, Home, Settings and calling apps stay available. You can stop focus or turn blocking off at any time.</string>
+    <string name="blocking_back">Back to Settings</string>
+    <string name="blocking_granted">Android permission is on. Choose whether to enable blocking below.</string>
+    <string name="blocking_not_granted">Android permission is off. Apps will not be blocked.</string>
+    <string name="blocking_review">Review the Android permission</string>
+    <string name="blocking_enable">Block selected apps during focus</string>
+    <string name="blocking_lists">Choose Block, Always allow, or Normal for each app. Always allow wins over a block. Changes apply to the current session. Each list holds up to 256 apps.</string>
+    <string name="blocking_search">Find an app</string>
+    <string name="blocking_normal">Normal</string>
+    <string name="blocking_block">Block</string>
+    <string name="blocking_allow">Always allow</string>
+    <string name="blocking_choice">%1$s: %2$s</string>
+    <string name="blocking_empty">No matching apps. Calling apps and escape routes are excluded from this list.</string>
+    <string name="blocking_limits">Android can delay app-opening events. Blocking is a voluntary aid, not a security barrier. It stops when the timer ends. Removing Android permission also stops it.</string>
+    <string name="blocking_permission_description">Android may show broad accessibility warnings. ScreenGarden requests only app-opening events to return blocked apps to Home during focus. Screen-content retrieval is disabled. The service does not read screen text, views or passwords. Events and observed app names are never stored, logged or uploaded. Granting this permission does not enable blocking until you turn the separate switch on.</string>
+    <string name="blocking_open_settings">Open Android accessibility settings</string>
+    <string name="blocking_error">Could not read or save your choices. Try again. A failed save does not enable blocking.</string>
+    <string name="blocking_retry">Try again</string>
+</resources>

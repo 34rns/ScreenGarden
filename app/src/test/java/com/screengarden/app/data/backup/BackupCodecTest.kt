@@ -2,6 +2,9 @@
 
 package com.screengarden.app.data.backup
 
+import com.screengarden.app.data.focus.FocusBlockCodec
+import com.screengarden.app.data.focus.FocusBlockPreferences
+import com.screengarden.app.domain.focus.FocusBlockPolicy
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -13,7 +16,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class BackupCodecTest {
     private fun empty(): JSONObject = JSONObject()
-        .put("format", "ScreenGarden").put("schemaVersion", 1).put("createdAtUtcMillis", 1000L)
+        .put("format", "ScreenGarden").put("schemaVersion", 2).put("createdAtUtcMillis", 1000L)
         .put("settings", BackupPreferences.defaults())
         .put("tables", JSONObject().apply { BackupSchema.tables.keys.forEach { put(it, JSONArray()) } })
 
@@ -21,8 +24,22 @@ class BackupCodecTest {
     fun emptyBackupRoundTripsEveryTableAndSetting() {
         val parsed = BackupCodec.decode(empty().toString().toByteArray())
         assertEquals(7, parsed.tables.size)
-        assertEquals(14, parsed.settings.length())
+        assertEquals(15, parsed.settings.length())
         assertEquals(1000L, parsed.createdAtUtcMillis)
+    }
+
+    @Test fun originalV1BackupsUpgradeToDisabledPolicyWithoutChangingExistingSettings() {
+        val old = empty().put("schemaVersion", 1)
+        old.getJSONObject("settings").remove(FocusBlockPreferences.KEY_NAME)
+        old.getJSONObject("settings").put("daily_goal_ms", 42L)
+        val parsed = BackupCodec.decode(old.toString().toByteArray())
+        assertEquals(42L, parsed.settings.getLong("daily_goal_ms"))
+        assertEquals(
+            FocusBlockPolicy(),
+            FocusBlockCodec.decode(parsed.settings.getString(FocusBlockPreferences.KEY_NAME))
+        )
+        assertEquals(2, JSONObject(String(parsed.encode())).getInt("schemaVersion"))
+        BackupCodec.decode(parsed.encode())
     }
 
     @Test
@@ -31,7 +48,7 @@ class BackupCodecTest {
             "broken",
             "{}",
             empty().put("schemaVersion", 0).toString(),
-            empty().put("schemaVersion", 2).toString(),
+            empty().put("schemaVersion", 3).toString(),
             empty().toString() + "{}"
         )) {
             assertThrows(IllegalArgumentException::class.java) { BackupCodec.decode(text.toByteArray()) }

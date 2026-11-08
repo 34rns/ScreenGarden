@@ -62,8 +62,15 @@ fun SettingsScreen(
     environmentContent: (@Composable () -> Unit)? = null,
     backupContent: (@Composable () -> Unit)? = null,
     manufacturer: String = Build.MANUFACTURER,
-    onAppSettings: () -> Unit = { }
+    onAppSettings: () -> Unit = { },
+    blockingContent: (@Composable (() -> Unit) -> Unit)? = null
 ) {
+    var blockingOpen by rememberSaveable { mutableStateOf(false) }
+    if (blockingOpen && blockingContent != null) {
+        BackHandler { blockingOpen = false }
+        blockingContent { blockingOpen = false }
+        return
+    }
     var helpOpen by rememberSaveable { mutableStateOf(false) }
     if (helpOpen) {
         BackHandler { helpOpen = false }
@@ -155,6 +162,11 @@ fun SettingsScreen(
                 !state.loading && !state.saving
             )
             SettingsBody(R.string.settings_focus_copy)
+            if (blockingContent != null) {
+                TextButton({ blockingOpen = true }, Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.blocking_title))
+                }
+            }
             HorizontalDivider()
             SettingsHeading(R.string.settings_data)
             SettingsBody(R.string.settings_data_copy)

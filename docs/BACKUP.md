@@ -27,7 +27,10 @@ database commit leaves that settings update pending, which ScreenGarden retries 
 screens, usage worker or nudge worker run. The UI reports an incomplete restore instead of claiming
 success. If recovery fails, free device storage and use **Try again**.
 
-The first published document format is schema version **1**, identified by `format: "ScreenGarden"`.
+The current document format is schema version **2**, identified by `format: "ScreenGarden"`.
+Original version **1** files remain readable; they receive an empty, disabled blocking policy.
+Version 2 includes your user-selected block and allow lists. Restores keep blocking off until
+you enable it again. Android accessibility permission is never exported or granted by a restore.
 Top-level fields are `format`, `schemaVersion`, `createdAtUtcMillis`, `settings`, and `tables`.
 Table column names mirror the Room user-data schema; booleans are JSON booleans and timestamps are
 UTC epoch milliseconds. Stored day keys retain their original local-day instants when travelling.
@@ -36,8 +39,8 @@ The internal recovery receipt is not part of an exported document.
 Wrong types, unknown/missing tables or columns, duplicate record keys, invalid settings, corrupt history
 payloads, negative or out-of-range counters and trailing content are rejected. Files are limited to
 **32 MiB** and **100,000 total records** to bound memory use. Larger exports report a failure, without
-deleting stored history. Versions older/newer than v1 are rejected: no earlier backup format was
-published, so no guessed migration is applied. A future format must define and test its upgrades.
+deleting stored history. Versions outside 1–2 are rejected. The explicit v1-to-v2 upgrade is tested;
+a future format must define and test its upgrades.
 
 Cancelling either file picker changes nothing. If Android kills the process while the save picker is
 open, the unsaved export snapshot is lost and saving reports an error; make a new backup. A provider

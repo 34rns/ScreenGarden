@@ -53,6 +53,13 @@
         <queries> block is the approved alternative to QUERY_ALL_PACKAGES (SECTION 9).
     -->
     <queries>
+        <!-- Calling and Settings handlers stay exempt from optional focus blocking. -->
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+        </intent>
+        <intent>
+            <action android:name="android.settings.SETTINGS" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.HOME" />
@@ -78,6 +85,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ScreenGarden">
+
+        <service
+            android:name=".data.focus.FocusBlockingService"
+            android:exported="true"
+            android:label="@string/blocking_title"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/focus_blocking_service" />
+        </service>
 
         <receiver android:name=".ui.widgets.GardenWidgetReceiver" android:exported="true">
             <intent-filter>

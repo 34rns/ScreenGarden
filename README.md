@@ -11,6 +11,14 @@ check.
 
 ## The idea
 
+Optional [focus app blocking](docs/FOCUS_BLOCKING.md) is off by default. Its
+restricted accessibility service never reads screen content or stores observed
+events. Only the block and allow lists you edit are saved locally.
+
+| Optional blocking | Permission explanation |
+| --- | --- |
+| <img src="docs/screenshots/blocking_light.png" width="220" alt="Optional focus blocking with separate permission and enable choices"> | <img src="docs/screenshots/blocking_permission.png" width="220" alt="Explanation before Android accessibility settings opens"> |
+
 English and a Spanish sample are bundled locally. On Android 13+, choose the
 language in Android's app settings; older versions follow the device language.
 Spanish covers the current resources and is awaiting native-speaker review.

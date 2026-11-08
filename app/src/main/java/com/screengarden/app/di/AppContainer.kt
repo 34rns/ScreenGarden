@@ -11,8 +11,10 @@ import com.screengarden.app.R
 import com.screengarden.app.core.time.BedtimeWindow
 import com.screengarden.app.core.time.LocalDay
 import com.screengarden.app.data.backup.BackupRepository
+import com.screengarden.app.data.focus.FocusBlockPreferences
 import com.screengarden.app.data.focus.FocusController
 import com.screengarden.app.data.focus.FocusUseReader
+import com.screengarden.app.data.focus.protectedFocusApps
 import com.screengarden.app.data.local.ScreenGardenDatabase
 import com.screengarden.app.data.notifications.AndroidNudgePublisher
 import com.screengarden.app.data.notifications.GentleNudgeCheck
@@ -45,6 +47,7 @@ import com.screengarden.app.data.work.UsageSyncScheduler
 import com.screengarden.app.domain.garden.GardenEnvironment
 import com.screengarden.app.domain.garden.chooseSeedSpecies
 import com.screengarden.app.domain.settings.SettingsRepository
+import com.screengarden.app.ui.screens.focus.FocusBlockingViewModel
 import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenViewModel
 import com.screengarden.app.ui.screens.habits.HabitsViewModel
@@ -93,6 +96,13 @@ class AppContainer(context: Context) {
     }
 
     fun settingsViewModel(): SettingsViewModel = SettingsViewModel(settingsRepository)
+
+    val focusBlockStore: FocusBlockPreferences by lazy { FocusBlockPreferences(appContext.settingsDataStore) }
+
+    fun focusBlockingViewModel(): FocusBlockingViewModel = FocusBlockingViewModel(focusBlockStore, {
+        val protected = protectedFocusApps(appContext)
+        appCatalog.installedApps().filter { it.packageName !in protected }
+    })
 
     val backupRepository: BackupRepository by lazy { BackupRepository(database, appContext.settingsDataStore) }
 

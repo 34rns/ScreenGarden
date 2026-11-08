@@ -32,6 +32,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -148,7 +149,9 @@ class FocusTimerService : Service() {
                             } catch (_: RuntimeException) {
                                 null
                             }
-                            if (FocusUsePolicy.shouldSoftFail(used)) {
+                            val gentle = (application as ScreenGardenApplication).container
+                                .settingsRepository.gentleMode.first()
+                            if (gentle && FocusUsePolicy.shouldSoftFail(used)) {
                                 progressed = FocusSessionMachine.end(running, FocusStatus.FAILED_SOFT, actual, now)
                             }
                         }

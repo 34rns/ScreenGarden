@@ -9,7 +9,11 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.screengarden.app.data.focus.FocusBlockCodec
+import com.screengarden.app.data.focus.FocusBlockPreferences
 import com.screengarden.app.data.settings.SettingsDefaults
+import com.screengarden.app.data.settings.SettingsKeys
+import com.screengarden.app.domain.focus.FocusBlockPolicy
 import com.screengarden.app.domain.garden.Hemisphere
 import com.screengarden.app.domain.model.AccentColor
 import com.screengarden.app.domain.model.ThemePreference
@@ -25,6 +29,10 @@ internal class BackupPreferences(private val store: DataStore<Preferences>) {
     }
 
     suspend fun apply(json: JSONObject) {
+        // Older pending receipts were committed with the original fourteen preferences.
+        if (!json.has(FocusBlockPreferences.KEY_NAME)) {
+            json.put(FocusBlockPreferences.KEY_NAME, FocusBlockCodec.encode(FocusBlockPolicy()))
+        }
         validate(json)
         store.edit { target ->
             defaults().keys().forEach { key ->
@@ -38,6 +46,9 @@ internal class BackupPreferences(private val store: DataStore<Preferences>) {
                     }
                 }
             }
+            val policy = FocusBlockCodec.decode(json.getString(FocusBlockPreferences.KEY_NAME))
+            target[FocusBlockPreferences.KEY] = FocusBlockCodec.encode(policy.copy(enabled = false))
+            if (policy.enabled) target[SettingsKeys.GENTLE_MODE] = true
         }
     }
 
@@ -57,6 +68,7 @@ internal class BackupPreferences(private val store: DataStore<Preferences>) {
             .put("compassion_days_per_month", SettingsDefaults.COMPASSION_DAYS_PER_MONTH)
             .put("hemisphere", SettingsDefaults.HEMISPHERE.name)
             .put("low_power_visuals", SettingsDefaults.LOW_POWER_VISUALS)
+            .put(FocusBlockPreferences.KEY_NAME, FocusBlockCodec.encode(FocusBlockPolicy()))
 
         fun validate(json: JSONObject) {
             val expected = defaults()
@@ -64,7 +76,11 @@ internal class BackupPreferences(private val store: DataStore<Preferences>) {
             expected.keys().forEach { key ->
                 when (expected.get(key)) {
                     is Boolean -> require(json.get(key) is Boolean)
-                    is String -> require(json.get(key) is String && json.getString(key).length <= 32)
+                    is String -> require(
+                        json.get(key) is String &&
+                            json.getString(key).length <=
+                            if (key == FocusBlockPreferences.KEY_NAME) 32_768 else 32
+                    )
                     is Number -> BackupCodec.integer(
                         json.get(key),
                         if (key == "daily_goal_ms") 1 else 0,
@@ -73,6 +89,7 @@ internal class BackupPreferences(private val store: DataStore<Preferences>) {
                 }
             }
             require(json.getInt("streak_threshold") in 0..100)
+            FocusBlockCodec.decode(json.getString(FocusBlockPreferences.KEY_NAME))
             require(json.getInt("compassion_days_per_month") in 0..10)
             require(json.getString("theme") in ThemePreference.entries.map { it.storageKey })
             require(json.getString("accent_color") in AccentColor.entries.map { it.storageKey })
