@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 57 / P35 final visual checks and signed release readiness)
+Last updated: 2026-11-08 (Session 58 / P35 verified public v1.1.0 and website announcement)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -1730,7 +1730,7 @@ SECTION 10 - KNOWN ISSUES
 
   Current test state: 384 JVM tests, zero failures/errors/skips.
   P35 final four gates PASS; 384 JVM tests, zero failures/errors/skips; lint zero errors/six accepted warnings. P31 full API35 integration suite has 20 passing tests. Fake-only screenshots reviewed. Offline manifest, unchanged schemas, secret and whitespace checks PASS.
-  Signed GitHub release v0.1.0 and screenshot Pages site are published (P33).
+  Signed GitHub releases v0.1.0 and v1.1.0 and screenshot Pages site are published (P33/P35).
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
       Physical-device periodic/reboot behavior and API 26 visuals are unverified.
@@ -1771,16 +1771,22 @@ SECTION 10 - KNOWN ISSUES
 
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P35 implementation complete locally: shared World, fullscreen Focus, Desk, backup v3 and new tokens. All four gates PASS, 384 JVM tests; saved API35 integration 20 PASS. Twenty fake-only images inspected; fullscreen cutout, clock contrast and English RTL clock defects corrected. Native mode/pause/pixel-shift and four-width browser checks PASS. Signed final R8 build/lint and production update smoke PASS; main CI, signed preflight/tag and public verification pending. No new permission/dependency/Room schema; existing update key preserved.
+  P35 code complete and signed v1.1.0 public. Implementation CI 42487765771,
+  signed main preflight 42488212418 and tag release 42488860934 SUCCESS.
+  Downloaded public assets pass checksums, APK signature/16 KiB alignment,
+  version 1.1.0/code 2/minSdk 26, no INTERNET, original v0.1.0 certificate and
+  immutable source checks. Public APK production update smoke PASS. Four gates,
+  384 JVM and 20 API35 integration tests PASS; twenty fake-only images reviewed.
+  Website announcement prepared and checked locally; final announcement
+  CI/Pages/live verification follows this commit. No new
+  permission/dependency/Room schema; private key and schemas 1-7 unchanged.
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Finish current final gates, then API35 integration, native frame/pause checks and
-  all twenty P35 fake-only screenshots. Inspect every image and finish docs/site checks,
-  commit/push/main CI, signed preflight and immutable v1.1.0 release protocol.
-  Keep schema 1-7 and the update key unchanged. Positions use saved planting order;
-  future stored positions need v8, not replacement of published v2.
+  Push the verified announcement, wait for its CI and Pages jobs, confirm live
+  v1.1.0 APK/notes/screenshots and four browser widths, then mark P35 completed
+  and save final workflow evidence. No app changes or retagging needed.
 
 SECTION 13 - SESSION LOG
 --------------------------------------------------------------------------------
@@ -3098,6 +3104,13 @@ SECTION 13 - SESSION LOG
 
     Verified  Final signed APK signature/16KiB alignment PASS; certificate matches v0.1.0. Production update smoke verifies Focus start/fullscreen/exit/Home/stop/restart, Insights/Settings, Desk start/dimming/pause/exit without crash.
     Found     Smoke helper expected Start Desk mode below the fold; actual switch was enabled. Added explicit scroll and reran successfully; no app code or check was weakened.
+
+  SESSION 58 - 2026-11-08 - P35 verified public v1.1.0 and website announcement
+    Did       Verified signed preflight and immutable tag publication; downloaded all public assets, checked them and installed the public APK on the dedicated emulator. Updated website download/notes links and release verification docs.
+    Decided   GitHub-only distribution, retained update certificate, Room v7 and all hard rules. No extra permission, library, font or paid service.
+    Verified  P35 code complete and signed v1.1.0 public. Implementation CI 42487765771, signed main preflight 42488212418 and tag release 42488860934 SUCCESS. Downloaded public assets pass checksums, APK signature/16 KiB alignment, version 1.1.0/code 2/minSdk 26, no INTERNET, original v0.1.0 certificate and immutable source checks. Public APK production update smoke PASS. Four gates, 384 JVM and 20 API35 integration tests PASS; twenty fake-only images reviewed. Website announcement prepared and checked locally; final announcement CI/Pages/live verification follows this commit. No new permission/dependency/Room schema; private key and schemas 1-7 unchanged.
+    Not ver.  Physical battery consumption, heat, AMOLED wear, low-end smoothness, OEM behavior, actual reboot/process death, complete current API26 UI, TalkBack listening, fluent Spanish review, independent byte-for-byte rebuild and portable owner signing-key backup remain unverified. Pixel shifting cannot guarantee burn-in prevention.
+    Next      Push the verified announcement, wait for its CI and Pages jobs, confirm live v1.1.0 APK/notes/screenshots and four browser widths, then mark P35 completed and save final workflow evidence. No app changes or retagging needed.
 
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------

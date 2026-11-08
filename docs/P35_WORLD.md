@@ -73,13 +73,13 @@ UI, bitmap, widget and wallpaper adapters. Existing repositories own all rewards
   permission, bedtime and export flows; rename the tab to World.
 - [x] Extend good-day planting beyond the old cap while preserving all old plants;
   test camera recovery, mapping after a new plant and a large visible field.
-- [ ] Run gates and emulator interactions/captures, checkpoint, commit/CI.
+- [x] Run gates and emulator interactions/captures, checkpoint, commit/CI.
 
 ### 3. New shared appearance
 
 - [x] Update Color/Type/Shape/environment tokens and original scene/vector art.
   Preserve curated accents, true-black AMOLED and large-text/RTL legibility.
-- [ ] Refresh affected captures and site originals; inspect each, gates, commit/CI.
+- [x] Refresh affected captures and site originals; inspect each, gates, commit/CI.
 
 ### 4. Fullscreen Focus and Desk
 
@@ -91,7 +91,7 @@ UI, bitmap, widget and wallpaper adapters. Existing repositories own all rewards
   work when hidden, cap Desk at 12 fps, preserve shifting with reduced motion.
 - [x] Test charging offer opt-in, unplug behavior, lifecycle/window restoration,
   focus exit without cancellation, mode limits and settings round-trip.
-- [ ] Gates, emulator checks/captures, checkpoint, commit/CI.
+- [x] Gates, emulator checks/captures, checkpoint, commit/CI.
 
 ### 5. Verify and ship
 
@@ -99,7 +99,7 @@ UI, bitmap, widget and wallpaper adapters. Existing repositories own all rewards
   visual inspection and fixes. Native integration, migration and release smoke.
 - [x] Measure emulator frame work/pause behavior; explicitly leave real-device
   battery consumption, thermal/OLED lifetime and OEM behavior unverified.
-- [ ] Update README, user guides, gallery, site, changelog and memory. Set version
+- [x] Update README, user guides, gallery, site, changelog and memory. Set version
   name 1.1.0 and increase versionCode. Keep private signing key untouched.
 - [ ] Fresh review, four gates, signed production lint/build/checks, main CI,
   signed main preflight, new immutable v1.1.0 tag, GitHub release/public download,
@@ -117,7 +117,7 @@ default Desk off and preserve all existing preferences and data.
 Extraction complete: all four gates PASS, 369 JVM tests; five legacy before/after
 app frames identical below the Android status bar. Scene and snapshot inspected.
 Local evidence: .tools/p35-{before,after}/ and p35-extract-{gates,captures}.log.
-World/Focus/Desk integration and v1.1.0 are next.
+World/Focus/Desk integration and v1.1.0 are complete; public checks are recorded below.
 
 Resume ledger (Session 55): extraction 74b8b1b / CI 42479248900 SUCCESS.
 Ruling: combine already integrated steps 2-4 in one feature checkpoint; they share
@@ -138,3 +138,4 @@ hidden three-second samples recorded zero. All twenty emulator originals were
 inspected; Settings framing and the RTL clock were corrected. Website layout,
 images, themes, FAQ, keyboard and reduced motion pass at four browser widths.
 Signed final smoke/main CI/preflight/tag and public download checks are pending.
+Publication (Session 58): signed preflight 42488212418 and tag release 42488860934 SUCCESS. Immutable v1.1.0 source is e8d432e53344f22ce61da87aee4309a2d39148d4. Public checksums, signature, 16 KiB alignment, version/code, offline manifest and original update certificate PASS. Downloaded public APK production Focus/Desk/Insights/Settings update smoke PASS. Release: https://github.com/34rns/ScreenGarden/releases/tag/v1.1.0.

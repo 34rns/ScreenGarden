@@ -80,5 +80,9 @@ stays unknown. Reminders and widgets are approximate; focus completion during
 device sleep may be delayed. Optional blocking is a voluntary aid. Backup files
 are unencrypted and can contain private usage; saving/sharing is user initiated.
 
-Signing, R8 release install/launch and the public download/site are verified
-separately during P33; this report does not claim them before they occur.
+The public signed v1.1.0 release passed workflow 42488860934 after main CI and
+signed preflight 42488212418. Downloaded artifacts pass all checksums, APK
+signature and 16 KiB alignment checks; version is 1.1.0/code 2 and the certificate
+matches v0.1.0. The downloaded production APK passed Focus/Desk/Insights/Settings
+update smoke on the dedicated emulator, including Home/window restoration. No
+production screenshots or real-device data were captured.
