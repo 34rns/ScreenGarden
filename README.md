@@ -41,12 +41,12 @@ are saved. See [how optional blocking works](docs/FOCUS_BLOCKING.md).
 ## Install
 
 Distribution is through [GitHub Releases](https://github.com/34rns/ScreenGarden/releases)
-only. Download the signed APK when a published release is available, open it on
-Android, and allow installation from the app you used to download it. Turn that
+only. [Download the signed v0.1.0 APK](https://github.com/34rns/ScreenGarden/releases/download/v0.1.0/ScreenGarden-v0.1.0.apk),
+open it on Android, and allow installation from the app you used to download it. Turn that
 installation permission off afterward if you prefer.
 
-Until a signed release is published, build the debug app using the steps below.
-Debug builds have a separate application ID and do not update the release app.
+You can also build the debug app using the steps below. Debug builds have a
+separate application ID and do not update the release app.
 Keep your exported backup somewhere private before uninstalling or moving devices.
 
 ## Privacy you can check
@@ -129,8 +129,8 @@ downloads are free. There is no F-Droid or Google Play release plan.
 
 ## Roadmap and contributing
 
-P01–P31 cover the implemented app and quality pass. Documentation and GitHub
-release/site delivery are P32–P33. Next improvements focus on device verification,
+P01–P33 are complete, including the signed GitHub release and screenshot site.
+Next improvements focus on device verification,
 translation review and accessibility feedback. See [the prompt roadmap](docs/PROMPTS.md)
 and [contribution guide](CONTRIBUTING.md), including small starter tasks.
 

@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 51 / P33 verified release readiness)
+Last updated: 2026-11-08 (Session 52 / P33 published release and final site links)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -1302,13 +1302,13 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P31     done    Quality pass: accessibility, perf, more screen sizes
                   [0.4 DONE in P00b; 3.3 remains]
   P32     done    Docs + release assets [3.4 part]
-  P33     doing   GitHub signed release automation + Pages/screenshots (D34/D69)
+  P33     doing   Signed GitHub release published; final Pages announcement/checkpoint pending
 
   The old 0.4 (visual verification) is COMPLETE as of P00b for the current UI:
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P32 complete; P33 GitHub release and Pages in progress.
+  Sequencing note: P00-P32 complete; P33 release published, final site links/CI pending.
   P04b repositories are complete, including BadgeRepository in P18.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
@@ -1533,14 +1533,14 @@ SECTION 10 - KNOWN ISSUES
 --------------------------------------------------------------------------------
   K1  CLOSED in P22. Theme and accent pickers persist choices; AMOLED is reachable in Settings.
   K2  Garden, Focus, App limits, Milestones, Insights and six Settings sections are implemented.
-  K3  P10 GardenViewModel reads Room through GardenStore. Five repositories are
+  K3  P10 GardenViewModel reads Room through GardenStore. Six repositories are
       implemented, including BadgeRepository in P18.
   K4  CLOSED in P31. compilerOptions preserves JVM 17; all four gates pass.
   K5  Gradle 8.13 prints "Deprecated Gradle features ... incompatible with
       Gradle 9.0". Harmless; handle it during the next AGP/Gradle upgrade.
   K6  No dynamic (Material You) colour by design - see D6.
-  K7  Release APK is UNSIGNED. Signing is D34/P33. Never publish an unsigned
-      APK as a release.
+  K7  CLOSED in P33. v0.1.0 signed APK is published on GitHub; certificate,
+      SHA-256 sums, source and mapping accompany it. Preserve private update key.
   K8  CLOSED in P00b. The UI was reviewed on the API 35 emulator: four tabs in
       light/dark/AMOLED, 1.3x font, RTL. Theme colours were verified by pixel
       probe, not by eye. See K26/K29 for what this did NOT cover (status-bar
@@ -1701,7 +1701,7 @@ SECTION 10 - KNOWN ISSUES
 
   Current test state: 362 JVM tests, zero failures/errors/skips.
   Final four gates PASS; 362 JVM tests, zero failures/errors/skips; lint zero errors/six accepted warnings. P31 full API35 integration suite has 20 passing tests. Fake-only screenshots reviewed. Offline manifest, unchanged schemas, secret and whitespace checks PASS.
-  No signed GitHub release or Pages exists yet.
+  Signed GitHub release v0.1.0 and screenshot Pages site are published (P33).
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
       Physical-device periodic/reboot behavior and API 26 visuals are unverified.
@@ -1742,12 +1742,12 @@ SECTION 10 - KNOWN ISSUES
 
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P32 complete. P33 locally verified and ready for publication: all four final gates PASS (362 JVM tests), signed optimized production APK/lint PASS, exactly one merged production Activity, signature/alignment and real emulator smoke PASS. Site browser checks PASS at 1440/768/390/320 pixels. Signing secrets configured privately. Main CI, signed GitHub preflight, tag release and Pages verification pending.
+  P00-P33 implemented. Signed v0.1.0 release is public and verified; initial Pages deployment is live. Main CI 42474603886, Pages 42474603912, signed main preflight 42474604474 and tag release 42475358257 all SUCCESS on 5a5a323. Final README/site download links and screenshot release notes are prepared and locally verified; their commit/push and final deployment verification remain.
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Push P33 readiness commit, verify main CI and Pages, dispatch signed main preflight and verify its artifacts. Only after success create new v0.1.0 tag, check signed-release workflow and download/install/check the public APK. Finish live site links and final memory; continue until stopped.
+  Commit/push the final P33 release announcement, verify its CI/Pages, recheck live download links and browser layouts, and save the completed handoff. No feature prompt remains; preserve the existing signing key.
 
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
@@ -2974,6 +2974,13 @@ SECTION 13 - SESSION LOG
     Not ver.  Publication/main CI, signed GitHub preflight/tag release, public downloaded APK and Pages still pending. Physical-device/OEM reliability, actual reboot/process death, full current API26 UI, low-end performance, TalkBack listening, portable private-key backup and fluent Spanish review remain unverified. Native widget test first needed the emulator host grant after reinstall; corrected fixture, then PASS.
     Next      Push P33 readiness commit, verify main CI and Pages, dispatch signed main preflight and verify its artifacts. Only after success create new v0.1.0 tag, check signed-release workflow and download/install/check the public APK. Finish live site links and final memory; continue until stopped.
 
+  SESSION 52 - 2026-11-08 - P33 published release and final site links
+    Did       Resumed saved P33 work; read complete memory and fetched origin without divergence. Confirmed public signed release and green preflight/tag workflows; preserved screenshot release notes already published. Completed README/site links to the released APK and reconciled release status.
+    Decided   Keep GitHub Releases/Pages only, existing immutable v0.1.0 tag and private update key. Screenshots remain byte-identical emulator fake-debug originals. No app behavior, dependency, permission or schema change.
+    Verified  Fresh four gate invocations PASS on unchanged app source; reports contain 362 JVM tests with zero failures/errors/skips and lint zero errors/six warnings. Prior full API35 suite: 20 PASS. Public APK matches GitHub SHA256 63c29341aa4fb47ea103e41ca0fef42b20884d0d5ad06026563bbb93ba70c0cc; all public checksums, signature and alignment PASS. Fresh downloaded-APK emulator focus/Home/stop/restart/Insights/Settings smoke PASS, without screenshots. Local four-width browser check PASS; existing public site HTTP200. Offline/nondebuggable one-Activity manifest, seven immutable schemas and site image hashes PASS.
+    Not ver.  Final announcement CI/Pages pending. Physical-device/OEM reliability, actual reboot/process death, complete current API26 UI, low-end performance, TalkBack listening and fluent Spanish review remain unverified. Owner portable private signing-key backup remains a manual custody task. Optional video not available (Session 12).
+    Next      Commit/push the final P33 release announcement, verify its CI/Pages, recheck live download links and browser layouts, and save the completed handoff. No feature prompt remains; preserve the existing signing key.
+
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
   No open questions. All four were answered in P00; the decisions live in
@@ -2987,7 +2994,7 @@ SECTION 14 - OPEN QUESTIONS
       https://github.com/34rns/ScreenGarden, public, branch main.
 
   Q3  SHOULD CI ALSO BUILD RELEASE?      ANSWERED -> D30 (+ release.yml)
-      Separate workflow, manual + weekly, unsigned; free on a public repo.
+      Signed version-tag releases and a manual main preflight; free (D91).
 
   Q4  IS THE ROOM RETENTION FOREVER?     ANSWERED -> D31
       Yes; no automatic pruning, with a user-controlled "Delete all data"
