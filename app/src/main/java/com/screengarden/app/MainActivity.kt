@@ -98,6 +98,7 @@ class MainActivity : ComponentActivity() {
         container.usageSyncScheduler.syncNow()
         container.nudgeScheduler.checkNow()
         setContent {
+            val saveSnapshot = rememberSnapshotSaveAction()
             // SYSTEM is only the initial value: it covers the few milliseconds
             // before DataStore emits the stored choice (K31).
             val themePreference by settingsRepository.theme
@@ -205,7 +206,8 @@ class MainActivity : ComponentActivity() {
                         state = state,
                         onStartFocus = startFocus,
                         onGrantUsage = { startActivity(UsageAccess.settingsIntent()) },
-                        onRetry = garden::refresh
+                        onRetry = garden::refresh,
+                        onSaveSnapshot = saveSnapshot
                     )
                 }
                 val focusContent: @androidx.compose.runtime.Composable () -> Unit = {

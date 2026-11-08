@@ -33,6 +33,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -64,9 +65,11 @@ fun GardenScreen(
     onStartFocus: () -> Unit,
     onGrantUsage: () -> Unit,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSaveSnapshot: ((ImageBitmap) -> Unit)? = null
 ) {
     var selectedPlantId by rememberSaveable { mutableStateOf<String?>(null) }
+    var snapshotOpen by rememberSaveable { mutableStateOf(false) }
     val selectedPlant = state.plants.firstOrNull { it.id == selectedPlantId }
 
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -137,10 +140,27 @@ fun GardenScreen(
                 Button(onClick = onStartFocus, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
                     Text(stringResource(R.string.garden_start_focus))
                 }
+                if (onSaveSnapshot != null) {
+                    OutlinedButton(
+                        onClick = { snapshotOpen = true },
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                        enabled = !state.loading
+                    ) { Text(stringResource(R.string.snapshot_open)) }
+                }
             }
         }
     }
     if (selectedPlant != null) PlantDetails(plant = selectedPlant, onDismiss = { selectedPlantId = null })
+    if (snapshotOpen && onSaveSnapshot != null) {
+        GardenSnapshotPreview(
+            state,
+            onSave = { image ->
+                onSaveSnapshot(image)
+                snapshotOpen = false
+            },
+            onDismiss = { snapshotOpen = false }
+        )
+    }
 }
 
 @Composable

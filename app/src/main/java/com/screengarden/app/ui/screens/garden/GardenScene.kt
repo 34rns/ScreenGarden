@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,6 +29,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -46,6 +48,7 @@ import com.screengarden.app.domain.garden.GardenWeather
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.domain.garden.PlantStage
+import com.screengarden.app.ui.theme.GardenEnvironmentColors
 import com.screengarden.app.ui.theme.gardenEnvironmentColors
 import kotlin.math.PI
 import kotlin.math.sin
@@ -83,32 +86,7 @@ fun GardenScene(
             val columns = if (maxWidth >= 340.dp) 3 else 2
             Box {
                 Canvas(modifier = Modifier.matchParentSize()) {
-                    drawRect(skyBrush)
-                    val ground = Path().apply {
-                        moveTo(0f, size.height * 0.45f)
-                        cubicTo(
-                            size.width * 0.3f,
-                            size.height * 0.34f,
-                            size.width * 0.68f,
-                            size.height * 0.53f,
-                            size.width,
-                            size.height * 0.38f
-                        )
-                        lineTo(size.width, size.height)
-                        lineTo(0f, size.height)
-                        close()
-                    }
-                    drawPath(ground, sceneColors.ground)
-                    drawOval(
-                        colors.onTertiaryContainer.copy(alpha = 0.05f),
-                        Offset(size.width * 0.62f, size.height * 0.08f),
-                        Size(size.width * 0.24f, 12.dp.toPx())
-                    )
-                    if (scene.light == GardenLight.NIGHT) {
-                        val moon = Offset(size.width * 0.84f, size.height * 0.11f)
-                        drawCircle(colors.onTertiaryContainer, 12.dp.toPx(), moon)
-                        drawCircle(sceneColors.sky, 11.dp.toPx(), moon + Offset(5.dp.toPx(), -3.dp.toPx()))
-                    }
+                    drawGardenBackdrop(sceneColors, colors, scene.light, skyBrush)
                     drawGardenWeather(scene.weather, phase.value, colors.onTertiaryContainer, lowPowerVisuals)
                     if (plants.isNotEmpty()) {
                         val time = phase.value
@@ -154,6 +132,41 @@ fun GardenScene(
                 }
             }
         }
+    }
+}
+
+/** Shared by the live scene and exported static image. */
+internal fun DrawScope.drawGardenBackdrop(
+    sceneColors: GardenEnvironmentColors,
+    colors: ColorScheme,
+    light: GardenLight,
+    skyBrush: Brush
+) {
+    drawRect(skyBrush)
+    val ground = Path().apply {
+        moveTo(0f, size.height * 0.45f)
+        cubicTo(
+            size.width * 0.3f,
+            size.height * 0.34f,
+            size.width * 0.68f,
+            size.height * 0.53f,
+            size.width,
+            size.height * 0.38f
+        )
+        lineTo(size.width, size.height)
+        lineTo(0f, size.height)
+        close()
+    }
+    drawPath(ground, sceneColors.ground)
+    drawOval(
+        colors.onTertiaryContainer.copy(alpha = 0.05f),
+        Offset(size.width * 0.62f, size.height * 0.08f),
+        Size(size.width * 0.24f, 12.dp.toPx())
+    )
+    if (light == GardenLight.NIGHT) {
+        val moon = Offset(size.width * 0.84f, size.height * 0.11f)
+        drawCircle(colors.onTertiaryContainer, 12.dp.toPx(), moon)
+        drawCircle(sceneColors.sky, 11.dp.toPx(), moon + Offset(5.dp.toPx(), -3.dp.toPx()))
     }
 }
 

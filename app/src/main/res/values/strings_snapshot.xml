@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="snapshot_open">Save a snapshot</string>
+    <string name="snapshot_title">Your garden, in a picture</string>
+    <string name="snapshot_description">Save this picture wherever you choose. Your app list and usage history are not included.</string>
+    <string name="snapshot_preview_description">Preview of the garden image to save</string>
+    <string name="snapshot_include_caption">Include date and streak</string>
+    <string name="snapshot_caption">%1$s\n%2$s · %3$s</string>
+    <string name="snapshot_save">Save image</string>
+    <string name="snapshot_close">Close preview</string>
+    <string name="snapshot_rendering">Preparing your picture…</string>
+    <string name="snapshot_render_error">The picture could not be prepared. Try again.</string>
+    <string name="snapshot_retry">Try again</string>
+    <string name="snapshot_saved">Garden image saved.</string>
+    <string name="snapshot_save_error">The image could not be saved. Try again and choose a location with available space.</string>
+</resources>

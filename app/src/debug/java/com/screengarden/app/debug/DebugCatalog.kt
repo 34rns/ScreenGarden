@@ -431,7 +431,13 @@ object DebugCatalog {
                         LocalLayoutDirection.current
                     }
                 ) {
-                    GardenScreen(state, { }, { }, { })
+                    GardenScreen(
+                        state,
+                        { },
+                        { },
+                        { },
+                        onSaveSnapshot = com.screengarden.app.rememberSnapshotSaveAction()
+                    )
                 }
             }
         }

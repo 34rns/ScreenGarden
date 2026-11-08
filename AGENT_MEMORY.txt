@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 35 / P23 verification)
+Last updated: 2026-11-08 (Session 36 / P24 complete; continuous batch resumed)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         312 JVM tests; 9 migration cases green on API 35 (P20)
+  Tests         320 JVM tests; 9 migration cases green on API 35 (P20)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -304,6 +304,14 @@ SECTION 4 - FOLDER LAYOUT
     data/repository  superseded by data/repo/ (D21, name used by the briefs)
     LICENSE-PENDING.md  deleted in P00 once D27 decided the license
 
+  P24 additions (snapshot export):
+    app/src/main/java/com/screengarden/app/SnapshotDocumentAction.kt
+    data/export/GardenSnapshotFiles.kt (private PNG and selected-document write)
+    ui/screens/garden/GardenSnapshotImage.kt + GardenSnapshotPreview.kt
+    app/src/main/res/values/strings_snapshot.xml
+    data/export/GardenSnapshotFilesTest.kt + ui/screens/garden/GardenSnapshotImageTest.kt
+    docs/screenshots/garden_snapshot_action.png + snapshot_*.png
+
   Layer rules
     - screens/ may depend on components/, theme/, domain/model.
     - screens/ must NOT touch data/ directly; go through a use case.
@@ -355,7 +363,7 @@ SECTION 5 - CONVENTIONS
   Kotlin
     - Explicit types on public APIs, `val` by default, no wildcard imports.
     - KDoc on every public class/function worth explaining; comments say WHY.
-    - Android adapters may exist in data/local/, data/usage/, data/focus/ and data/notifications/.
+    - Android adapters may exist in data/local/, data/usage/, data/focus/, data/notifications/ and data/export/.
       domain/core stay pure.
     - 120-column limit, 4-space indent.
   Data
@@ -1044,6 +1052,19 @@ SECTION 6 - DECISIONS
       Compact layout shows the score number with an accessible out-of-100
       description; medium shows score/streak beside the plant. Both fit 1.3x text.
       Debug host reports API 31+ widget sizes explicitly and has no default padding.
+  D82 P24 USER-CONTROLLED GARDEN PICTURES.
+      Freeze plants/environment when opening the preview; shared vector renderer,
+      backdrop and night palette draw a static 1024x768 PNG. Optional localized
+      date/streak caption contains no app list, usage history or measured totals.
+      Reserve the preview image area during rendering and bound scrolling so
+      loading cannot push save/close controls below the sheet. Render/encode/file
+      work runs off the main thread. The preview sets its own dialog-window bar
+      contrast via public DialogWindowProvider/WindowCompat APIs (pinned APIs
+      verified). Android CreateDocument chooses destination.
+      One AtomicFile-backed private cache PNG survives activity recreation during
+      the picker. A new save clears abandoned pending files; cancel, completion
+      and failure discard the pending image. Errors never claim successful saving.
+      No new dependency, permission or Room schema. No sharing occurs automatically.
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
@@ -1101,7 +1122,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P21     done    Day/night, seasons, weather visuals [new]
   P22     done    Six Settings sections, persisted themes/curated palettes [3.1]
   P23     done    Responsive Glance widget + user start/stop Quick Settings tile [new]
-  P24     todo    Snapshot export [new]
+  P24     done    Frozen garden preview, optional caption and Android PNG save picker [new]
   P25     todo    Plant packs (16.5) [new]
   P26     todo    Export/import JSON (16.6) [new]
   P27     todo    Battery help [new]
@@ -1117,8 +1138,8 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P23 are implemented and locally verified; see CURRENT STATUS for CI.
-  P04b repositories are complete, including BadgeRepository in P18. P24 is next.
+  Sequencing note: P00-P24 are implemented and locally verified; see CURRENT STATUS for CI.
+  P04b repositories are complete, including BadgeRepository in P18. P25 is next.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
 --------------------------------------------------------------------------------
@@ -1141,6 +1162,8 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   Kotlin standard library.
   P09 added no dependency: the lifecycle uses plain Kotlin arithmetic and the
   existing JVM JUnit tests, with java.util.UUID as its default ID factory.
+  P24 adds no dependency: existing Compose art, Android Canvas/PNG, AtomicFile
+  and ActivityResultContracts.CreateDocument provide the complete local export.
   P15 adds no dependency: PackageManager, Room, Compose and Flow already exist.
   P19 adds no dependency: native Compose Canvas renders charts; original code is
   GPL-3.0-or-later and uses the existing Apache-2.0 Compose artifacts. No Vico.
@@ -1243,6 +1266,9 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
 --------------------------------------------------------------------------------
 SECTION 9 - PERMISSIONS
 --------------------------------------------------------------------------------
+  P24 snapshot export uses Android SAF CreateDocument and only its returned URI.
+  No storage-wide permission, FileProvider, automatic sharing or network is added.
+
   P23 service binding: BIND_QUICK_SETTINGS_TILE protects the exported tile
   service so only Android can bind. Not a uses-permission or user grant.
 
@@ -1487,18 +1513,18 @@ SECTION 10 - KNOWN ISSUES
       ubuntu-latest image is moving to Ubuntu 26. P09 CI remains green. Review
       action/runtime upgrades in the quality pass; no workflow change in P09.
 
-  Current lint state: 0 errors, 4 accepted warnings (K11, K12, K46, K58). No baseline.
+  Current lint state: 0 errors, 5 accepted warnings (K11, K12, K46, K58, K60). No baseline.
   Current ktlint state: clean (0 violations).
   K55 P12 timer uses monotonic elapsed time in process and UTC checkpoints for
       recovery. Screen-off completion can be delayed by device sleep; no exact
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 312 JVM tests, zero failures/errors/skips. Four P23 gates
-  PASS; lint zero errors/four accepted warnings. P20 nine API 35 migrations PASS
-  through v6; P23 does not change schema. API 35 production tile start/stop test
-  PASS. Both actual Glance layouts and unclipped plant images at 1.0/1.3x text
-  PASS; four final fake-only widget/tile images reviewed.
+  Current test state: 320 JVM tests, zero failures/errors/skips. All four P24
+  gates PASS; lint zero errors/five accepted warnings. P20 nine API 35 migrations
+  PASS through v6; P24 does not change schema. API 35 fake garden preview, caption
+  toggle, picker cancellation/reopen and actual PNG save PASS. Seven final fake-only
+  captures reviewed in light/dark/night, 1.3x text, RTL and without a caption.
   No signed GitHub release or Pages exists yet.
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
@@ -1517,23 +1543,34 @@ SECTION 10 - KNOWN ISSUES
       cannot reconstruct an earlier month. API 26/new-size Insights rendering
       remains a P31 check. No exact hourly history or physical-device claim.
 --------------------------------------------------------------------------------
+  K60 Lint PluralsCandidate flags the existing widget score phrase "%1$d out of
+      100". It is a ratio, not a quantity needing plural grammar. Accepted without
+      suppression. Detailed P24 audit found five warnings; P23 memory said four.
+  K61 The pending snapshot is private cache. If Android evicts it while the file
+      picker is open, saving reports a clear error and the user can preview again.
+      Actual process-death/cache-eviction saving is unverified; no usage is exported.
+--------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P22 are published and CI verified green.
-  P22 10b0160 published; CI 42446118343 SUCCESS.
-  P23 complete locally: Glance widget, shared plant art, installed-widget-only
-  updates, user start/stop Focus tile. Final four gates PASS; 312 JVM tests,
-  lint zero errors/four accepted warnings. One actual API 35 tile test PASS.
-  Four fake-only captures reviewed; compact/medium layouts and plant bounds
-  pass at 1.0/1.3x text. No new Room schema or user permission. Publication/CI next.
-  No signed GitHub release or Pages yet.
+  P00-P23 are published and CI verified green. P23 7ae5675; CI 42448713070 SUCCESS.
+  P24 complete locally: frozen snapshot preview, optional localized date/streak,
+  shared art/night colors, PNG encoding and Android document-picker save action.
+  All four final gates PASS: 320 JVM tests, zero failures/errors/skips; lint zero
+  errors/five accepted warnings. Existing widget ratio warning was missing from
+  P23's four-warning count; detailed report corrected in K60, no suppression.
+  API 35 fake-only preview/caption, cancel/reopen and actual PNG file save PASS.
+  Seven final fake-only captures reviewed. No permission/dependency/schema change.
+  P24 commit/push and CI are the final standing-order checks at this checkpoint.
+  No signed GitHub release or Pages yet. No P25 work started.
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Publish P23/check CI, then P24 snapshot export and P25-P33 in order.
-  Continue P23-P33 in order, GitHub only, until explicitly stopped by the owner.
-  Save checkpoints and use compaction to continue; do not stop at task/context
-  milestones. Never request, print or commit secret values.
+  Finish P24 publication/CI, then begin P25 plant packs from docs/PROMPTS.md.
+  Owner resumed the continuous batch on 2026-11-08, revoking the P24 stop request.
+  Continue P25-P33 until explicitly stopped; save checkpoints at each prompt. No P24 feature
+  work remains unfinished. Preserve D69: free GitHub Releases and Pages only.
+  P25-P33 remain; signed release setup and Pages are P33. Never request, print
+  or commit secret values. Read this complete memory and check Git/CI on resume.
 
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
@@ -2467,10 +2504,53 @@ SECTION 13 - SESSION LOG
               correctly; capture assertions prove two full plant images at 1.0/
               1.3x text. Four final fake-only images reviewed. Old schemas unchanged,
               no INTERNET/allowBackup=false; final secret/whitespace sweep PASS.
-    Not ver.  P23 publication/CI pending. Signed release/Pages, API 26/new sizes,
+    Not ver.  Signed release/Pages, API 26/new sizes,
               long-running widget refresh, physical-device reliability remain
               unverified. Video not available; no new inference.
     Next      Finish P23, publish and check CI, then P24-P33 without stopping.
+    CI        P23 7ae5675 pushed; 42448713070 SUCCESS, all four quality steps.
+              https://github.com/34rns/ScreenGarden/actions/runs/42448713070
+    Handoff   Manually interrupted after planning P24, before any P24 source/test
+              edits. Plan: reuse Canvas art and scene colors for a PNG preview,
+              optional date/streak caption, Android CreateDocument image/png.
+              No storage-wide permission, new dependency or schema. Test rendered
+              image/PNG output and write failures; keep storage in the Android
+              adapter and wire callbacks through the activity. P24 is next.
+--------------------------------------------------------------------------------
+  SESSION 36 - 2026-11-08 - P24 complete, continuous batch resumed
+    Did       Resumed renderer/PNG drafts; read full memory, status/20 commits,
+              fetched origin with no divergence and verified P23 CI SUCCESS.
+              Finished frozen static picture preview, optional localized caption,
+              shared renderer/backdrop/night palette, private pending PNG, Android
+              CreateDocument save, failure/cancel handling and README gallery.
+    Decided   D82; no dependency/permission/schema change. New saves replace any
+              abandoned cache image. Actual system file picker controls destination.
+              Owner took a manual break, then resumed continuous work. P25 is not started.
+    Verified  Final four gates PASS: 320 JVM tests, no failures/errors/skips;
+              lint zero errors/five accepted warnings. Eight focused snapshot tests
+              PASS. API 35 fake demo preview, caption toggle, cancel/reopen and actual
+              PNG save through Android picker PASS; decoded PNG is 1024x768.
+              Seven final emulator fake-only captures reviewed, including dark/night,
+              large text and RTL. Old schemas, offline/backup-disabled manifest,
+              secret sweep and whitespace check PASS. P24 publication/CI follows.
+    Found     Replacement regression initially failed: framework and AndroidX
+              AtomicFile both rename over an existing file, unsupported on Windows.
+              Clear the abandoned pending image before preparing a new snapshot;
+              same regression now passes. First emulator image exposed bottom-sheet
+              anchors changing when the image loaded; reserved the image area and
+              bounded scrolling. Save is now visible without scrolling in its test
+              and final native capture. Initial null UI roots retry with fresh paths.
+              Corrected the native helper's save selector to android:id/button1;
+              actual picker saving and PNG decoding pass. Final dark screenshot
+              exposed the sheet's separate system-bar window; set its own icon
+              contrast with verified public APIs and rechecked the affected images.
+              Detailed lint audit corrected the pre-existing widget ratio warning
+              omitted from P23 memory; five warnings, not four, no check weakened.
+    Not ver.  Actual process-death/cache-eviction save, API 26/other-size snapshot
+              visuals and physical-device reliability. Signed release/Pages remain
+              P33. Video not available (Session 12), no inferred summary or ideas.
+    Next      Final P24 push/CI, then P25-P33 continuously until explicitly stopped.
+
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------

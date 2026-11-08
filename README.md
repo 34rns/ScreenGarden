@@ -97,6 +97,12 @@ Settings includes stored themes, curated accents and optional visual controls:
 |---|---|---|
 | <img src="docs/screenshots/settings_light_appearance.png" width="220" alt="Stored theme, curated palette and scenery choices"> | <img src="docs/screenshots/settings_amoled_appearance.png" width="220" alt="True-black AMOLED settings with labelled choices"> | <img src="docs/screenshots/settings_data_about.png" width="220" alt="Local data, introduction restart and license information"> |
 
+Garden pictures can be previewed and saved with an optional date and streak caption:
+
+| Picture preview | Moonlit picture | Without a caption |
+|---|---|---|
+| <img src="docs/screenshots/snapshot_light.png" width="220" alt="Garden picture preview with an optional date and streak caption"> | <img src="docs/screenshots/snapshot_night.png" width="220" alt="A moonlit garden picture using the shared plant art"> | <img src="docs/screenshots/snapshot_without_caption.png" width="220" alt="A garden picture without its caption"> |
+
 ## Privacy promise
 
 - **No internet permission.** The app cannot make a network request, even by
@@ -123,6 +129,9 @@ by intention. A pull request that adds network access or telemetry is rejected.
 - A garden timeline with weekly/monthly views of actual saved plant snapshots.
   A snapshot is saved once when completed-day growth is applied. Earlier layouts
   were not recorded and are never reconstructed or guessed.
+- Preview and save a garden picture as PNG through Android's file picker, with
+  an optional date and streak caption. The image includes no app list or usage
+  history and needs no storage-wide permission.
 - First-run privacy and permission explanations, goal setup and optional
   notifications permission.
 - Preferences DataStore for goals and light/dark/AMOLED theme selection.

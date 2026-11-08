@@ -49,6 +49,32 @@ class GardenScreenTest {
 
     private val application: Application = ApplicationProvider.getApplicationContext()
 
+    @Test fun snapshotPreviewOffersAnOptionalCaptionBeforeSaving() {
+        var saved: androidx.compose.ui.graphics.ImageBitmap? = null
+        composeRule.setContent {
+            ScreenGardenTheme {
+                GardenScreen(
+                    GardenUiState(false, GardenAvailability.READY, listOf(flower), 72, 4),
+                    { },
+                    { },
+                    { },
+                    onSaveSnapshot = { saved = it }
+                )
+            }
+        }
+        composeRule.onNodeWithText(text(R.string.snapshot_open)).performScrollTo().performClick()
+        composeRule.onNodeWithText(text(R.string.snapshot_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.snapshot_include_caption)).performClick()
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodes(
+                androidx.compose.ui.test.hasContentDescription(text(R.string.snapshot_preview_description))
+            )
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText(text(R.string.snapshot_save)).assertIsDisplayed().performClick()
+        assertTrue("Save must receive the rendered picture", saved != null)
+    }
+
     @Test
     fun sleepGardenKeepsPlantsAndFocusAccessible() {
         var starts = 0
