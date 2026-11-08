@@ -77,6 +77,33 @@ Please add unit tests for logic that can be tested without Android (use cases,
 growth rules, time maths) under `app/src/test/`. New behaviour without tests is
 acceptable only when it is purely visual and you say so in the pull request.
 
+Run all four gates before submitting, using `gradlew.bat` in PowerShell:
+
+```powershell
+.\gradlew.bat ktlintCheck --no-build-cache
+.\gradlew.bat :app:testDebugUnitTest
+.\gradlew.bat :app:lintDebug
+.\gradlew.bat :app:assembleDebug
+```
+
+Run `scripts/Check-Repository.ps1` for offline/backup, license-header and schema
+checks. For a Room upgrade, append a new schema, Migration and preservation test;
+never edit a published schema or use destructive fallback. Extend the hash file
+with the new version without replacing old hashes. Run the dedicated emulator's
+integration tests and record results honestly; a compiled app is not a tested app.
+
+## Good first contributions
+
+- Review the Spanish sample as a fluent speaker, including plurals and dates.
+- Add a complete translation using the instructions below.
+- Verify a battery-help menu path on a recent device and note the exact version.
+- Improve chart accessibility with screen-reader feedback and a focused test.
+- Contribute original plant art with complete license metadata and validator results.
+
+Keep proposals focused. Privacy, free tools and offline operation are required.
+Read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) and use [SECURITY.md](SECURITY.md)
+for sensitive reports. Never post an unredacted private backup or credentials.
+
 ## Translations
 
 English in `app/src/main/res/values/strings*.xml` is the fallback. Spanish in

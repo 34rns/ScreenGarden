@@ -1,0 +1,20 @@
+name: Feature or improvement
+description: Propose a focused, free, offline improvement.
+title: "feat: "
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What would this help you do?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Smallest useful change
+      description: Explain offline behavior, accessibility and any new permissions/dependencies.
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: "ScreenGarden stays free, offline and account-free. Paid tools, network SDKs, ads and tracking are outside the project rules."

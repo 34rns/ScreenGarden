@@ -1,0 +1,33 @@
+name: Bug report
+description: Describe a reproducible problem using artificial data.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include private backups, real usage screenshots, credentials or signing files. Report security issues privately using SECURITY.md."
+  - type: input
+    id: version
+    attributes:
+      label: ScreenGarden and Android versions
+      placeholder: "ScreenGarden 0.1.0, Android 15"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Use fake data. Include permission/battery settings when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Additional evidence
+      description: Redacted errors or emulator screenshots with fake debug-only data.

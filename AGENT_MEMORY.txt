@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 48 / P31 quality pass)
+Last updated: 2026-11-08 (Session 49 / P32 documentation completion)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -188,6 +188,11 @@ SECTION 4 - FOLDER LAYOUT
   |-- ART_LICENSE.md                    CC BY-SA 4.0 for art and plant packs
   |-- README.md                         pitch, privacy, screenshots, license
   |-- CONTRIBUTING.md                   rules, style, licensing, PR flow
+  |-- CODE_OF_CONDUCT.md, SECURITY.md    contributor conduct/private reporting
+  |-- THIRD_PARTY_NOTICES.md             upstream library attribution
+  |-- docs/GALLERY.md, QUALITY.md        screenshot gallery and verified limits
+  |-- scripts/Check-Repository.ps1       manifest/schema/file CI guard
+  |-- app/src/main/assets/notices/       bundled Apache/BSD/GPL notices
   |-- .editorconfig                     ktlint and editor settings
   |-- .gitattributes                    eol=lf so Windows clones pass ktlint
   |-- .gitignore
@@ -1190,6 +1195,16 @@ SECTION 6 - DECISIONS
       docs/QUALITY.md separates verified checks from OEM/physical-device limitations.
       New layout screenshots and scripts/{Check-Repository.ps1,schema-hashes.json}.
 
+  D90 P32 RELEASE DOCUMENTATION AND NOTICES.
+      Short README and separate docs/GALLERY.md; setup, privacy, architecture,
+      FAQ, verification limits and focused roadmap. CONTRIBUTING has migration
+      checks, translations and starter tasks. Added conduct/security guides and
+      GitHub bug/feature templates; private vulnerability reporting enabled.
+      Unmodified Apache-2.0, protobuf BSD notice and GPL text bundled in
+      app/src/main/assets/notices with THIRD_PARTY_NOTICES.md. Official texts
+      retrieved freely; no new SDK, permission, key, schema or user-facing screen.
+      Original art remains CC BY-SA 4.0. GitHub-only release/Pages remains P33.
+
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
   From P00 on, work is identified by PROMPT NUMBER. The old dotted IDs are kept
@@ -1255,14 +1270,14 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P30     done    Live wallpaper [new]
   P31     done    Quality pass: accessibility, perf, more screen sizes
                   [0.4 DONE in P00b; 3.3 remains]
-  P32     todo    Docs + release assets [3.4 part]
+  P32     done    Docs + release assets [3.4 part]
   P33     todo    GitHub signed release automation + Pages/screenshots (D34/D69)
 
   The old 0.4 (visual verification) is COMPLETE as of P00b for the current UI:
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P30 complete; P30 publication/CI in progress.
+  Sequencing note: P00-P32 complete; P33 GitHub release and Pages next.
   P04b repositories are complete, including BadgeRepository in P18.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
@@ -1654,7 +1669,7 @@ SECTION 10 - KNOWN ISSUES
       and actual process-death restart are not verified. P13 adds reachable UI.
 
   Current test state: 362 JVM tests, zero failures/errors/skips.
-  Final four gates PASS; 360 JVM tests, zero failures/errors/skips; lint zero errors/six accepted warnings. Native API35 permission/redirect/allow/disable/end checks PASS. Fake-only screenshots reviewed. Offline manifest, unchanged schemas, secret and whitespace checks PASS.
+  Final four gates PASS; 362 JVM tests, zero failures/errors/skips; lint zero errors/six accepted warnings. P31 full API35 integration suite has 20 passing tests. Fake-only screenshots reviewed. Offline manifest, unchanged schemas, secret and whitespace checks PASS.
   No signed GitHub release or Pages exists yet.
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
@@ -1696,12 +1711,12 @@ SECTION 10 - KNOWN ISSUES
 
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P31 complete locally. P30 4639276 CI 42466891783 SUCCESS. P31 four gates PASS; 362 JVM and 20 API35 integration tests, no failures/errors/skips. 14 fake-only layout captures reviewed. P31 publication/CI pending; P32 docs and P33 release/Pages remain.
+  P00-P32 complete. P31 bfe8b58 CI 42468119814 SUCCESS. P32 fresh four gates PASS; 362 JVM tests, zero failures/errors/skips, lint zero errors/six accepted warnings. Documentation/notices/gallery ready; P32 CI pending publication. P33 signed GitHub release and Pages remain.
 
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Verify P31 CI; finish P32 documentation, then P33 private signing, verified GitHub Release and Pages. Continue until explicitly stopped.
+  Verify P32 CI, then implement P33 tag-based private signing and professional GitHub Pages. Configure signing secrets through the owner only; never request or print their values. Continue until explicitly stopped.
 
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
@@ -2906,6 +2921,13 @@ SECTION 13 - SESSION LOG
     Verified  Four final gates PASS; 362 JVM tests and full 20-case native rerun green. CI guard rejects deliberate INTERNET probe and accepts actual merged manifest. All 14 fake-only captures reviewed; small and landscape focus controls reachable. Schemas unchanged, source text/architecture audit and secret/whitespace sweeps clean.
     Not ver.  Physical-device/OEM reliability, low-end performance, full current API26 UI, TalkBack listening, actual reboot/process death and Spanish native review. Capture helpers initially expected below-fold text and swiped outside the landscape content; corrected using actual scroll bounds, without changing or weakening app checks. No signed release/Pages yet.
     Next      Verify P31 CI; finish P32 documentation, then P33 private signing, verified GitHub Release and Pages. Continue until explicitly stopped.
+
+  SESSION 49 - 2026-11-08 - P32 documentation completion
+    Did       Finished README, contribution/security/conduct guides, issue templates, runtime license notices and the emulator-only screenshot gallery. Verified gallery paths and preserved required upstream attribution.
+    Decided   D90; GitHub only, original GPL/CC licenses unchanged; no new dependency, permission or schema.
+    Verified  Fresh four gate invocations PASS; 362 JVM report cases, no failures/errors/skips. P31 CI SUCCESS. Offline manifest, immutable schemas, secret sweep and whitespace checks PASS. All gallery image paths exist.
+    Not ver.  P32 CI pending push; signed release and Pages pending P33. Physical-device/OEM behavior, real reboot/process death, complete API26 layouts and native Spanish review remain unverified.
+    Next      Verify P32 CI, then implement P33 tag-based private signing and professional GitHub Pages. Configure signing secrets through the owner only; never request or print their values. Continue until explicitly stopped.
 
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
