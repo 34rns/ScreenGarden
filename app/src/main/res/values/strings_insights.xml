@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="insights_subtitle">Your time, seen gently.</string>
+    <string name="insights_day">Day</string>
+    <string name="insights_week">Week</string>
+    <string name="insights_month">Month</string>
+    <string name="insights_range">%1$s – %2$s</string>
+    <plurals name="insights_coverage">
+        <item quantity="one">%1$d of %2$d day has measured usage. Off days stay out of averages.</item>
+        <item quantity="other">%1$d of %2$d days have measured usage. Off days stay out of averages.</item>
+    </plurals>
+    <string name="insights_total">Screen time in this view</string>
+    <string name="insights_time">%1$d h %2$d min</string>
+    <string name="insights_unknown">Not measured</string>
+    <string name="insights_counts">Pickups: %1$s · Average score: %2$s</string>
+    <string name="insights_score_value">%1$d / 100</string>
+    <string name="insights_refresh">Refresh</string>
+    <string name="insights_refresh_error">Refresh could not finish. Saved history is still here.</string>
+    <string name="insights_read_error">History could not be read. Try refreshing.</string>
+    <string name="insights_no_access">Usage access is off. Saved history stays here; enable it to measure new days.</string>
+    <string name="insights_enable">Enable Usage access</string>
+    <string name="insights_empty">Your history will take shape here</string>
+    <string name="insights_empty_copy">Open ScreenGarden after a day of usage to collect what Android can report. Missing days are unknown, never zero.</string>
+    <string name="insights_retention">Android usually keeps about a week of detailed events. ScreenGarden saves collected daily totals locally, so a fresh install cannot reconstruct an earlier month.</string>
+    <string name="insights_screen_chart">Screen time against your goal</string>
+    <string name="insights_goal_legend">Bars: screen time. Dashed line: daily goal %1$s.</string>
+    <plurals name="insights_bar_description">
+        <item quantity="one">Screen time bar chart with %1$d measured day. Missing and off days have no bar. Daily goal: %2$s. Exact values are available below.</item>
+        <item quantity="other">Screen time bar chart with %1$d measured days. Missing and off days have no bar. Daily goal: %2$s. Exact values are available below.</item>
+    </plurals>
+    <string name="insights_score_chart">Health score</string>
+    <string name="insights_score_description">Health score from zero to one hundred, oldest to newest. Gaps mean unknown or off days. Exact daily scores are available below.</string>
+    <string name="insights_score_legend">Score 0–100. Gaps stay unknown; off days are excluded.</string>
+    <string name="insights_show_values">Show daily values</string>
+    <string name="insights_hide_values">Hide daily values</string>
+    <string name="insights_daily_value">%1$s: %2$s; score %3$s; pickups %4$s</string>
+    <string name="insights_off">Compassion day</string>
+    <string name="insights_top_apps">Where time went</string>
+    <string name="insights_no_apps">No measured app usage in this view.</string>
+    <string name="insights_app_value">%1$s: %2$s</string>
+    <string name="insights_hours">Patterns by hour</string>
+    <string name="insights_hours_copy">Recent measured days in this view only. Each tile shows minutes in a local clock hour; more green means more time.</string>
+    <string name="insights_hours_empty">Hourly detail is unavailable. Android may have expired the events, or screen-state evidence is incomplete.</string>
+    <plurals name="insights_hour_value">
+        <item quantity="one">%1$s: %2$d minute</item>
+        <item quantity="other">%1$s: %2$d minutes</item>
+    </plurals>
+    <string name="insights_hour_minutes">%1$d min</string>
+    <string name="insights_peak">Most time: %1$s, %2$s across %3$s.</string>
+    <plurals name="insights_recent_days">
+        <item quantity="one">%1$d recent measured day</item>
+        <item quantity="other">%1$d recent measured days</item>
+    </plurals>
+    <string name="insights_hours_zero">No foreground time in the recent measured hours.</string>
+</resources>

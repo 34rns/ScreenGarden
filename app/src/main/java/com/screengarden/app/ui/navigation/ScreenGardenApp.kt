@@ -24,7 +24,8 @@ fun ScreenGardenApp(
     gardenContent: @Composable (() -> Unit) -> Unit,
     focusContent: @Composable () -> Unit,
     limitsContent: @Composable (() -> Unit) -> Unit,
-    habitsContent: @Composable (() -> Unit) -> Unit = { _ -> }
+    habitsContent: @Composable (() -> Unit) -> Unit = { _ -> },
+    insightsContent: @Composable () -> Unit = { }
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -58,7 +59,8 @@ fun ScreenGardenApp(
             gardenContent = gardenContent,
             focusContent = focusContent,
             limitsContent = limitsContent,
-            habitsContent = habitsContent
+            habitsContent = habitsContent,
+            insightsContent = insightsContent
         )
     }
 }

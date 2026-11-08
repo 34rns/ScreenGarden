@@ -25,6 +25,7 @@ import com.screengarden.app.data.repo.DailyStatRepositoryImpl
 import com.screengarden.app.data.repo.FocusSessionRepositoryImpl
 import com.screengarden.app.data.repo.GardenRepositoryImpl
 import com.screengarden.app.data.repo.HabitsRepository
+import com.screengarden.app.data.repo.InsightsRepository
 import com.screengarden.app.data.settings.DataStoreSettingsRepository
 import com.screengarden.app.data.settings.SettingsRepository
 import com.screengarden.app.data.settings.settingsDataStore
@@ -37,6 +38,7 @@ import com.screengarden.app.data.work.UsageSyncScheduler
 import com.screengarden.app.ui.screens.focus.FocusViewModel
 import com.screengarden.app.ui.screens.garden.GardenViewModel
 import com.screengarden.app.ui.screens.habits.HabitsViewModel
+import com.screengarden.app.ui.screens.insights.InsightsViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
 import java.time.LocalTime
 import kotlinx.coroutines.flow.combine
@@ -96,6 +98,25 @@ class AppContainer(context: Context) {
     val gardenRepository: GardenRepositoryImpl by lazy { GardenRepositoryImpl(database) }
     val badgeRepository: BadgeRepositoryImpl by lazy { BadgeRepositoryImpl(database.badgeDao()) }
     val habitsRepository: HabitsRepository by lazy { HabitsRepository(database) }
+    val insightsRepository: InsightsRepository by lazy {
+        InsightsRepository(
+            database,
+            gardenRepository,
+            usageRepository,
+            { appCatalog.installedApps().associate { it.packageName to it.label } }
+        )
+    }
+
+    fun insightsViewModel(): InsightsViewModel = InsightsViewModel(
+        insightsRepository,
+        settingsRepository.dailyGoalMs,
+        settingsRepository.pickupGoal,
+        { usageRepository.isUsageAccessGranted() },
+        {
+            dailyUsageSync.run()
+            Unit
+        }
+    )
 
     fun habitsViewModel(): HabitsViewModel = HabitsViewModel(
         habitsRepository,

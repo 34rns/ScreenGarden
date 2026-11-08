@@ -27,6 +27,28 @@ import org.junit.Test
  */
 class DefaultUsageRepositoryTest {
 
+    @Test fun hourlyBinsMatchBoundedForegroundTimeAndExcludeScreenOff() = runBlocking {
+        val source = FakeUsageSource(
+            events = listOf(
+                event(UsageEventType.SCREEN_INTERACTIVE, 0),
+                resumed(APP_A, 50),
+                event(UsageEventType.SCREEN_NON_INTERACTIVE, 80),
+                paused(APP_A, 100)
+            )
+        )
+        val usage = repository(source).readDay(DAY_START, ZONE).requireUsage()
+        val bins = requireNotNull(usage.hourlyUsageMillis)
+        assertEquals(10 * MINUTE, bins[0])
+        assertEquals(20 * MINUTE, bins[1])
+        assertEquals(usage.totalScreenTimeMillis, bins.sum())
+    }
+
+    @Test fun missingScreenEvidenceHasNoHourlyZeroes() = runBlocking {
+        val usage = repository(FakeUsageSource(events = listOf(resumed(APP_A, 10), paused(APP_A, 20))))
+            .readDay(DAY_START, ZONE).requireUsage()
+        assertNull(usage.hourlyUsageMillis)
+    }
+
     @Test
     fun bedtimeCountsOnlyLaunchableScreenOnTimeAndClipsAtNow() = runBlocking {
         val source = FakeUsageSource(

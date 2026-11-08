@@ -3,6 +3,7 @@
 package com.screengarden.app.data.usage
 
 import com.screengarden.app.core.time.BedtimeWindow
+import com.screengarden.app.core.time.HourlyUsage
 import com.screengarden.app.core.time.LocalDay
 import java.time.ZoneId
 
@@ -71,7 +72,8 @@ class DefaultUsageRepository(
                 window.unlocks,
                 window.apps,
                 window.usageIsBounded,
-                if (window.usageIsBounded && bedtime != null) window.bedtimeUsageMillis else null
+                if (window.usageIsBounded && bedtime != null) window.bedtimeUsageMillis else null,
+                window.hourlyUsageMillis.takeIf { window.usageIsBounded }
             )
         )
     }
@@ -94,8 +96,12 @@ class DefaultUsageRepository(
         val launchablePackages = source.launchablePackages()
         val measuredWindows = LinkedHashMap<String, MutableWindow>()
         var bedtimeUsageMillis = 0L
+        val hours = LongArray(24)
         fun closeMeasuredWindow(packageName: String?, since: Long, until: Long) {
             closeWindow(packageName, since, until, windows = measuredWindows, windowStartMillis = dayStartUtcMillis)
+            if (packageName in launchablePackages) {
+                HourlyUsage.add(hours, maxOf(since, dayStartUtcMillis), until, zone)
+            }
             if (packageName in launchablePackages && bedtime != null) {
                 bedtimeUsageMillis += bedtime.overlapMillis(maxOf(since, dayStartUtcMillis), until, zone)
             }
@@ -200,7 +206,8 @@ class DefaultUsageRepository(
             pickups = pickups,
             unlocks = if (source.supportsUnlocks) UnlockCount.Supported(unlocks) else UnlockCount.Unsupported,
             usageIsBounded = source.supportsScreenState && hasScreenEvidence,
-            bedtimeUsageMillis = bedtimeUsageMillis
+            bedtimeUsageMillis = bedtimeUsageMillis,
+            hourlyUsageMillis = hours.toList()
         )
     }
 
@@ -231,5 +238,6 @@ data class UsageWindow(
     val pickups: Int,
     val unlocks: UnlockCount,
     val usageIsBounded: Boolean,
-    val bedtimeUsageMillis: Long = 0L
+    val bedtimeUsageMillis: Long = 0L,
+    val hourlyUsageMillis: List<Long> = emptyList()
 )

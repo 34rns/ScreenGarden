@@ -7,7 +7,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.screengarden.app.ui.screens.insights.InsightsScreen
 import com.screengarden.app.ui.screens.settings.SettingsScreen
 
 /**
@@ -22,7 +21,8 @@ fun ScreenGardenNavHost(
     gardenContent: @Composable (() -> Unit) -> Unit,
     focusContent: @Composable () -> Unit,
     limitsContent: @Composable (() -> Unit) -> Unit,
-    habitsContent: @Composable (() -> Unit) -> Unit = { _ -> }
+    habitsContent: @Composable (() -> Unit) -> Unit = { _ -> },
+    insightsContent: @Composable () -> Unit = { }
 ) {
     NavHost(
         navController = navController,
@@ -36,7 +36,7 @@ fun ScreenGardenNavHost(
             focusContent()
         }
         composable(ScreenGardenDestination.Insights.route) {
-            InsightsScreen()
+            insightsContent()
         }
         composable(ScreenGardenDestination.Settings.route) {
             SettingsScreen(

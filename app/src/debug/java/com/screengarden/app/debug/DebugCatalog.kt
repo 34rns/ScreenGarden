@@ -4,21 +4,32 @@ package com.screengarden.app.debug
 
 import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.screengarden.app.R
 import com.screengarden.app.ScreenGardenApplication
+import com.screengarden.app.core.time.LocalDay
 import com.screengarden.app.data.notifications.AndroidNudgePublisher
 import com.screengarden.app.data.usage.AndroidUsageSource
 import com.screengarden.app.domain.focus.FocusSessionState
 import com.screengarden.app.domain.focus.FocusStatus
 import com.screengarden.app.domain.focus.FocusTag
+import com.screengarden.app.domain.garden.GardenDayRecord
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.domain.habits.BadgeKind
 import com.screengarden.app.domain.habits.EarnedBadge
 import com.screengarden.app.domain.habits.HabitsSnapshot
 import com.screengarden.app.domain.habits.Streaks
+import com.screengarden.app.domain.insights.AppTime
+import com.screengarden.app.domain.insights.HourlyDay
+import com.screengarden.app.domain.insights.InsightsPeriod
+import com.screengarden.app.domain.insights.InsightsSnapshot
+import com.screengarden.app.domain.insights.InsightsSummary
 import com.screengarden.app.domain.limits.AppLimitRule
 import com.screengarden.app.domain.limits.LaunchableApp
 import com.screengarden.app.domain.notifications.Nudge
@@ -33,10 +44,13 @@ import com.screengarden.app.ui.screens.garden.GardenScreen
 import com.screengarden.app.ui.screens.garden.GardenUiState
 import com.screengarden.app.ui.screens.habits.HabitsScreen
 import com.screengarden.app.ui.screens.habits.HabitsUiState
+import com.screengarden.app.ui.screens.insights.InsightsScreen
+import com.screengarden.app.ui.screens.insights.InsightsUiState
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
 import com.screengarden.app.ui.screens.limits.AppLimitsUiState
 import com.screengarden.app.ui.screens.settings.SettingsScreen
 import java.time.LocalDate
+import java.time.ZoneId
 
 /**
  * The debug-build catalogue of diagnostic screens (P05b).
@@ -55,6 +69,77 @@ object DebugCatalog {
 
     /** The requested debug destination, or null when [requested] names none. */
     fun destination(requested: String?, context: Context): DebugDestination? {
+        if (requested in setOf(
+                "insights_demo",
+                "insights_empty_demo",
+                "insights_permission_demo",
+                "insights_rtl_demo",
+                "insights_day_demo",
+                "insights_month_demo"
+            )
+        ) {
+            val today = LocalDate.of(2026, 11, 8)
+            val zone = ZoneId.systemDefault()
+            val days = if (requested == "insights_empty_demo") {
+                emptyList()
+            } else {
+                (0..29).map { index ->
+                    val key = LocalDay.startOfDay(today.minusDays((29 - index).toLong()), zone)
+                    GardenDayRecord(
+                        key, 70 + index % 4 * 6, 100 + index * 19 % 170, 25, 1, 30 + index % 10,
+                        25, true, index < 29, key, isCompassionDay = index == 26
+                    )
+                }
+            }
+            val apps = days.flatMap { day ->
+                val reader = day.screenMinutes * 60_000L * 3 / 5
+                listOf(
+                    AppTime(day.dayStartUtcMillis, "demo.reader", "Reading", reader),
+                    AppTime(day.dayStartUtcMillis, "demo.notes", "Notes", day.screenMinutes * 60_000L - reader)
+                )
+            }
+            val hours = days.takeLast(7).map { day ->
+                val values = MutableList(24) { 0L }
+                val total = day.screenMinutes * 60_000L
+                values[8] = total / 6
+                values[12] = total / 6
+                values[18] = total / 5
+                values[19] = total / 5
+                values[20] = total / 6
+                values[21] = total - values.sum()
+                check(values.sum() == total && values.all { it in 0L..3_600_000L })
+                HourlyDay(day.dayStartUtcMillis, values)
+            }
+            val snapshot = InsightsSnapshot(days, apps)
+            return DebugDestination(requireNotNull(requested), ScreenGardenDestination.Insights) {
+                var period by remember {
+                    mutableStateOf(
+                        when (requested) {
+                            "insights_day_demo" -> InsightsPeriod.DAY
+                            "insights_month_demo" -> InsightsPeriod.MONTH
+                            else -> InsightsPeriod.WEEK
+                        }
+                    )
+                }
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides
+                        if (requested == "insights_rtl_demo") LayoutDirection.Rtl else LocalLayoutDirection.current
+                ) {
+                    InsightsScreen(
+                        InsightsUiState(
+                            loading = false,
+                            period = period,
+                            hasUsageAccess = requested != "insights_permission_demo",
+                            summary = InsightsSummary.build(snapshot, period, today, 180, 80, zone),
+                            hours = hours
+                        ),
+                        { period = it },
+                        {},
+                        {}
+                    )
+                }
+            }
+        }
         if (requested in setOf("habits_demo", "habits_empty_demo", "habits_rtl_demo")) {
             val state = HabitsUiState(
                 loading = false,

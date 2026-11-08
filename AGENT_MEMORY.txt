@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 26 / P18 complete locally)
+Last updated: 2026-11-08 (Session 28 / P19 complete)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -125,7 +125,7 @@ SECTION 3 - TECH STACK
                 (P07); API 35 + API 26 emulators for visual, RTL, migration and
                 on-device usage checks; a debug-only usage self-check screen
                 (P05b) turns "it compiles" into measured numbers
-  Tests         263 JVM tests; 7 migration cases green on API 35 (P18)
+  Tests         281 JVM tests; 7 migration cases green on API 35 (P18)
   Toolchain     JDK 17 (17.0.20.1 verified), Android SDK 35, build-tools 35.0.0
 
   LOCAL ENVIRONMENT (verified in P00b, Windows 11 + Git Bash)
@@ -228,6 +228,7 @@ SECTION 4 - FOLDER LAYOUT
           |       |-- MainActivity.kt              single activity, AMOLED hook
           |       |-- core/time/LocalDay.kt        the only day-boundary helper
           |       |-- core/time/BedtimeWindow.kt   shared local quiet-hour window (P16)
+          |       |-- core/time/HourlyUsage.kt     local-hour bins with DST transitions (P19)
           |       |-- data/notifications/          publisher/check/durable delivery ledger (P16)
           |       |-- domain/notifications/        pure threshold policy (P16)
           |       |-- di/AppContainer.kt           manual DI root + database
@@ -248,6 +249,8 @@ SECTION 4 - FOLDER LAYOUT
           |       |-- domain/habits/               calendar streaks/badges/store (P18)
           |       |-- data/repo/HabitsRepository.kt atomic rest quota and milestone reads (P18)
           |       |-- data/repo/BadgeRepositoryImpl.kt permanent unlock timestamps (P18)
+          |       |-- data/repo/InsightsRepository.kt stored totals and recent hourly reads (P19)
+          |       |-- domain/insights/             honest summaries and store boundary (P19)
           |       `-- ui/  theme/, navigation/, components/, screens/,
           |                 onboarding/ (OnboardingScreen + GoalSetup, P07),
           |                 screens/garden/ (ViewModel/state, Canvas, renderer, details)
@@ -255,6 +258,7 @@ SECTION 4 - FOLDER LAYOUT
           |                 screens/focus/ (FocusScreen + FocusViewModel, P13)
           |                 screens/limits/ (AppLimitsScreen + ViewModel, P15)
           |                 screens/habits/ (milestones, compassion controls + ViewModel, P18)
+          |                 screens/insights/ (single state, Canvas charts and labelled heatmap, P19)
           |-- debug/                            DEBUG-ONLY source set (P05b)
           |   |-- res/values/strings.xml        self-check strings, never shipped
           |   `-- java/com/screengarden/app/
@@ -966,6 +970,21 @@ SECTION 6 - DECISIONS
       sessions in a local Monday-Sunday week, first bloom and first recovery.
       Garden/focus transitions record plant badges atomically; the milestone
       screen also evaluates stored history. All data remains local and free.
+  D77 P19 INSIGHTS USE NATIVE CANVAS AND HONEST COVERAGE.
+      Day/week/month mean today, last 7 and last 30 local days. Daily totals stay
+      in existing Room v5; custom Compose Canvas bars/score line add no library
+      or art dependency (original GPL-3.0-or-later code, existing Apache-2.0 Compose).
+      Missing/unbounded/compassion days have no bar or score and stay out of
+      totals/averages/top apps. Applied scores stay frozen; current/unapplied
+      scores reuse HealthScoreCalculator with current goals and measured inputs.
+      HourlyUsage splits the existing bounded foreground intervals by local
+      clock hour and timezone transitions; repeated DST hours share a bin and
+      gaps invent no minutes. Hour bins are transient, never a new history claim.
+      At most seven local days of Android events are re-read on visible refresh;
+      range toggles reuse them. Heatmap excludes off/missing days and labels every
+      tile with minutes; readable daily values complement chart descriptions.
+      Permission, empty, partial and retry states are explicit. No new schema,
+      dependency or permission. Debug demos contain fake-only consistent totals.
 --------------------------------------------------------------------------------
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
@@ -1018,7 +1037,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   P17     done    Measured bedtime minutes, Room v4 migration, sleep garden and
                   visible-clock policy; 244 JVM tests + 6 emulator checks [new]
   P18     done    Streaks + badges, compassion-day quota and Room v5 [1.5 part]
-  P19     todo    Insights charts [2.3]
+  P19     done    Insights charts, safe summaries and recent hourly evidence [2.3]
   P20     todo    Weekly reflection + timeline [new]
   P21     todo    Day/night, seasons, weather visuals [new]
   P22     todo    Themes (incl. AMOLED toggle; removes D35's hook) [3.1]
@@ -1039,8 +1058,8 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
   done for screens that do not exist yet; each new screen re-verifies its own.
 
-  Sequencing note: P00-P18 are implemented and verified; P18 publication pending.
-  P04b repositories are complete, including BadgeRepository in P18. P19 is next.
+  Sequencing note: P00-P19 are implemented and locally verified; see CURRENT STATUS for CI.
+  P04b repositories are complete, including BadgeRepository in P18. P20 is next.
   Keep one prompt per logical commit; continue the owner-authorized full batch.
 
 --------------------------------------------------------------------------------
@@ -1064,6 +1083,8 @@ SECTION 8 - DEPENDENCIES  (task briefs call this "section 7")
   P09 added no dependency: the lifecycle uses plain Kotlin arithmetic and the
   existing JVM JUnit tests, with java.util.UUID as its default ID factory.
   P15 adds no dependency: PackageManager, Room, Compose and Flow already exist.
+  P19 adds no dependency: native Compose Canvas renders charts; original code is
+  GPL-3.0-or-later and uses the existing Apache-2.0 Compose artifacts. No Vico.
 
   Name / version                    License       Why / scope
   ---------------------------------------------------------------------------
@@ -1234,8 +1255,8 @@ SECTION 10 - KNOWN ISSUES
   K1  The AMOLED scheme is a persisted setting now (P04), but nothing writes it
       yet: the picker is P22's work, so on device it is still reachable only
       through the debug intent extra (D35). Close in P22.
-  K2  Garden, Focus and App limits are implemented. Settings has the limits entry;
-      other Settings controls (P22) and Insights (P19) remain unfinished.
+  K2  Garden, Focus, App limits, Milestones and Insights are implemented. Settings
+      has limits/milestones entries; remaining Settings controls are P22.
   K3  P10 GardenViewModel reads Room through GardenStore. Five repositories are
       implemented, including BadgeRepository in P18.
   K4  kotlinOptions { jvmTarget } is deprecated in Kotlin 2.1 (still compiles).
@@ -1414,13 +1435,12 @@ SECTION 10 - KNOWN ISSUES
       alarm or extra wake lock. Physical-device Doze/battery behavior, real reboot
       and actual process-death restart are not verified. P13 adds reachable UI.
 
-  Current test state: 263 JVM tests, 0 failures/errors/skips. Four final P18
-  gates PASS; lint 0 errors/4 accepted warnings. Seven API 35 migration cases
-  PASS through v5. Real Settings route, mark/unmark and restart persistence PASS.
-  P16's two native reminder tests and P14's service tests remain recorded.
-  Seven final fake-only sleep-garden screenshots reviewed: light/dark/AMOLED,
-  1.3x text, forced RTL, no data and no permission. No real-data screenshots.
-  CI: P17 86aca9a run 42433264065 SUCCESS; all four quality steps green.
+  Current test state: 281 JVM tests, zero failures/errors/skips. Four final P19
+  gates PASS; lint zero errors/four accepted warnings. P18's seven API 35
+  migration cases PASS through v5; P19 changes no schema. Real Insights tab,
+  day/week/month ranges and readable daily values PASS. Ten final fake-only
+  Insights captures reviewed, including 1.3x text and corrected RTL paragraphs.
+  Prior P16 reminder/P14 service/P18 migration results stay in their session logs.
   No signed release or Pages site exists yet.
   K56 P16 reminders are approximate: 15-minute minimum, Doze/battery/OEM delay.
       Claim-before-post can miss one after a crash, but never repeats it.
@@ -1434,31 +1454,29 @@ SECTION 10 - KNOWN ISSUES
       explicit synchronous commit() and its success check to persist claims
       before posting; the generic editing helper suggestion is not adopted.
       Four lint warnings, zero errors; no suppression or baseline added.
+  K59 P19 hourly details are transient and limited by recent Android event
+      retention/evidence. Collected daily totals stay in Room; a fresh install
+      cannot reconstruct an earlier month. API 26/new-size Insights rendering
+      remains a P31 check. No exact hourly history or physical-device claim.
 --------------------------------------------------------------------------------
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P17 are published and verified; P17 code and checkpoint CI SUCCESS.
-  P18 completed locally: domain/habits rules, data/repo/HabitsRepository and
-  BadgeRepositoryImpl, ui/screens/habits screen/ViewModel, Settings navigation,
-  isCompassionDay in Room v5, MIGRATION_4_5 and exported 5.json.
-  Current code preserves badge timestamps, applied rewards and rest markers
-  during usage sync; plant transitions record bloom/recovery in their transaction.
-  Fresh final four gates PASS: 263 JVM tests, zero failures/errors/skips,
-  lint zero errors/four accepted warnings. Seven emulator migration cases and
-  real milestone mark/restart/unmark checks PASS. Ten fake-only milestone and
-  settings captures reviewed. Publication/CI pending; no unfinished P18 code.
-  No paid tool/dependency/permission added. No signed release or Pages yet.
-
+  P00-P18 are published; P18 b082ea9 CI 42435800292 SUCCESS.
+  P19 complete locally: Canvas Insights, bounded daily summaries, top apps,
+  pickups, honest recent-hour heatmap, single ViewModel state and retry/access
+  states. Fresh four gates PASS; 281 JVM tests, zero failures/errors/skips;
+  lint zero errors/four accepted warnings. Real emulator ranges/values PASS.
+  Ten fake-only captures reviewed; RTL regression fails before and passes
+  after content-direction fix. P19 commit/push/CI is the immediate final step.
+  No dependency/permission/schema added. No signed release or Pages yet.
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  Finish P18 publication and CI, then implement P19 Insights
-  charts and continue P20-P33 in order, GitHub only.
-  Owner requests continuous work until explicitly stopped (2026-11-08);
-  save checkpoints but do not stop at task/context milestones. Use compaction
-  to continue the same task. Signing may require manual human setup in P33;
-  never request, print or commit secret values.
-
+  Publish P19 and confirm CI; then P20 weekly reflection and garden history.
+  Continue P20-P33 in order, GitHub only, until explicitly stopped by the owner.
+  Save checkpoints and use compaction to continue; do not stop at task/context
+  milestones. Signing may require manual human setup in P33; never request,
+  print or commit secret values.
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
 --------------------------------------------------------------------------------
@@ -2212,7 +2230,43 @@ SECTION 13 - SESSION LOG
     Not ver.  Physical-device reliability, API 26/new-size milestone visuals,
               signed APK and Pages. Video not available (Session 12). Emulator
               capture null roots retry with unique paths; final captures verified.
-    Next      Publish P18 and verify CI, then P19-P33 continuously until stopped.
+    CI        P18 b082ea9 pushed; 42435800292 SUCCESS, all four quality steps.
+              https://github.com/34rns/ScreenGarden/actions/runs/42435800292
+    Next      P19-P33 continuously until stopped.
+  SESSION 27 - 2026-11-08 - P19 Insights implementation checkpoint
+    Did       P18 CI confirmed green. Added pure summaries, local-hour splitting,
+              existing-event hourly reads, Insights repository/ViewModel, native
+              Canvas charts, top apps, pickups, readable values and labelled heatmap.
+              Added fake-only demos for day/week/month, missing data/access and RTL.
+    Decided   D77. Existing Compose Canvas keeps dependency/license scope small.
+              Last 1/7/30 local days; bounded non-rest days only in aggregates.
+              Applied scores stay frozen; recent hour bins are never stored history.
+    Verified  Initial expanded 280-test full run PASS. Initial lint has 0 errors
+              but 5 new wording/unused-string warnings; fixed with plurals and by
+              deleting the obsolete placeholder string. Native fake preview reviewed:
+              six measured days and one compassion gap, readable goal line/controls.
+              Retry regression failed before the observer restart fix and now passes.
+    Not ver.  Final gates after wording fixes running; captures, actual tab
+              interaction, final review/publication/CI pending. No signed APK/Pages.
+    Next      Finish P19 final gates, emulator checks/captures, memory/push/CI;
+              continue P20-P33 without stopping unless the owner requests it.
+  SESSION 28 - 2026-11-08 - P19 final RTL correction and publication
+    Did       Resumed saved work; read memory, status/history, fetched origin with
+              no divergence. Finished Insights paragraph direction for numeric
+              coverage, chart legends and dates. Reused existing Material tokens.
+              Updated ten emulator fake-only images and reviewed every capture.
+    Decided   Keep D69/D74/D77; no new permission/dependency/schema. Explicit
+              Text styles need Content direction even under a LocalTextStyle;
+              otherwise English punctuation/numeric-leading copy inherits RTL.
+    Verified  Fresh four gates PASS: 281 JVM tests, zero failures/errors/skips;
+              lint zero errors/four accepted warnings. The new RTL regression
+              fails before and passes after the fix. Real Insights tab, day/week/
+              month and readable values PASS. Ten final captures reviewed.
+              Privacy manifest, unchanged schemas, secret/whitespace sweep PASS.
+    Not ver.  Physical-device reliability, API 26/new sizes (P31), signed APK and
+              Pages. Video not available (Session 12). Null emulator UI roots
+              retry with fresh dump paths; only verified final images published.
+    Next      Commit/push/CI P19, then P20-P33 continuously until stopped.
 --------------------------------------------------------------------------------
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------

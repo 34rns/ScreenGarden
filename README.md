@@ -4,7 +4,7 @@ A calm, offline garden that grows while you focus and keep your screen time in
 check.
 
 > **Status: work in progress.** Onboarding, local settings, usage collection and
-> the Garden, Focus, App limits and Milestones screens are implemented. Insights and Settings controls are
+> the Garden, Focus, Insights, App limits and Milestones screens are implemented. Settings controls are
 > still being built. There is no installable signed release yet.
 
 [![CI](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/34rns/ScreenGarden/actions/workflows/ci.yml)
@@ -21,8 +21,8 @@ nothing is uploaded or sold.
 ## Screenshots
 
 Captured on an Android 15 emulator (1080 × 2400) with demo mode enabled.
-Garden, Focus, App limits and Milestones images use fake debug-only demo data. Settings shows
-the App limits and Milestones entries; Insights remains a placeholder. No image contains personal phone data.
+Garden, Focus, Insights, App limits and Milestones images use fake debug-only demo data. Settings shows
+the App limits and Milestones entries. No image contains personal phone data.
 
 | | Light | Dark | AMOLED |
 | --- | --- | --- | --- |
@@ -71,6 +71,16 @@ Compassion days and milestones, with fake data:
 | --- | --- | --- | --- |
 | <img src="docs/screenshots/habits_compassion.png" width="200" alt="Mark an off day and configure the monthly allowance"> | <img src="docs/screenshots/habits_large_font.png" width="200" alt="Milestones at 1.3 times font scale"> | <img src="docs/screenshots/habits_rtl.png" width="200" alt="Mirrored milestone layout with readable text"> | <img src="docs/screenshots/habits_empty.png" width="200" alt="No counted days or earned badges yet"> |
 
+Insights, with fake debug-only data and explicit coverage:
+
+| Recent hours | Month view | Large text | Mirrored layout |
+| --- | --- | --- | --- |
+| <img src="docs/screenshots/insights_hours.png" width="200" alt="Labelled local-hour heatmap and recent-day coverage"> | <img src="docs/screenshots/insights_month.png" width="200" alt="Thirty-day screen time with an off-day gap"> | <img src="docs/screenshots/insights_large_font.png" width="200" alt="Insights at 1.3 times font scale"> | <img src="docs/screenshots/insights_rtl.png" width="200" alt="Insights with mirrored chart chronology and controls"> |
+
+| Today | No data yet | Usage access missing |
+| --- | --- | --- |
+| <img src="docs/screenshots/insights_day.png" width="200" alt="Today's measured screen time"> | <img src="docs/screenshots/insights_empty.png" width="200" alt="An honest empty history with no invented totals"> | <img src="docs/screenshots/insights_permission.png" width="200" alt="Saved Insights remain visible after Usage access is switched off"> |
+
 ## Privacy promise
 
 - **No internet permission.** The app cannot make a network request, even by
@@ -117,12 +127,21 @@ by intention. A pull request that adds network access or telemetry is rejected.
   grace, using the same gradual curve as the other habits. Saved plants remain
   accessible and recoverable. Old bedtime history is unknown until remeasured.
 - Usage without reliable screen events (including Android 8.0–8.1) is shown as
-  incomplete rather than given a fabricated score. Insights and the remaining
-  Settings controls are still being built.
+  incomplete rather than given a fabricated score. The remaining Settings
+  controls are still being built.
 - Counted-day streaks and permanent badges celebrate progress gently. Mark today
   or a past date as a compassion day to preserve a streak and exclude it from
   averages. The monthly allowance defaults to three and is configurable from zero
   to ten. Rest never erases applied growth or an earned badge.
+- Insights shows today, the last seven days or the last thirty days: screen-time
+  bars against your goal, a health-score line, top apps and pickups. Readable daily
+  values accompany the charts. A labelled hourly heatmap uses recent measured
+  events only; missing and compassion days stay out of averages and totals.
+
+Insights preserves collected daily totals locally. Android usually retains about a
+week of detailed usage events, so a fresh install cannot reconstruct the previous
+month. Hourly detail is read from that recent event history and may be unavailable;
+unknown usage is never shown as zero. The month view covers the last thirty local days.
 
 Reminder checks use Android's background scheduler at a 15-minute minimum interval,
 with a battery-not-low constraint. Checks can be delayed by Doze, battery restrictions

@@ -37,6 +37,8 @@ import com.screengarden.app.ui.screens.garden.GardenScreen
 import com.screengarden.app.ui.screens.garden.GardenViewModel
 import com.screengarden.app.ui.screens.habits.HabitsScreen
 import com.screengarden.app.ui.screens.habits.HabitsViewModel
+import com.screengarden.app.ui.screens.insights.InsightsScreen
+import com.screengarden.app.ui.screens.insights.InsightsViewModel
 import com.screengarden.app.ui.screens.limits.AppLimitsScreen
 import com.screengarden.app.ui.screens.limits.AppLimitsViewModel
 import com.screengarden.app.ui.theme.ScreenGardenTheme
@@ -159,6 +161,23 @@ class MainActivity : ComponentActivity() {
                     val state by habits.uiState.collectAsStateWithLifecycle()
                     HabitsScreen(state, habits::setCompassionDay, habits::setThreshold, habits::setMonthlyLimit, back)
                 }
+                val insightsContent: @androidx.compose.runtime.Composable () -> Unit = {
+                    val factory = remember(container) {
+                        viewModelFactory { initializer { container.insightsViewModel() } }
+                    }
+                    val insights: InsightsViewModel = viewModel(factory = factory)
+                    val state by insights.uiState.collectAsStateWithLifecycle()
+                    LifecycleResumeEffect(insights) {
+                        insights.refresh()
+                        onPauseOrDispose { }
+                    }
+                    InsightsScreen(
+                        state,
+                        insights::setPeriod,
+                        insights::refresh,
+                        { startActivity(UsageAccess.settingsIntent()) }
+                    )
+                }
                 when {
                     // A debug build launched with a screen extra wins, so the diagnostic
                     // screens stay reachable even before onboarding was completed.
@@ -167,7 +186,8 @@ class MainActivity : ComponentActivity() {
                         gardenContent = gardenContent,
                         focusContent = focusContent,
                         limitsContent = limitsContent,
-                        habitsContent = habitsContent
+                        habitsContent = habitsContent,
+                        insightsContent = insightsContent
                     )
                     onboardingDone == null -> Box(
                         modifier = Modifier
@@ -206,7 +226,8 @@ class MainActivity : ComponentActivity() {
                         gardenContent = gardenContent,
                         focusContent = focusContent,
                         limitsContent = limitsContent,
-                        habitsContent = habitsContent
+                        habitsContent = habitsContent,
+                        insightsContent = insightsContent
                     )
                 }
             }

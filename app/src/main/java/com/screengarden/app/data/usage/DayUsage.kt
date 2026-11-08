@@ -46,7 +46,9 @@ data class DayUsage(
     /** False when the event stream cannot bound activity time with screen state. */
     val usageIsBounded: Boolean = false,
     /** Unknown until both a configured window and bounded foreground intervals are available. */
-    val bedtimeUsageMillis: Long? = null
+    val bedtimeUsageMillis: Long? = null,
+    /** Recent event-derived clock hours, not persisted history; null without bounded evidence. */
+    val hourlyUsageMillis: List<Long>? = null
 ) {
 
     /** The entry for one package, or null when it was not used that day. */
