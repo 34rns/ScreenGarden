@@ -12,7 +12,13 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /** Twelve deterministic particles maximum, drawn by the existing scene clock without a simulation. */
-internal fun DrawScope.drawGardenWeather(weather: GardenWeather, phase: Float, ink: Color, lowPower: Boolean) {
+internal fun DrawScope.drawGardenWeather(
+    weather: GardenWeather,
+    phase: Float,
+    ink: Color,
+    lowPower: Boolean,
+    maxParticles: Int = 12
+) {
     if (weather == GardenWeather.SUN_RAYS) {
         val sun = Offset(size.width * 0.84f, size.height * 0.12f)
         drawCircle(ink.copy(alpha = 0.18f), 14.dp.toPx(), sun)
@@ -31,7 +37,7 @@ internal fun DrawScope.drawGardenWeather(weather: GardenWeather, phase: Float, i
         return
     }
     if (lowPower) return
-    repeat(12) { index ->
+    repeat(maxParticles.coerceIn(0, 12)) { index ->
         val x = size.width * ((index * 0.137f + phase * 0.04f) % 1f)
         val y = size.height * ((index * 0.083f + phase) % 1f) * 0.48f
         val center = Offset(x, y)

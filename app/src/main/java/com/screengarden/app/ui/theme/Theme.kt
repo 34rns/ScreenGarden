@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import com.screengarden.app.domain.model.AccentColor
 import com.screengarden.app.domain.model.ThemePreference
 
-private val LightColors = lightColorScheme(
+internal val LightColors = lightColorScheme(
     primary = LightPrimary,
     onPrimary = LightOnPrimary,
     primaryContainer = LightPrimaryContainer,

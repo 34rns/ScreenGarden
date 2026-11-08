@@ -45,20 +45,23 @@ import com.screengarden.app.core.time.LocalDay
 import com.screengarden.app.domain.garden.GardenCoverage
 import com.screengarden.app.domain.garden.GardenStatus
 import com.screengarden.app.domain.garden.Plant
-import com.screengarden.app.domain.garden.PlantStage
 import com.screengarden.app.domain.garden.summarizeGardenStatus
+import com.screengarden.app.domain.world.RenderMode
+import com.screengarden.app.domain.world.WorldPlant
+import com.screengarden.app.domain.world.WorldState
 import com.screengarden.app.ui.screens.garden.PackPlantRenderer
 import com.screengarden.app.ui.screens.garden.PlantPalette
 import com.screengarden.app.ui.screens.garden.PlantRenderer
-import com.screengarden.app.ui.screens.garden.PlantVisuals
 import com.screengarden.app.ui.screens.garden.VectorPlantRenderer
 import com.screengarden.app.ui.theme.LightBackground
+import com.screengarden.app.ui.theme.LightColors
 import com.screengarden.app.ui.theme.LightOnBackground
 import com.screengarden.app.ui.theme.LightOnSecondaryContainer
 import com.screengarden.app.ui.theme.LightOnTertiary
 import com.screengarden.app.ui.theme.LightPrimary
 import com.screengarden.app.ui.theme.LightSecondary
 import com.screengarden.app.ui.theme.LightTertiary
+import com.screengarden.app.ui.world.drawWorld
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -175,28 +178,16 @@ internal fun widgetPlantBitmap(plant: Plant, renderer: PlantRenderer = VectorPla
         LightOnTertiary,
         LightOnSecondaryContainer
     )
-    val growth = when (plant.stage) {
-        PlantStage.SEED -> 0f
-        PlantStage.SPROUT -> 0.5f
-        PlantStage.BUD -> 0.78f
-        PlantStage.BLOOM -> 1f
-    }
     CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(image), Size(192f, 192f)) {
-        renderer.draw(
-            this,
-            plant,
-            palette,
-            PlantVisuals(
-                growth,
-                if (plant.stage ==
-                    PlantStage.BLOOM
-                ) {
-                    1f
-                } else {
-                    0f
-                },
-                (1f - plant.health / 60f).coerceIn(0f, 1f)
-            )
+        drawWorld(
+            WorldState(
+                plants = listOf(WorldPlant(plant, wilt = (1f - plant.health / 60f).coerceIn(0f, 1f))),
+                backdrop = false
+            ),
+            RenderMode.WIDGET,
+            LightColors,
+            renderer,
+            palette
         )
     }
     return image.asAndroidBitmap()

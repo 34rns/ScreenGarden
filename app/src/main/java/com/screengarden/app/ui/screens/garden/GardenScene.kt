@@ -16,20 +16,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.key
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -48,8 +41,11 @@ import com.screengarden.app.domain.garden.GardenWeather
 import com.screengarden.app.domain.garden.Plant
 import com.screengarden.app.domain.garden.PlantCondition
 import com.screengarden.app.domain.garden.PlantStage
-import com.screengarden.app.ui.theme.GardenEnvironmentColors
+import com.screengarden.app.domain.world.RenderMode
+import com.screengarden.app.domain.world.WorldPlant
+import com.screengarden.app.domain.world.WorldState
 import com.screengarden.app.ui.theme.gardenEnvironmentColors
+import com.screengarden.app.ui.world.drawWorld
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -74,7 +70,6 @@ fun GardenScene(
         environment
     }
     val sceneColors = gardenEnvironmentColors(scene, colors)
-    val skyBrush = remember(sceneColors) { Brush.verticalGradient(listOf(sceneColors.sky, sceneColors.horizon)) }
     val motionEnabled = rememberGardenMotionEnabled() && !isBedtime && !lowPowerVisuals
     val phase = rememberGardenPhase(motionEnabled && plants.isNotEmpty())
     Surface(
@@ -86,25 +81,17 @@ fun GardenScene(
             val columns = if (maxWidth >= 340.dp) 3 else 2
             Box {
                 Canvas(modifier = Modifier.matchParentSize()) {
-                    drawGardenBackdrop(sceneColors, colors, scene.light, skyBrush)
-                    drawGardenWeather(scene.weather, phase.value, colors.onTertiaryContainer, lowPowerVisuals)
-                    if (plants.isNotEmpty()) {
-                        val time = phase.value
-                        if (!lowPowerVisuals && scene.light != GardenLight.NIGHT) {
-                            repeat(6) { index ->
-                                val x = size.width * ((index * 0.17f + time * 0.08f) % 1f)
-                                val y = size.height * (0.15f + index * 0.07f) +
-                                    sin((time * 2 * PI + index).toFloat()) * 4.dp.toPx()
-                                drawCircle(colors.onTertiaryContainer.copy(alpha = 0.12f), 1.5.dp.toPx(), Offset(x, y))
-                            }
-                        }
-                        if (streakDays >= 3 && scene.light != GardenLight.NIGHT && !lowPowerVisuals) {
-                            val center = Offset(size.width * (0.18f + time * 0.6f), size.height * 0.16f)
-                            val wing = 2.dp.toPx() + kotlin.math.abs(sin(time * 12 * PI).toFloat()) * 3.dp.toPx()
-                            drawOval(colors.tertiary, center - Offset(wing, 3.dp.toPx()), Size(wing, 6.dp.toPx()))
-                            drawOval(colors.tertiary, center, Size(wing, 6.dp.toPx()))
-                        }
-                    }
+                    drawWorld(
+                        WorldState(
+                            environment = scene,
+                            phase = phase.value,
+                            streakDays = if (plants.isEmpty()) 0 else streakDays.coerceAtLeast(1),
+                            lowPowerVisuals = lowPowerVisuals
+                        ),
+                        RenderMode.INTERACTIVE,
+                        colors,
+                        VectorPlantRenderer
+                    )
                 }
                 Column(
                     modifier = Modifier
@@ -132,41 +119,6 @@ fun GardenScene(
                 }
             }
         }
-    }
-}
-
-/** Shared by the live scene and exported static image. */
-internal fun DrawScope.drawGardenBackdrop(
-    sceneColors: GardenEnvironmentColors,
-    colors: ColorScheme,
-    light: GardenLight,
-    skyBrush: Brush
-) {
-    drawRect(skyBrush)
-    val ground = Path().apply {
-        moveTo(0f, size.height * 0.45f)
-        cubicTo(
-            size.width * 0.3f,
-            size.height * 0.34f,
-            size.width * 0.68f,
-            size.height * 0.53f,
-            size.width,
-            size.height * 0.38f
-        )
-        lineTo(size.width, size.height)
-        lineTo(0f, size.height)
-        close()
-    }
-    drawPath(ground, sceneColors.ground)
-    drawOval(
-        colors.onTertiaryContainer.copy(alpha = 0.05f),
-        Offset(size.width * 0.62f, size.height * 0.08f),
-        Size(size.width * 0.24f, 12.dp.toPx())
-    )
-    if (light == GardenLight.NIGHT) {
-        val moon = Offset(size.width * 0.84f, size.height * 0.11f)
-        drawCircle(colors.onTertiaryContainer, 12.dp.toPx(), moon)
-        drawCircle(sceneColors.sky, 11.dp.toPx(), moon + Offset(5.dp.toPx(), -3.dp.toPx()))
     }
 }
 
@@ -249,6 +201,23 @@ internal fun GardenPlantArt(
     Canvas(modifier = modifier) {
         val offset = Math.floorMod(plant.id.hashCode(), 100) / 100f
         val sway = if (motionEnabled) sin(((phase?.value ?: 0f) + offset) * (2 * PI).toFloat()) * 2f else 0f
-        renderer.draw(this, plant, palette, PlantVisuals(growth.value, bloom.value, wilt.value, sway))
+        drawWorld(
+            WorldState(
+                plants = listOf(
+                    WorldPlant(
+                        plant,
+                        growth = growth.value,
+                        bloom = bloom.value,
+                        wilt = wilt.value,
+                        swayDegrees = sway
+                    )
+                ),
+                backdrop = false
+            ),
+            RenderMode.INTERACTIVE,
+            colors,
+            renderer,
+            palette
+        )
     }
 }

@@ -11,7 +11,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
@@ -24,10 +23,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import com.screengarden.app.domain.garden.GardenLight
 import com.screengarden.app.domain.garden.GardenWeather
-import com.screengarden.app.domain.garden.PlantCondition
-import com.screengarden.app.domain.garden.PlantStage
+import com.screengarden.app.domain.world.RenderMode
+import com.screengarden.app.domain.world.WorldState
+import com.screengarden.app.domain.world.mapPlotPlants
 import com.screengarden.app.ui.theme.GardenNightColors
-import com.screengarden.app.ui.theme.gardenEnvironmentColors
+import com.screengarden.app.ui.world.drawWorld
 
 /** A static image of the supplied snapshot; no usage reads, motion or garden rewards. */
 internal fun renderGardenSnapshot(
@@ -49,7 +49,6 @@ internal fun renderGardenSnapshot(
         state.environment
     }
     val plantColors = if (environment.light == GardenLight.NIGHT) GardenNightColors else colors
-    val sceneColors = gardenEnvironmentColors(environment, plantColors)
     val palette = PlantPalette(
         plantColors.primary,
         plantColors.secondary,
@@ -66,39 +65,18 @@ internal fun renderGardenSnapshot(
                 addRoundRect(RoundRect(Rect(0f, 0f, size.width, size.height), CornerRadius(if (framed) 40f else 0f)))
             }
             clipPath(boundary) {
-                drawGardenBackdrop(
-                    sceneColors,
-                    plantColors,
-                    environment.light,
-                    Brush.verticalGradient(listOf(sceneColors.sky, sceneColors.horizon))
-                )
-                drawGardenWeather(environment.weather, 0f, plantColors.onTertiaryContainer, state.lowPowerVisuals)
-                val columns = state.plants.size.coerceIn(1, 3)
-                val rows = ((state.plants.size + columns - 1) / columns).coerceAtLeast(1)
-                val width = size.width / columns
-                // Leave the wallpaper's lower area clear for Android preview controls and the Home dock.
                 val plotFraction = if (!framed && size.height > size.width) 0.4f else 0.65f
-                val height = size.height * plotFraction / rows
-                state.plants.forEachIndexed { index, plant ->
-                    val x = index % columns * width
-                    val y = size.height * 0.3f + index / columns * height
-                    val right = size.width - x - width
-                    val bottom = size.height - y - height
-                    inset(x, y, right, bottom) {
-                        val growth = when (plant.stage) {
-                            PlantStage.SEED -> 0f
-                            PlantStage.SPROUT -> 0.5f
-                            PlantStage.BUD -> 0.78f
-                            PlantStage.BLOOM -> 1f
-                        }
-                        val wilt = if (plant.condition == PlantCondition.GROWING) {
-                            0f
-                        } else {
-                            ((60 - plant.health) / 50f).coerceIn(0f, 1f)
-                        }
-                        renderer.draw(this, plant, palette, PlantVisuals(growth, if (growth == 1f) 1f else 0f, wilt))
-                    }
-                }
+                drawWorld(
+                    WorldState(
+                        plants = mapPlotPlants(state.plants, plotFraction),
+                        environment = environment,
+                        lowPowerVisuals = state.lowPowerVisuals
+                    ),
+                    if (framed) RenderMode.SNAPSHOT else RenderMode.WALLPAPER,
+                    plantColors,
+                    renderer,
+                    palette
+                )
             }
         }
     }

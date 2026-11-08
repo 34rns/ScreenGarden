@@ -1,6 +1,6 @@
 ================================================================================
 SCREEN GARDEN - AGENT MEMORY
-Last updated: 2026-11-08 (Session 53 / P33 completed GitHub release and screenshot site)
+Last updated: 2026-11-08 (Session 54 / P35 shared world extraction)
 Maintained by: whoever (human or agent) edits this repo. Update this file in the
 same change as the code. It is the single source of truth for rules, decisions,
 dependencies, permissions and status.
@@ -1236,6 +1236,17 @@ SECTION 6 - DECISIONS
       Release procedure is docs/RELEASING.md; Section 17 points to it. Old unsigned
       weekly distribution notes are historical, superseded by this decision.
 
+  D92 P35 SHARED WORLD (in progress).
+      Pure Kotlin world/camera/mode policies; Compose DrawScope scene renderer with
+      explicit clock inputs; Android window, bitmap, lifecycle and surface adapters only.
+      Keep legacy pixels during extraction before changing scene/tokens. No new library.
+      Deterministic chronological placement survives ordinary app restarts/new planting.
+      Desk preferences will be desk_mode_enabled (false) and desk_clock (true), backed
+      up with an explicit format upgrade; no Room change intended. Desk needs no new
+      permission: local window brightness/keep-on and charging broadcast only.
+      Fullscreen Focus preview never commits rewards; existing terminal transaction owns them.
+      Optional DreamService omitted; manual opt-in Desk with a charging offer is sufficient.
+
 SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
 --------------------------------------------------------------------------------
   From P00 on, work is identified by PROMPT NUMBER. The old dotted IDs are kept
@@ -1303,6 +1314,7 @@ SECTION 7 - FEATURE CHECKLIST (prompt-mapped roadmap)
                   [0.4, 3.3]
   P32     done    Docs + release assets [3.4 part]
   P33     done    Signed v0.1.0 GitHub release and verified screenshot Pages site
+  P35     active  Shared world renderer, pan/zoom field, fullscreen Focus, Desk; v1.1.0
 
   The old 0.4 (visual verification) is COMPLETE as of P00b for the current UI:
   four tabs in light/dark/AMOLED, 1.3x font, RTL, on API 35. It is not marked
@@ -1742,13 +1754,19 @@ SECTION 10 - KNOWN ISSUES
 
 SECTION 11 - CURRENT STATUS
 --------------------------------------------------------------------------------
-  P00-P33 complete. Signed v0.1.0 is published: https://github.com/34rns/ScreenGarden/releases/tag/v0.1.0 . Screenshot site is live: https://34rns.github.io/ScreenGarden/ . Final announcement 6b69d33 CI 42476379987 and Pages 42476380041 SUCCESS. Signed main preflight 42474604474 and tag release 42475358257 SUCCESS on immutable 5a5a323. All required gates and public download/site checks pass. No unfinished feature work or blocking issue remains; practical device/testing limits below are explicit.
-
+  P00-P33 remain complete; v0.1.0 and https://34rns.github.io/ScreenGarden/ are public.
+  P35 active. Audit and pre-overhaul fake emulator baselines saved under .tools/p35-before/.
+  Pure world/camera/mode models and shared renderer now connected to legacy Garden art,
+  widget, snapshot and wallpaper adapter. Extraction verification complete: 369 JVM tests, all four gates PASS;
+  five before/after fake-emulator app frames identical (Android status icons excluded).
+  No new permission/dependency or Room schema. Existing private update key preserved.
 --------------------------------------------------------------------------------
 SECTION 12 - NEXT STEP
 --------------------------------------------------------------------------------
-  No planned prompt remains. Preserve the existing private update key; an owner-controlled portable encrypted backup and real-device/OEM accessibility/reliability checks are the next optional follow-ups. Future changes must increase versionCode, retain the signing key, and follow docs/RELEASING.md. Continue only with a new requested task.
-
+  Continue docs/P35_WORLD.md: complete extraction gates/pixel comparison and commit,
+  then interactive World/new appearance/fullscreen Focus/Desk and v1.1.0 verification.
+  Preserve all schema 1-7 artifacts. Positions derive from persisted planting order;
+  a future stored-position change would require v8, not rewriting the already shipped v2.
 --------------------------------------------------------------------------------
 SECTION 13 - SESSION LOG
 --------------------------------------------------------------------------------
@@ -2988,6 +3006,23 @@ SECTION 13 - SESSION LOG
     Not ver.  Physical-device/OEM reliability, actual reboot/process death, complete current API26 UI, low-end performance, TalkBack listening and fluent Spanish review remain unverified. Independent byte-for-byte build reproduction is unverified. Owner portable private signing-key backup remains a manual custody task. Optional video not available (Session 12).
     Next      No planned prompt remains. Preserve the existing private update key; an owner-controlled portable encrypted backup and real-device/OEM accessibility/reliability checks are the next optional follow-ups. Future changes must increase versionCode, retain the signing key, and follow docs/RELEASING.md. Continue only with a new requested task.
 
+  SESSION 54 - 2026-11-08 - P35 renderer extraction (active)
+    Did       Recovered unfinished P35 models/renderer and baseline captures. Read memory,
+              audited drawing callers and fetched origin at 506bf08 without divergence.
+              Connected legacy scene/individual art, widget, snapshots and wallpaper.
+    Decided   D92; no new runtime dependency, permission or Room schema. Preserve old
+              framing first; later World uses the deterministic field mapping.
+    Verified  Saved predecessor red/green world tests checked. Fresh initial style gate
+              failed on unformatted draft files; format applied. Targeted rendering test
+              exposed missing static wallpaper weather, fixed mode detail policy.
+    Verified  Fresh four gates PASS; 369 JVM tests, zero failures/errors/skips; lint zero
+              errors/six accepted warnings. Five fake-only before/after frames have identical
+              app pixels, excluding Android status bar; inspected scene and snapshot.
+    Not ver.  Extraction CI pending push; interactive World/new look,
+              fullscreen Focus/Desk and v1.1.0 release not yet implemented. Actual battery,
+              OLED lifetime, OEM support and physical-device performance remain unverified.
+    Next      Finish extraction verification/commit, then remaining docs/P35_WORLD.md steps.
+
 SECTION 14 - OPEN QUESTIONS
 --------------------------------------------------------------------------------
   No open questions. All four were answered in P00; the decisions live in
@@ -3266,6 +3301,8 @@ SECTION 16 - CORE DESIGN
     onboardingDone    Boolean default false
     hemisphere        enum    drives season visuals (P21)
     lowPowerVisuals   Boolean reduces animation/particles
+    deskModeEnabled   Boolean opt-in Desk controls/charging offer, default false (P35)
+    deskClock         Boolean optional Desk clock, default true (P35)
     keepScreenOn     Boolean optional focus-screen display setting, false (P13)
     compassionDaysPerMonth Int monthly allowance, default 3, range 0..10 (P18)
     IMPLEMENTED in P04: the first ten keys, with the SettingsDefaults values
