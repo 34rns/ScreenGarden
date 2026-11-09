@@ -994,15 +994,17 @@ SECTION 6 - DECISIONS
       keeps LocalDay UTC keys and delivered marker sets. Claim before posting prevents
       duplicate checks/process restarts; a crash after claim can miss a nudge.
       data/notifications is an isolated Android-adapter exception like data/focus.
-  D74 CODEBUFF ATTRIBUTION REQUEST (owner, 2026-11-07; audited 2026-11-08).
-      Owner requests removing unwarranted Codebuff/codebuff-team credits across
-      projects. All 31 owned GitHub repositories have no Codebuff collaborator
-      access; indexed code search found no current references. ScreenGarden has
-      Codebuff co-author trailers in two published commits (dead756/e09f823).
-      Removing those would rewrite published history, forbidden by SECTION 18.
-      No history rewrite or access removal performed. Omit unwarranted future
-      credits; preserve required license notices. Other unindexed/local projects
-      have not been inspected outside this permitted project folder.
+  D74 ASSISTANT CREDIT CLEANUP (owner; completed 2026-11-09).
+      Owner explicitly approved a one-time published-history cleanup after
+      reviewing its effects on commit IDs and release tags. All 32 owned GitHub
+      repositories were audited; 30 unwanted generation/co-author credits in
+      five repositories were removed. This project's two credited commits and
+      all affected release tags were cleaned; code and release assets preserved.
+      Local unfinished edits, staging and the older portfolio worktree were
+      backed up and verified unchanged. GitHub CI and Pages passed afterward.
+      The normal no-history-rewrite rule still applies outside this approved
+      cleanup. Do not add unwanted automated-tool credits to future commits;
+      preserve required copyright and license notices.
   D75 P17 BEDTIME USES THE EXISTING SCORE AND MEASUREMENT BOUNDARY.
       Room v4 adds only nullable DailyStat.bedtimeMinutes; MIGRATION_3_4 leaves
       old rows unknown and preserves all six tables, active timers and plant health.
@@ -2458,7 +2460,7 @@ SECTION 13 - SESSION LOG
               in light/dark; reviewed images and updated the README gallery.
     Decided   D73/D74. No new permission, dependency or schema. Highest newly
               crossed milestone avoids late bursts; flags persist before posting.
-              Codebuff access audit found no collaborators/indexed current credits;
+              Assistant-credit access audit found no collaborators/indexed current credits;
               existing co-author trailers stay because published history is immutable.
     Verified  231 JVM tests, 0 failures/errors/skips; four gates PASS; lint
               0 errors/3 accepted warnings. API 35 nudge tests 2 PASS, confirming
@@ -2508,7 +2510,7 @@ SECTION 13 - SESSION LOG
               seven emulator fake-only captures. Completed the pending memory
               update and corrected the lint warning count (K58).
     Decided   Keep D75 and GitHub-only distribution (D69). Preserve published
-              history; no current Codebuff credit exists in product files (D74).
+              history; no current unwanted tool credit exists in product files (D74).
               Finish this prompt before saving a fresh-session handoff.
     Verified  Fresh four gates PASS; 244 JVM tests, zero failures/errors/skips;
               lint zero errors/four warnings. Fresh API 35 run: six tests PASS
