@@ -147,3 +147,7 @@ Code: **GPL-3.0-or-later**, [LICENSE](LICENSE).
 Original art and built-in plant packs: **CC BY-SA 4.0**, [art attribution](ART_LICENSE.md).
 Libraries retain their [third-party notices](THIRD_PARTY_NOTICES.md), also bundled
 in the APK. Source is public alongside every binary release.
+
+## Support
+
+[Buy me a coffee](https://www.supportkori.com/rnsofficial)
